@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 
 const STAGES = [
-  { text: 'Analyzing your transformation readiness...', sub: 'Processing diagnostic inputs' },
-  { text: 'Evaluating leadership alignment...', sub: 'Mapping executive sponsorship patterns' },
-  { text: 'Assessing change readiness...', sub: 'Comparing against transformation benchmarks' },
-  { text: 'Identifying human factor risks...', sub: 'Analyzing culture and adoption barriers' },
-  { text: 'Building your roadmap...', sub: 'Generating tailored recommendations' },
+  { text: 'Analyzing organizational readiness...', sub: 'Processing diagnostic inputs across 6 dimensions' },
+  { text: 'Evaluating leadership alignment...', sub: 'Mapping executive sponsorship and middle management patterns' },
+  { text: 'Assessing data and process maturity...', sub: 'Benchmarking against industry transformation profiles' },
+  { text: 'Identifying human factor risks...', sub: 'Analyzing culture, talent, and adoption barriers' },
+  { text: 'Generating process-specific recommendations...', sub: 'Building your tailored transformation roadmap' },
 ];
 
 export default function Analysis() {
@@ -13,10 +13,7 @@ export default function Analysis() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setStage(s => {
-        if (s < STAGES.length - 1) return s + 1;
-        return s;
-      });
+      setStage(s => s < STAGES.length - 1 ? s + 1 : s);
     }, 2500);
     return () => clearInterval(interval);
   }, []);

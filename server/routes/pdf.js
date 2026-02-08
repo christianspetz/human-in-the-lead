@@ -2,40 +2,25 @@ const express = require('express');
 const PDFDocument = require('pdfkit');
 const router = express.Router();
 
-const COLORS = {
-  navy: '#0F172A',
-  darkGray: '#1E293B',
-  medGray: '#475569',
-  lightGray: '#94A3B8',
-  white: '#FFFFFF',
-  teal: '#06B6D4',
-  amber: '#F59E0B',
-  red: '#EF4444',
-  green: '#22C55E'
-};
+const COLORS = { navy: '#0F172A', dark: '#1E293B', med: '#475569', light: '#94A3B8', white: '#FFFFFF', teal: '#06B6D4', amber: '#F59E0B', red: '#EF4444', green: '#22C55E' };
+const DIMS = [
+  { key: 'strategic_alignment', label: 'Strategic Alignment' },
+  { key: 'organizational_capacity', label: 'Organizational Capacity' },
+  { key: 'data_maturity', label: 'Data Maturity' },
+  { key: 'talent_readiness', label: 'Talent Readiness' },
+  { key: 'process_readiness', label: 'Process Readiness' },
+  { key: 'investment_posture', label: 'Investment Posture' }
+];
 
-function getScoreColor(score) {
-  if (score < 30) return COLORS.red;
-  if (score < 50) return COLORS.amber;
-  if (score < 70) return '#EAB308';
-  if (score < 85) return COLORS.green;
-  return '#10B981';
+function getScoreColor(s) { return s < 30 ? COLORS.red : s < 50 ? COLORS.amber : s < 70 ? '#EAB308' : s < 85 ? COLORS.green : '#10B981'; }
+
+function addFooter(doc) {
+  doc.fontSize(8).fillColor(COLORS.light)
+    .text('Built by Christian Spetz | Transformation & AI Strategy | linkedin.com/in/christianspetz', 50, doc.page.height - 40, { align: 'center', width: doc.page.width - 100 });
 }
 
-function addFooter(doc, pageNum) {
-  doc.fontSize(8)
-    .fillColor(COLORS.lightGray)
-    .text(
-      'Built by Christian Spetz | Transformation & AI Strategy | linkedin.com/in/christianspetz',
-      50, doc.page.height - 40,
-      { align: 'center', width: doc.page.width - 100 }
-    );
-}
-
-function addSectionTitle(doc, title, y) {
-  doc.fontSize(14)
-    .fillColor(COLORS.teal)
-    .text(title, 50, y);
+function addSection(doc, title, y) {
+  doc.fontSize(14).fillColor(COLORS.teal).text(title, 50, y);
   doc.moveTo(50, y + 20).lineTo(545, y + 20).strokeColor(COLORS.teal).lineWidth(0.5).stroke();
   return y + 30;
 }
@@ -43,215 +28,109 @@ function addSectionTitle(doc, title, y) {
 router.post('/generate-pdf', async (req, res) => {
   try {
     const { results, answers, name } = req.body;
+    if (!results) return res.status(400).json({ error: 'Results are required' });
 
-    if (!results) {
-      return res.status(400).json({ error: 'Results are required' });
-    }
-
-    const doc = new PDFDocument({
-      size: 'A4',
-      margins: { top: 50, bottom: 60, left: 50, right: 50 },
-      bufferPages: true,
-      info: {
-        Title: 'Human-in-the-Lead: AI Transformation Readiness Report',
-        Author: 'Christian Spetz',
-        Subject: 'AI Transformation Readiness Assessment'
-      }
-    });
-
+    const doc = new PDFDocument({ size: 'A4', margins: { top: 50, bottom: 60, left: 50, right: 50 }, bufferPages: true,
+      info: { Title: 'AI Transformation Readiness Report', Author: 'Christian Spetz' } });
     const chunks = [];
-    doc.on('data', chunk => chunks.push(chunk));
+    doc.on('data', c => chunks.push(c));
     doc.on('end', () => {
-      const pdfBuffer = Buffer.concat(chunks);
+      const buf = Buffer.concat(chunks);
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', 'attachment; filename="AI-Transformation-Readiness-Report.pdf"');
-      res.setHeader('Content-Length', pdfBuffer.length);
-      res.send(pdfBuffer);
+      res.send(buf);
     });
 
-    const pageWidth = doc.page.width - 100;
+    const pw = doc.page.width - 100;
+    const intro = answers?.intro || {};
 
-    // ===== COVER PAGE =====
+    // COVER PAGE
     doc.rect(0, 0, doc.page.width, doc.page.height).fill(COLORS.navy);
+    doc.fontSize(28).fillColor(COLORS.teal).text('Human-in-the-Lead', 50, 100, { width: pw });
+    doc.fontSize(16).fillColor(COLORS.white).text('AI Transformation Readiness Report', 50, 140, { width: pw });
+    doc.moveTo(50, 175).lineTo(200, 175).strokeColor(COLORS.teal).lineWidth(2).stroke();
 
-    // Title block
-    doc.fontSize(28)
-      .fillColor(COLORS.teal)
-      .text('Human-in-the-Lead', 50, 120, { width: pageWidth });
+    const prepFor = name || 'Your Organization';
+    const context = [intro.industry, intro.orgSize].filter(Boolean).join(' | ');
+    doc.fontSize(12).fillColor(COLORS.light).text(`Prepared for: ${prepFor}`, 50, 200).text(`${context}`, 50, 218)
+      .text(`Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, 50, 236);
 
-    doc.fontSize(16)
-      .fillColor(COLORS.white)
-      .text('AI Transformation Readiness Report', 50, 160, { width: pageWidth });
+    // Dimension scores on cover
+    const dims = results.dimension_scores || {};
+    let dy = 290;
+    doc.fontSize(10).fillColor(COLORS.light).text('DIMENSIONAL SCORES', 50, dy); dy += 20;
+    DIMS.forEach(d => {
+      const score = dims[d.key] || 0;
+      doc.fontSize(9).fillColor(COLORS.light).text(d.label, 50, dy, { width: 180 });
+      doc.rect(240, dy + 2, 200, 10).fillAndStroke('#1E293B', '#334155');
+      doc.rect(240, dy + 2, (score / 100) * 200, 10).fill(getScoreColor(score));
+      doc.fontSize(9).fillColor(COLORS.white).text(`${score}`, 450, dy);
+      dy += 22;
+    });
 
-    doc.moveTo(50, 195).lineTo(200, 195).strokeColor(COLORS.teal).lineWidth(2).stroke();
-
-    const preparedFor = name || 'Your Organization';
-    doc.fontSize(12)
-      .fillColor(COLORS.lightGray)
-      .text(`Prepared for: ${preparedFor}`, 50, 220, { width: pageWidth })
-      .text(`Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, 50, 240, { width: pageWidth });
-
-    // Score circle
-    const centerX = doc.page.width / 2;
-    const scoreColor = getScoreColor(results.readiness_score);
-    doc.circle(centerX, 380, 60).lineWidth(6).strokeColor(scoreColor).stroke();
-    doc.fontSize(36).fillColor(COLORS.white).text(String(results.readiness_score), centerX - 30, 358, { width: 60, align: 'center' });
-    doc.fontSize(10).fillColor(COLORS.lightGray).text('READINESS SCORE', centerX - 50, 425, { width: 100, align: 'center' });
-
-    doc.fontSize(13).fillColor(scoreColor).text(results.readiness_level, 50, 470, { width: pageWidth, align: 'center' });
-
-    // Headline
-    doc.fontSize(16).fillColor(COLORS.white).text(`"${results.headline}"`, 50, 510, { width: pageWidth, align: 'center' });
-
+    dy += 20;
+    doc.fontSize(13).fillColor(getScoreColor(results.readiness_score || 0)).text(results.readiness_level || '', 50, dy, { width: pw, align: 'center' });
+    dy += 25;
+    doc.fontSize(14).fillColor(COLORS.white).text(`"${results.headline}"`, 50, dy, { width: pw, align: 'center' });
     addFooter(doc);
 
-    // ===== PAGE 2: EXECUTIVE SUMMARY + HUMAN RISK =====
-    doc.addPage();
-    let y = 50;
+    // PAGE 2: SUMMARY + RISK
+    doc.addPage(); let y = 50;
+    y = addSection(doc, 'EXECUTIVE SUMMARY', y);
+    doc.fontSize(11).fillColor(COLORS.dark).text(results.summary, 50, y, { width: pw, lineGap: 4 }); y = doc.y + 25;
 
-    y = addSectionTitle(doc, 'EXECUTIVE SUMMARY', y);
-    doc.fontSize(11).fillColor(COLORS.darkGray).text(results.summary, 50, y, { width: pageWidth, lineGap: 4 });
-    y = doc.y + 25;
+    doc.rect(50, y, pw, 70).fillAndStroke('#FEF3C7', COLORS.amber);
+    doc.fontSize(10).fillColor(COLORS.amber).text('YOUR BIGGEST HUMAN RISK', 65, y + 10, { width: pw - 30 });
+    doc.fontSize(10).fillColor(COLORS.dark).text(results.human_factors_risk || '', 65, y + 28, { width: pw - 30, lineGap: 3 }); y += 85;
 
-    // Human Factors Risk box
-    doc.rect(50, y, pageWidth, 70).fillAndStroke('#FEF3C7', COLORS.amber);
-    doc.fontSize(10).fillColor(COLORS.amber).text('⚠ YOUR BIGGEST HUMAN RISK', 65, y + 10, { width: pageWidth - 30 });
-    doc.fontSize(10).fillColor(COLORS.darkGray).text(results.human_factors_risk, 65, y + 28, { width: pageWidth - 30, lineGap: 3 });
-    y = y + 85;
+    y = addSection(doc, 'STRENGTHS', y);
+    (results.strengths || []).forEach(s => { doc.fontSize(10).fillColor(COLORS.green).text('✓', 55, y); doc.fillColor(COLORS.dark).text(s, 70, y, { width: pw - 20, lineGap: 3 }); y = doc.y + 8; }); y += 10;
 
-    // Strengths
-    y = addSectionTitle(doc, 'STRENGTHS', y);
-    if (results.strengths && Array.isArray(results.strengths)) {
-      results.strengths.forEach(s => {
-        doc.fontSize(10).fillColor(COLORS.green).text('✓', 55, y);
-        doc.fillColor(COLORS.darkGray).text(s, 70, y, { width: pageWidth - 20, lineGap: 3 });
-        y = doc.y + 8;
-      });
+    y = addSection(doc, 'KEY RISKS', y);
+    (results.risks || []).forEach(r => { doc.fontSize(10).fillColor(COLORS.red).text('✗', 55, y); doc.fillColor(COLORS.dark).text(r, 70, y, { width: pw - 20, lineGap: 3 }); y = doc.y + 8; }); y += 10;
+
+    if (y < 600) {
+      y = addSection(doc, 'TIMELINE & INVESTMENT ASSESSMENT', y);
+      doc.fontSize(10).fillColor(COLORS.med).text('Estimated Timeline:', 50, y);
+      doc.fillColor(COLORS.dark).text(results.estimated_timeline || '', 50, y + 15, { width: pw, lineGap: 3 }); y = doc.y + 12;
+      doc.fillColor(COLORS.med).text('Investment Assessment:', 50, y);
+      doc.fillColor(COLORS.dark).text(results.budget_assessment || '', 50, y + 15, { width: pw, lineGap: 3 });
     }
-    y += 10;
-
-    // Risks
-    y = addSectionTitle(doc, 'KEY RISKS', y);
-    if (results.risks && Array.isArray(results.risks)) {
-      results.risks.forEach(r => {
-        doc.fontSize(10).fillColor(COLORS.red).text('✗', 55, y);
-        doc.fillColor(COLORS.darkGray).text(r, 70, y, { width: pageWidth - 20, lineGap: 3 });
-        y = doc.y + 8;
-      });
-    }
-    y += 10;
-
-    // Timeline + Budget
-    y = addSectionTitle(doc, 'TIMELINE & BUDGET ASSESSMENT', y);
-    if (y > 680) { doc.addPage(); y = 50; }
-    doc.fontSize(10).fillColor(COLORS.medGray).text('Estimated Timeline:', 50, y);
-    doc.fillColor(COLORS.darkGray).text(results.estimated_timeline, 50, y + 15, { width: pageWidth, lineGap: 3 });
-    y = doc.y + 12;
-    doc.fillColor(COLORS.medGray).text('Budget Assessment:', 50, y);
-    doc.fillColor(COLORS.darkGray).text(results.budget_assessment, 50, y + 15, { width: pageWidth, lineGap: 3 });
-
     addFooter(doc);
 
-    // ===== PAGE 3: RECOMMENDATIONS =====
-    doc.addPage();
-    y = 50;
-    y = addSectionTitle(doc, 'RECOMMENDATIONS', y);
+    // PAGE 3: RECOMMENDATIONS
+    doc.addPage(); y = 50;
+    y = addSection(doc, 'RECOMMENDATIONS', y);
+    (results.recommendations || []).forEach((rec, i) => {
+      if (y > 680) { doc.addPage(); addFooter(doc); y = 50; }
+      const title = typeof rec === 'object' ? rec.title : rec;
+      const desc = typeof rec === 'object' ? rec.description : '';
+      doc.fontSize(11).fillColor(COLORS.teal).text(`${i + 1}. ${title}`, 50, y, { width: pw }); y = doc.y + 3;
+      if (desc) { doc.fontSize(10).fillColor(COLORS.dark).text(desc, 65, y, { width: pw - 15, lineGap: 3 }); y = doc.y + 12; }
+    }); y += 10;
 
-    if (results.recommendations && Array.isArray(results.recommendations)) {
-      results.recommendations.forEach((rec, i) => {
-        if (y > 680) { doc.addPage(); addFooter(doc); y = 50; }
-        const title = typeof rec === 'object' ? rec.title : rec;
-        const desc = typeof rec === 'object' ? rec.description : '';
-
-        doc.fontSize(11).fillColor(COLORS.teal).text(`${i + 1}. ${title}`, 50, y, { width: pageWidth });
-        y = doc.y + 3;
-        if (desc) {
-          doc.fontSize(10).fillColor(COLORS.darkGray).text(desc, 65, y, { width: pageWidth - 15, lineGap: 3 });
-          y = doc.y + 12;
-        }
-      });
-    }
-
-    y += 10;
     if (y > 580) { doc.addPage(); y = 50; }
+    y = addSection(doc, 'QUICK WINS — NEXT 30 DAYS', y);
+    (results.quick_wins || []).forEach(qw => { doc.fontSize(10).fillColor(COLORS.teal).text('→', 55, y); doc.fillColor(COLORS.dark).text(qw, 70, y, { width: pw - 20, lineGap: 3 }); y = doc.y + 8; }); y += 10;
 
-    // Quick Wins
-    y = addSectionTitle(doc, 'QUICK WINS (NEXT 30 DAYS)', y);
-    if (results.quick_wins && Array.isArray(results.quick_wins)) {
-      results.quick_wins.forEach((qw, i) => {
-        doc.fontSize(10).fillColor(COLORS.teal).text(`→`, 55, y);
-        doc.fillColor(COLORS.darkGray).text(qw, 70, y, { width: pageWidth - 20, lineGap: 3 });
-        y = doc.y + 8;
-      });
-    }
-
-    y += 10;
     if (y > 580) { doc.addPage(); y = 50; }
-
-    // Watch-Outs
-    y = addSectionTitle(doc, 'WATCH-OUTS FOR YOUR PROFILE', y);
-    if (results.watch_outs && Array.isArray(results.watch_outs)) {
-      results.watch_outs.forEach(wo => {
-        doc.fontSize(10).fillColor(COLORS.amber).text('⚠', 55, y);
-        doc.fillColor(COLORS.darkGray).text(wo, 70, y, { width: pageWidth - 20, lineGap: 3 });
-        y = doc.y + 8;
-      });
-    }
-
+    y = addSection(doc, 'WATCH-OUTS FOR YOUR PROFILE', y);
+    (results.watch_outs || []).forEach(wo => { doc.fontSize(10).fillColor(COLORS.amber).text('!', 55, y); doc.fillColor(COLORS.dark).text(wo, 70, y, { width: pw - 20, lineGap: 3 }); y = doc.y + 8; });
     addFooter(doc);
 
-    // ===== YOUR ANSWERS PAGE =====
-    doc.addPage();
-    y = 50;
-    y = addSectionTitle(doc, 'YOUR DIAGNOSTIC ANSWERS', y);
-
-    const questionLabels = {
-      q1: 'Industry', q2: 'Organization Size', q3: 'Company Trajectory',
-      q4: 'Change Initiative Track Record', q5: 'AI Initiative Status',
-      q6: 'Executive Sponsorship', q7: 'Middle Management Champions',
-      q8: 'Culture Around Change', q9: 'AI Transformation Budget',
-      q10: 'Primary Goal'
-    };
-
-    if (answers) {
-      Object.entries(questionLabels).forEach(([key, label]) => {
-        if (y > 700) { doc.addPage(); addFooter(doc); y = 50; }
-        doc.fontSize(9).fillColor(COLORS.medGray).text(label + ':', 50, y);
-        doc.fontSize(10).fillColor(COLORS.darkGray).text(answers[key] || 'N/A', 50, y + 13, { width: pageWidth });
-        y = doc.y + 10;
-      });
-    }
-
-    addFooter(doc);
-
-    // ===== CTA PAGE =====
+    // CTA PAGE
     doc.addPage();
     doc.rect(0, 0, doc.page.width, doc.page.height).fill(COLORS.navy);
-
-    doc.fontSize(22).fillColor(COLORS.teal).text('What Comes Next?', 50, 200, { width: pageWidth, align: 'center' });
-
+    doc.fontSize(22).fillColor(COLORS.teal).text('What Comes Next?', 50, 200, { width: pw, align: 'center' });
     doc.fontSize(12).fillColor(COLORS.white).text(
-      'This diagnostic identifies the gaps. Closing them requires a structured approach — executive alignment, change management, governance, and adoption strategy.',
-      70, 260, { width: pageWidth - 40, align: 'center', lineGap: 5 }
-    );
-
+      'This diagnostic identifies the gaps. Closing them requires a structured approach — executive alignment, change management, governance, and adoption strategy tailored to your industry and processes.', 70, 260, { width: pw - 40, align: 'center', lineGap: 5 });
     doc.fontSize(12).fillColor(COLORS.white).text(
-      'If you want help building and executing your AI transformation roadmap, connect with Christian Spetz on LinkedIn.',
-      70, 330, { width: pageWidth - 40, align: 'center', lineGap: 5 }
-    );
-
-    doc.fontSize(14).fillColor(COLORS.teal).text(
-      'linkedin.com/in/christianspetz',
-      50, 400, { width: pageWidth, align: 'center', link: 'https://linkedin.com/in/christianspetz', underline: true }
-    );
-
+      'If you want help building and executing your AI transformation roadmap, connect with Christian Spetz on LinkedIn.', 70, 330, { width: pw - 40, align: 'center', lineGap: 5 });
+    doc.fontSize(14).fillColor(COLORS.teal).text('linkedin.com/in/christianspetz', 50, 400, { width: pw, align: 'center', link: 'https://linkedin.com/in/christianspetz', underline: true });
     addFooter(doc);
 
     doc.end();
-  } catch (err) {
-    console.error('PDF generation error:', err);
-    res.status(500).json({ error: 'PDF generation failed' });
-  }
+  } catch (err) { console.error('PDF error:', err); res.status(500).json({ error: 'PDF generation failed' }); }
 });
 
 module.exports = router;
