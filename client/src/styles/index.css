@@ -111,6 +111,7 @@ body { font-family: var(--font-body); background: var(--navy); color: var(--whit
 
 .results-context { text-align: center; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--slate); margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--navy-light); }
 .results-header { text-align: center; margin-bottom: 2.5rem; }
+.results-org-context { font-size: 0.95rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--slate-light); margin-bottom: 1.5rem; font-weight: 500; }
 .results-scores-row { display: flex; align-items: center; justify-content: center; gap: 2.5rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
 .score-ring-wrapper { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
 .radar-chart-container { display: flex; justify-content: center; }
