@@ -53,8 +53,8 @@ body { font-family: var(--font-body); background: var(--navy); color: var(--whit
 .landing .subtitle { font-size: clamp(1rem, 2.5vw, 1.25rem); color: var(--teal); font-weight: 400; margin-bottom: 2.5rem; }
 .landing .description { font-size: 1rem; color: var(--slate-light); line-height: 1.75; max-width: 580px; margin: 0 auto 1.5rem; text-align: left; }
 .landing .description.secondary { font-size: 0.88rem; color: var(--slate-light); font-style: normal; text-align: center; margin-bottom: 3rem; }
-.dimension-list { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; margin: 1.5rem auto 2.5rem; max-width: 560px; }
-.dimension-tag { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--slate-lighter); background: var(--navy-light); border: 1px solid var(--navy-mid); padding: 0.35rem 0.85rem; border-radius: 100px; font-weight: 500; white-space: nowrap; }
+.dimension-list { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; margin: 1.5rem auto 2.5rem; max-width: 600px; }
+.dimension-tag { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--slate-lighter); background: var(--navy-light); border: 1px solid var(--navy-mid); padding: 0.4rem 1rem; border-radius: 100px; font-weight: 500; white-space: nowrap; }
 .dimension-scores { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 2.5rem; }
 .dim-score-card { background: var(--navy-light); border: 1px solid var(--navy-mid); border-radius: 10px; padding: 1rem; text-align: center; }
 .dim-score-card .dim-value { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.25rem; }

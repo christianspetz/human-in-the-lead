@@ -14,7 +14,7 @@ export default function Landing({ onStart }) {
         <h1 className="animate-in animate-in-delay-1">Human-in-the-Lead</h1>
         <p className="subtitle animate-in animate-in-delay-2">Why Most AI Transformations Fail (And Will Yours?)</p>
         <p className="description animate-in animate-in-delay-3">
-          Most AI transformations stall — not because the technology wasn't good enough, but because the organization wasn't ready. Misaligned leadership, fragmented data, change-fatigued teams, and no clear plan for adoption. The human side is almost always the hardest part to get right. This diagnostic evaluates where your organization actually stands across six dimensions that determine whether AI initiatives land or fail.
+          There's a lot of excitement around AI right now, and rightly so. But the organizations that stall tend to overindex on the technology and underindex on everything else: leadership alignment, data readiness, change capacity, and getting people to actually adopt new ways of working. This diagnostic evaluates where your organization stands across six dimensions that determine whether AI initiatives land or fail.
         </p>
         <div className="dimension-list animate-in animate-in-delay-4">
           <span className="dimension-tag">Strategic Alignment</span>
@@ -25,7 +25,7 @@ export default function Landing({ onStart }) {
           <span className="dimension-tag">Investment Posture</span>
         </div>
         <p className="description secondary animate-in animate-in-delay-4">
-          11 questions. 3 minutes. Powered by AI. Brutally honest.
+          11 questions. 3 minutes. A balanced perspective.
         </p>
         <div className="animate-in animate-in-delay-5">
           <button className="btn-primary" onClick={() => onStart(name, email)}>
