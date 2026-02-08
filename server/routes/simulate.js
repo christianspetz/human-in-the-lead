@@ -9,7 +9,7 @@ const simulateLimiter = rateLimit({
   standardHeaders: true, legacyHeaders: false, keyGenerator: (req) => req.ip
 });
 
-function buildPrompt(industry, departments, assignments, meters, taskLabels) {
+function buildPrompt(industry, departments, assignments, meters, taskLabels, taskDeptMap) {
   const automationLabelMap = {
     full_ai: 'Full AI',
     ai_led: 'AI-Led + Human Oversight',
@@ -21,32 +21,9 @@ function buildPrompt(industry, departments, assignments, meters, taskLabels) {
   for (const dept of departments) {
     configSummary += `\n### ${dept.label}\n`;
     for (const [taskId, level] of Object.entries(assignments)) {
-      if (taskLabels[taskId] && taskId.includes(dept.id.replace('_', ''))) {
+      if (taskLabels[taskId] && taskDeptMap[taskId] === dept.id) {
         configSummary += `- ${taskLabels[taskId]}: ${automationLabelMap[level] || level}\n`;
       }
-    }
-    // Fallback: also match by checking all task IDs for this department
-    const deptPrefix = dept.id;
-    for (const [taskId, level] of Object.entries(assignments)) {
-      if (taskLabels[taskId] && !configSummary.includes(taskLabels[taskId]) && taskId.includes(deptPrefix)) {
-        configSummary += `- ${taskLabels[taskId]}: ${automationLabelMap[level] || level}\n`;
-      }
-    }
-  }
-
-  // If prefix matching didn't capture everything, add remaining
-  const captured = new Set();
-  const lines = configSummary.split('\n');
-  for (const line of lines) {
-    for (const [taskId, label] of Object.entries(taskLabels)) {
-      if (line.includes(label)) captured.add(taskId);
-    }
-  }
-  const uncaptured = Object.entries(assignments).filter(([id]) => !captured.has(id) && taskLabels[id]);
-  if (uncaptured.length > 0) {
-    configSummary += '\n### Additional Tasks\n';
-    for (const [taskId, level] of uncaptured) {
-      configSummary += `- ${taskLabels[taskId]}: ${automationLabelMap[level] || level}\n`;
     }
   }
 
@@ -92,16 +69,16 @@ Total response: 600-900 words. Be specific and actionable throughout.`;
 
 router.post('/simulate', simulateLimiter, async (req, res) => {
   try {
-    const { industry, departments, assignments, meters, taskLabels } = req.body;
+    const { industry, departments, assignments, meters, taskLabels, taskDeptMap } = req.body;
 
-    if (!industry || !departments || !assignments || !meters || !taskLabels) {
+    if (!industry || !departments || !assignments || !meters || !taskLabels || !taskDeptMap) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
     if (!Array.isArray(departments) || departments.length < 2 || departments.length > 3) {
       return res.status(400).json({ error: 'Must select 2-3 departments' });
     }
 
-    const { systemPrompt, userPrompt } = buildPrompt(industry, departments, assignments, meters, taskLabels);
+    const { systemPrompt, userPrompt } = buildPrompt(industry, departments, assignments, meters, taskLabels, taskDeptMap);
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',

@@ -78,7 +78,7 @@ export default function App() {
     setScreen(SCREENS.SIMULATOR_TASKS);
   }, []);
 
-  const handleSimTasksComplete = useCallback(async (assignments, meters, taskLabels) => {
+  const handleSimTasksComplete = useCallback(async (assignments, meters, taskLabels, taskDeptMap) => {
     setSimAssignments(assignments);
     setSimMeters(meters);
     setSimError(null);
@@ -92,6 +92,7 @@ export default function App() {
           assignments,
           meters,
           taskLabels,
+          taskDeptMap,
         })
       });
       if (!res.ok) {

@@ -34,6 +34,15 @@ export default function SimulatorTasks({ industry, departments, onComplete, onBa
     return labels;
   }, [deptTasks]);
 
+  // Map each taskId to its department ID (for server-side grouping)
+  const taskDeptMap = useMemo(() => {
+    const map = {};
+    Object.entries(deptTasks).forEach(([deptId, tasks]) => {
+      tasks.forEach(t => { map[t.id] = deptId; });
+    });
+    return map;
+  }, [deptTasks]);
+
   // Count totals
   const totalTasks = Object.values(deptTasks).flat().length;
   const assignedCount = Object.keys(assignments).length;
@@ -159,7 +168,7 @@ export default function SimulatorTasks({ industry, departments, onComplete, onBa
               className="btn-primary"
               style={{ padding: '0.8rem 2rem', fontSize: '0.95rem' }}
               disabled={!allAssigned}
-              onClick={() => onComplete(assignments, meters, taskLabels)}
+              onClick={() => onComplete(assignments, meters, taskLabels, taskDeptMap)}
             >
               Generate Blueprint
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
