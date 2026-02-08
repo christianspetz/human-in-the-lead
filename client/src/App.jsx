@@ -53,6 +53,9 @@ export default function App() {
       {screen === SCREENS.ANALYSIS && <Analysis />}
       {screen === SCREENS.RESULTS && <Results results={results} answers={answers} userName={userData.name} error={error} onRestart={handleRestart} />}
       <footer className="app-footer">
+        <p style={{ fontSize: '0.7rem', color: 'var(--slate)', marginBottom: '0.75rem', maxWidth: '500px', margin: '0 auto 0.75rem', lineHeight: '1.5' }}>
+          This is a personal project built on my own time. All views are my own and do not represent the views or positions of my employer. Based on publicly available frameworks and best practices.
+        </p>
         <p>
           Built by <a href="https://linkedin.com/in/christianspetz" target="_blank" rel="noopener noreferrer">Christian Spetz</a> — Transformation & AI Strategy
           <a href="https://linkedin.com/in/christianspetz" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">

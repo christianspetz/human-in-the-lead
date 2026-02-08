@@ -52,7 +52,14 @@ body { font-family: var(--font-body); background: var(--navy); color: var(--whit
 .landing h1 { font-family: var(--font-display); font-size: clamp(2.4rem, 6vw, 3.6rem); line-height: 1.1; color: var(--pure-white); margin-bottom: 0.5rem; }
 .landing .subtitle { font-size: clamp(1rem, 2.5vw, 1.25rem); color: var(--teal); font-weight: 400; margin-bottom: 2.5rem; }
 .landing .description { font-size: 1rem; color: var(--slate-light); line-height: 1.75; max-width: 580px; margin: 0 auto 1.5rem; text-align: left; }
-.landing .description.secondary { font-size: 0.85rem; color: var(--slate); font-style: italic; text-align: center; margin-bottom: 3rem; }
+.landing .description.secondary { font-size: 0.88rem; color: var(--slate-light); font-style: normal; text-align: center; margin-bottom: 3rem; }
+.dimension-list { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; margin: 1.5rem auto 2.5rem; max-width: 560px; }
+.dimension-tag { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--slate-lighter); background: var(--navy-light); border: 1px solid var(--navy-mid); padding: 0.35rem 0.85rem; border-radius: 100px; font-weight: 500; white-space: nowrap; }
+.dimension-scores { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 2.5rem; }
+.dim-score-card { background: var(--navy-light); border: 1px solid var(--navy-mid); border-radius: 10px; padding: 1rem; text-align: center; }
+.dim-score-card .dim-value { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.25rem; }
+.dim-score-card .dim-label { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--slate-light); font-weight: 500; }
+@media (max-width: 640px) { .dimension-scores { grid-template-columns: repeat(2, 1fr); } }
 
 .btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 1rem 2.5rem; background: linear-gradient(135deg, var(--teal), #0891B2); color: var(--navy); font-family: var(--font-body); font-size: 1rem; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden; }
 .btn-primary::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, transparent, rgba(255,255,255,0.15)); opacity: 0; transition: opacity 0.3s; }
@@ -100,7 +107,7 @@ body { font-family: var(--font-body); background: var(--navy); color: var(--whit
 .analysis-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; text-align: center; }
 .analysis-spinner { width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--navy-light); border-top-color: var(--teal); animation: spin 1s linear infinite; margin-bottom: 2rem; }
 .analysis-stage { font-size: 1.05rem; color: var(--slate-lighter); animation: pulse 2s ease-in-out infinite; margin-bottom: 0.5rem; }
-.analysis-substage { font-size: 0.8rem; color: var(--slate); }
+.analysis-substage { font-size: 0.88rem; color: var(--slate-light); }
 
 .results-context { text-align: center; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--slate); margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--navy-light); }
 .results-header { text-align: center; margin-bottom: 2.5rem; }

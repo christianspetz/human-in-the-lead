@@ -14,7 +14,7 @@ export default function Landing({ onStart }) {
         <h1 className="animate-in animate-in-delay-1">Human-in-the-Lead</h1>
         <p className="subtitle animate-in animate-in-delay-2">Why Most AI Transformations Fail (And Will Yours?)</p>
         <p className="description animate-in animate-in-delay-3">
-          AI transformation isn't a technology challenge — it's a human one. The organizations that fail don't lack tools or data. They lack alignment, change readiness, and a plan for the hardest part: getting people to actually adopt new ways of working. This diagnostic evaluates your organization's readiness across six dimensions critical to AI transformation success.
+          Most AI transformations stall — not because the technology wasn't good enough, but because the organization wasn't ready. Misaligned leadership, fragmented data, change-fatigued teams, and no clear plan for adoption. The human side is almost always the hardest part to get right. This diagnostic evaluates where your organization actually stands across six dimensions that determine whether AI initiatives land or fail.
         </p>
         <div className="dimension-list animate-in animate-in-delay-4">
           <span className="dimension-tag">Strategic Alignment</span>
@@ -25,7 +25,7 @@ export default function Landing({ onStart }) {
           <span className="dimension-tag">Investment Posture</span>
         </div>
         <p className="description secondary animate-in animate-in-delay-4">
-          Built on transformation best practices from McKinsey, Kotter, Prosci ADKAR, and leading practitioners. Powered by AI. Brutally honest.
+          11 questions. 3 minutes. Powered by AI. Brutally honest.
         </p>
         <div className="animate-in animate-in-delay-5">
           <button className="btn-primary" onClick={() => onStart(name, email)}>
@@ -35,17 +35,15 @@ export default function Landing({ onStart }) {
         </div>
         {!showCapture ? (
           <div className="animate-in animate-in-delay-5" style={{ marginTop: '1.5rem' }}>
-            <button className="btn-ghost" onClick={() => setShowCapture(true)}>Want a detailed PDF report emailed? (Optional)</button>
+            <button className="btn-ghost" onClick={() => setShowCapture(true)}>Want a personalized report? (Optional)</button>
           </div>
         ) : (
           <div className="lead-capture animate-in">
             <p style={{ fontSize: '0.85rem', color: 'var(--slate-light)', marginBottom: '1rem' }}>
-              Enter your details to receive a detailed PDF report with industry benchmarks and a 90-day action plan. Completely optional.
+              Add your name to personalize your readiness report and PDF download.
             </p>
             <label htmlFor="lead-name">Name</label>
             <input id="lead-name" type="text" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} />
-            <label htmlFor="lead-email">Email</label>
-            <input id="lead-email" type="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
             <div className="lead-capture-actions">
               <button className="btn-ghost" onClick={() => { setShowCapture(false); setName(''); setEmail(''); }}>Skip</button>
               <button className="btn-primary" style={{ padding: '0.6rem 1.5rem', fontSize: '0.9rem' }} onClick={() => onStart(name, email)}>Continue →</button>
