@@ -7,6 +7,7 @@ const pool = require('./db');
 const analyzeRouter = require('./routes/analyze');
 const pdfRouter = require('./routes/pdf');
 const statsRouter = require('./routes/stats');
+const simulateRouter = require('./routes/simulate');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -28,6 +29,7 @@ app.get('/health', (req, res) => {
 app.use('/api', analyzeRouter);
 app.use('/api', pdfRouter);
 app.use('/api', statsRouter);
+app.use('/api', simulateRouter);
 
 // Serve React build in production
 const clientBuildPath = path.join(__dirname, '..', 'client', 'dist');

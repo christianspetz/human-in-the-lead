@@ -3,8 +3,21 @@ import Landing from './components/Landing';
 import Diagnostic from './components/Diagnostic';
 import Analysis from './components/Analysis';
 import Results from './components/Results';
+import SimulatorSetup from './components/SimulatorSetup';
+import SimulatorTasks from './components/SimulatorTasks';
+import SimulatorAnalysis from './components/SimulatorAnalysis';
+import SimulatorResults from './components/SimulatorResults';
 
-const SCREENS = { LANDING: 'landing', DIAGNOSTIC: 'diagnostic', ANALYSIS: 'analysis', RESULTS: 'results' };
+const SCREENS = {
+  LANDING: 'landing',
+  DIAGNOSTIC: 'diagnostic',
+  ANALYSIS: 'analysis',
+  RESULTS: 'results',
+  SIMULATOR_SETUP: 'simulator_setup',
+  SIMULATOR_TASKS: 'simulator_tasks',
+  SIMULATOR_ANALYSIS: 'simulator_analysis',
+  SIMULATOR_RESULTS: 'simulator_results',
+};
 
 export default function App() {
   const [screen, setScreen] = useState(SCREENS.LANDING);
@@ -13,6 +26,14 @@ export default function App() {
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
 
+  // Simulator state
+  const [simConfig, setSimConfig] = useState(null);
+  const [simAssignments, setSimAssignments] = useState(null);
+  const [simMeters, setSimMeters] = useState(null);
+  const [simBlueprint, setSimBlueprint] = useState(null);
+  const [simError, setSimError] = useState(null);
+
+  // ─── Diagnostic handlers ───────────────────────────────────
   const handleStart = useCallback((name, email) => {
     setUserData({ name, email });
     setScreen(SCREENS.DIAGNOSTIC);
@@ -45,13 +66,67 @@ export default function App() {
     setError(null); setUserData({ name: '', email: '' });
   }, []);
 
+  // ─── Simulator handlers ────────────────────────────────────
+  const handleSimulatorStart = useCallback(() => {
+    setSimConfig(null); setSimAssignments(null); setSimMeters(null);
+    setSimBlueprint(null); setSimError(null);
+    setScreen(SCREENS.SIMULATOR_SETUP);
+  }, []);
+
+  const handleSimSetupComplete = useCallback((config) => {
+    setSimConfig(config);
+    setScreen(SCREENS.SIMULATOR_TASKS);
+  }, []);
+
+  const handleSimTasksComplete = useCallback(async (assignments, meters, taskLabels) => {
+    setSimAssignments(assignments);
+    setSimMeters(meters);
+    setSimError(null);
+    setScreen(SCREENS.SIMULATOR_ANALYSIS);
+    try {
+      const res = await fetch('/api/simulate', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          industry: simConfig.industry,
+          departments: simConfig.departments,
+          assignments,
+          meters,
+          taskLabels,
+        })
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Blueprint generation failed');
+      }
+      const data = await res.json();
+      setSimBlueprint(data.blueprint);
+      setScreen(SCREENS.SIMULATOR_RESULTS);
+    } catch (err) {
+      setSimError(err.message);
+      setScreen(SCREENS.SIMULATOR_TASKS);
+    }
+  }, [simConfig]);
+
+  const handleSimStartOver = useCallback(() => {
+    setSimConfig(null); setSimAssignments(null); setSimMeters(null);
+    setSimBlueprint(null); setSimError(null);
+    setScreen(SCREENS.LANDING);
+  }, []);
+
   return (
     <div className="app-container">
       <div className="bg-glow" /><div className="bg-glow-2" />
-      {screen === SCREENS.LANDING && <Landing onStart={handleStart} />}
+
+      {screen === SCREENS.LANDING && <Landing onStart={handleStart} onStartSimulator={handleSimulatorStart} />}
       {screen === SCREENS.DIAGNOSTIC && <Diagnostic onComplete={handleDiagnosticComplete} onBack={() => setScreen(SCREENS.LANDING)} />}
       {screen === SCREENS.ANALYSIS && <Analysis />}
       {screen === SCREENS.RESULTS && <Results results={results} answers={answers} userName={userData.name} error={error} onRestart={handleRestart} />}
+
+      {screen === SCREENS.SIMULATOR_SETUP && <SimulatorSetup onComplete={handleSimSetupComplete} onBack={() => setScreen(SCREENS.LANDING)} />}
+      {screen === SCREENS.SIMULATOR_TASKS && <SimulatorTasks industry={simConfig?.industry} departments={simConfig?.departments || []} onComplete={handleSimTasksComplete} onBack={() => setScreen(SCREENS.SIMULATOR_SETUP)} />}
+      {screen === SCREENS.SIMULATOR_ANALYSIS && <SimulatorAnalysis />}
+      {screen === SCREENS.SIMULATOR_RESULTS && <SimulatorResults blueprint={simBlueprint} meters={simMeters} industry={simConfig?.industry} departments={simConfig?.departments || []} assignments={simAssignments || {}} onStartOver={handleSimStartOver} />}
+
       <footer className="app-footer">
         <p style={{ fontSize: '0.7rem', color: 'var(--slate)', marginBottom: '0.75rem', maxWidth: '500px', margin: '0 auto 0.75rem', lineHeight: '1.5' }}>
           This is a personal project built on my own time. All views are my own and do not represent the views or positions of my employer. Based on publicly available frameworks and best practices.

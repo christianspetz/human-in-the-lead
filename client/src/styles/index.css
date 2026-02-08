@@ -179,6 +179,103 @@ body { font-family: var(--font-body); background: var(--navy); color: var(--whit
 .bg-glow { position: fixed; top: -30%; left: -10%; width: 50%; height: 60%; background: radial-gradient(ellipse at center, rgba(6,182,212,0.04), transparent 70%); pointer-events: none; z-index: 0; }
 .bg-glow-2 { position: fixed; bottom: -20%; right: -15%; width: 45%; height: 50%; background: radial-gradient(ellipse at center, rgba(245,158,11,0.03), transparent 70%); pointer-events: none; z-index: 0; }
 
+/* ─── Landing Page: Two-Tool Grid ──────────────────────────── */
+.landing-tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin: 0 auto; text-align: center; }
+.landing-tool-card { background: var(--navy-light); border: 1px solid var(--navy-mid); border-radius: 14px; padding: 1.75rem 1.5rem; cursor: pointer; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.landing-tool-card:hover { border-color: var(--teal); transform: translateY(-4px); box-shadow: 0 8px 30px rgba(6,182,212,0.12); }
+.landing-tool-card h3 { font-family: var(--font-display); font-size: 1.15rem; color: var(--pure-white); margin-bottom: 0.5rem; }
+.landing-tool-desc { font-size: 0.85rem; color: var(--slate-light); line-height: 1.6; margin-bottom: 0.5rem; }
+.landing-tool-icon { margin-bottom: 1rem; }
+.landing-tool-time { display: inline-block; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--slate); font-weight: 500; }
+.landing-tool-card .dimension-list { margin: 0; gap: 0.5rem; }
+.landing-tool-card .dimension-tag { font-size: 0.62rem; padding: 0.25rem 0.6rem; }
+
+/* ─── Simulator Setup ──────────────────────────────────────── */
+.simulator-setup { padding-top: 1rem; }
+.simulator-dept-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.6rem; }
+.simulator-dept-card { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; background: var(--navy-light); border: 2px solid var(--navy-mid); border-radius: 10px; cursor: pointer; font-family: var(--font-body); font-size: 0.88rem; color: var(--slate-lighter); transition: all 0.2s; text-align: left; }
+.simulator-dept-card:hover { border-color: rgba(168,85,247,0.4); color: var(--pure-white); }
+.simulator-dept-card.selected { border-color: #A855F7; background: rgba(168,85,247,0.1); color: var(--pure-white); font-weight: 500; }
+.simulator-dept-card.disabled { opacity: 0.3; cursor: not-allowed; }
+.simulator-dept-card.disabled:hover { border-color: var(--navy-mid); color: var(--slate-lighter); }
+.simulator-dept-check { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; font-size: 0.7rem; color: #A855F7; flex-shrink: 0; }
+
+/* ─── Simulator Tasks Layout ───────────────────────────────── */
+.simulator-tasks-layout { display: grid; grid-template-columns: 1fr 300px; gap: 1.5rem; }
+.simulator-dept-tabs { display: flex; gap: 0.25rem; margin-bottom: 1.25rem; border-bottom: 2px solid var(--navy-mid); padding-bottom: 0; }
+.simulator-dept-tab { display: flex; align-items: center; gap: 0.4rem; padding: 0.6rem 1rem; border: none; background: none; cursor: pointer; color: var(--slate-light); font-family: var(--font-body); font-size: 0.85rem; font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; white-space: nowrap; }
+.simulator-dept-tab:hover { color: var(--pure-white); }
+.simulator-dept-tab.active { color: #A855F7; border-bottom-color: #A855F7; }
+.simulator-tab-badge { font-size: 0.7rem; background: var(--navy-mid); color: var(--slate-light); padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: 600; }
+.simulator-dept-tab.active .simulator-tab-badge { background: rgba(168,85,247,0.2); color: #A855F7; }
+
+.simulator-task-list { display: flex; flex-direction: column; gap: 0.4rem; }
+.simulator-task-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.65rem 0; border-bottom: 1px solid rgba(51,65,85,0.4); }
+.simulator-task-row:last-child { border-bottom: none; }
+.simulator-task-label { flex: 1; font-size: 0.88rem; color: var(--slate-lighter); line-height: 1.4; }
+
+.simulator-level-buttons { display: flex; gap: 0.2rem; flex-shrink: 0; }
+.simulator-level-btn { padding: 0.3rem 0.55rem; font-size: 0.68rem; font-family: var(--font-body); font-weight: 500; border: 1px solid var(--navy-mid); border-radius: 5px; background: transparent; color: var(--slate); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.simulator-level-btn:hover { border-color: var(--slate); color: var(--slate-lighter); }
+.simulator-level-btn.selected { color: var(--pure-white); border-color: transparent; }
+.simulator-level-btn.selected[data-level="full_ai"] { background: #A855F7; }
+.simulator-level-btn.selected[data-level="ai_led"] { background: #3B82F6; }
+.simulator-level-btn.selected[data-level="human_led"] { background: #22C55E; }
+.simulator-level-btn.selected[data-level="full_human"] { background: #64748B; }
+
+/* ─── Trade-off Meters Panel ───────────────────────────────── */
+.simulator-meters-panel { position: sticky; top: 1.5rem; background: var(--navy-light); border: 1px solid var(--navy-mid); border-radius: 14px; padding: 1.25rem; height: fit-content; }
+.tradeoff-meter { margin-bottom: 1.1rem; }
+.tradeoff-meter:last-of-type { margin-bottom: 0; }
+.tradeoff-meter-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem; }
+.tradeoff-meter-label { font-size: 0.78rem; color: var(--slate-lighter); font-weight: 500; }
+.tradeoff-meter-value { font-size: 0.78rem; font-weight: 700; color: var(--pure-white); font-variant-numeric: tabular-nums; }
+.tradeoff-meter-track { height: 6px; background: rgba(51,65,85,0.6); border-radius: 3px; overflow: hidden; }
+.tradeoff-meter-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease, background-color 0.4s ease; }
+.tradeoff-meter-fill[data-zone="green"] { background: var(--green); }
+.tradeoff-meter-fill[data-zone="yellow"] { background: var(--amber); }
+.tradeoff-meter-fill[data-zone="red"] { background: var(--red); }
+.tradeoff-meter-desc { font-size: 0.68rem; color: var(--slate); margin-top: 0.15rem; display: block; }
+
+/* ─── Simulator Bottom Bar ─────────────────────────────────── */
+.simulator-bottom-bar { display: flex; align-items: center; justify-content: space-between; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--navy-mid); }
+
+/* ─── Simulator Results ────────────────────────────────────── */
+.simulator-results { padding-top: 2rem; }
+.simulator-results-header { text-align: center; margin-bottom: 2rem; }
+.simulator-mini-meters { display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; margin: 1rem 0; }
+.simulator-mini-meter { text-align: center; min-width: 70px; }
+.simulator-mini-meter-value { font-size: 1.4rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.simulator-mini-meter-value[data-zone="green"] { color: var(--green); }
+.simulator-mini-meter-value[data-zone="yellow"] { color: var(--amber); }
+.simulator-mini-meter-value[data-zone="red"] { color: var(--red); }
+.simulator-mini-meter-label { font-size: 0.65rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--slate-light); font-weight: 500; margin-top: 0.15rem; }
+.simulator-mini-meter-bar { width: 100%; height: 4px; background: rgba(51,65,85,0.6); border-radius: 2px; overflow: hidden; margin-top: 0.35rem; }
+
+/* Blueprint Section Cards */
+.blueprint-section { background: var(--navy-light); border: 1px solid var(--navy-mid); border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1rem; border-left: 4px solid var(--teal); }
+.blueprint-section h3 { font-family: var(--font-display); font-size: 1.05rem; margin-top: 0; margin-bottom: 0.75rem; }
+.blueprint-section-content { font-size: 0.88rem; color: var(--slate-lighter); line-height: 1.7; }
+.blueprint-section-content p { margin-bottom: 0.4rem; }
+.blueprint-section.smart-moves { border-left-color: var(--green); }
+.blueprint-section.smart-moves h3 { color: var(--green); }
+.blueprint-section.risk-flags { border-left-color: var(--red); }
+.blueprint-section.risk-flags h3 { color: var(--red); }
+.blueprint-section.complexity { border-left-color: var(--amber); }
+.blueprint-section.complexity h3 { color: var(--amber); }
+.blueprint-section.recommendations { border-left-color: var(--teal); }
+.blueprint-section.recommendations h3 { color: var(--teal); }
+.blueprint-section.assessment { border-left-color: #A855F7; }
+.blueprint-section.assessment h3 { color: #A855F7; }
+
+.simulator-actions { display: flex; gap: 1rem; justify-content: center; margin-top: 2.5rem; margin-bottom: 1rem; }
+
+/* ─── Responsive: Simulator ────────────────────────────────── */
+@media (max-width: 900px) {
+  .simulator-tasks-layout { grid-template-columns: 1fr; }
+  .simulator-meters-panel { position: static; order: -1; }
+}
+
 @media (max-width: 640px) {
   .page-wrapper { padding: 1.5rem 1rem; }
   .landing { padding-top: 2rem; }
@@ -189,4 +286,23 @@ body { font-family: var(--font-body); background: var(--navy); color: var(--whit
   .results-scores-row { flex-direction: column; gap: 1.5rem; }
   .intro-actions { flex-direction: column; gap: 1rem; }
   .intro-actions .btn-primary { width: 100%; }
+
+  /* Landing tool cards stack */
+  .landing-tools-grid { grid-template-columns: 1fr; }
+  .landing-tool-card .btn-primary,
+  .landing-tool-card .btn-secondary { width: 100%; }
+
+  /* Simulator tasks responsive */
+  .simulator-dept-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .simulator-task-row { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+  .simulator-level-buttons { width: 100%; display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.3rem; }
+  .simulator-level-btn { text-align: center; padding: 0.4rem 0.3rem; }
+  .simulator-bottom-bar { flex-direction: column; gap: 1rem; text-align: center; }
+  .simulator-bottom-bar .btn-primary { width: 100%; }
+
+  /* Simulator results */
+  .simulator-mini-meters { gap: 0.75rem; }
+  .simulator-mini-meter { min-width: 55px; }
+  .simulator-actions { flex-direction: column; }
+  .simulator-actions .btn-primary { width: 100%; }
 }
