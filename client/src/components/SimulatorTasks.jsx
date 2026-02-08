@@ -1,13 +1,20 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { AUTOMATION_LEVELS, getTasksForDepartment, calculateMeters } from '../data/simulatorData';
+import React, { useState, useMemo } from 'react';
+import {
+  AUTOMATION_LEVELS, getTasksForDepartment, calculateMeters,
+  getTaskTier, getConsequenceCallout, getMeterDescription,
+  getMeterInterpretation, getPostureAnalysis,
+} from '../data/simulatorData';
 
-const METER_CONFIG = [
-  { key: 'cost', label: 'Cost Impact', desc: 'Savings vs. AI licensing costs' },
-  { key: 'risk', label: 'Risk Exposure', desc: 'Compliance, errors, accountability' },
-  { key: 'speed', label: 'Speed / Throughput', desc: 'Processing speed gain' },
-  { key: 'morale', label: 'Employee Morale', desc: 'Workforce sentiment impact' },
-  { key: 'quality', label: 'Quality / Accuracy', desc: 'Output accuracy and consistency' },
+const METER_KEYS = [
+  { key: 'cost', label: 'Cost Impact' },
+  { key: 'risk', label: 'Risk Exposure' },
+  { key: 'speed', label: 'Speed / Throughput' },
+  { key: 'morale', label: 'Employee Morale' },
+  { key: 'quality', label: 'Quality / Accuracy' },
 ];
+
+const TIER_ICONS = { critical: '!!', judgment: '!', routine: '' };
+const TIER_LABELS = { critical: 'High-stakes', judgment: 'Judgment-dependent', routine: '' };
 
 function getMeterZone(val) {
   if (val >= 67) return 'green';
@@ -15,11 +22,10 @@ function getMeterZone(val) {
   return 'red';
 }
 
-export default function SimulatorTasks({ industry, departments, onComplete, onBack }) {
+export default function SimulatorTasks({ industry, departments, priorities, onComplete, onBack }) {
   const [assignments, setAssignments] = useState({});
   const [activeDept, setActiveDept] = useState(0);
 
-  // Build task lists and label map
   const deptTasks = useMemo(() => {
     const map = {};
     departments.forEach(dept => {
@@ -34,7 +40,6 @@ export default function SimulatorTasks({ industry, departments, onComplete, onBa
     return labels;
   }, [deptTasks]);
 
-  // Map each taskId to its department ID (for server-side grouping)
   const taskDeptMap = useMemo(() => {
     const map = {};
     Object.entries(deptTasks).forEach(([deptId, tasks]) => {
@@ -43,15 +48,11 @@ export default function SimulatorTasks({ industry, departments, onComplete, onBa
     return map;
   }, [deptTasks]);
 
-  // Count totals
   const totalTasks = Object.values(deptTasks).flat().length;
   const assignedCount = Object.keys(assignments).length;
-
-  // Calculate meters
-  const meters = useMemo(() => calculateMeters(assignments, industry), [assignments, industry]);
-
-  // Progress percentage
-  const progress = totalTasks > 0 ? 10 + ((assignedCount / totalTasks) * 70) : 10;
+  const meters = useMemo(() => calculateMeters(assignments, industry, taskLabels), [assignments, industry, taskLabels]);
+  const posture = useMemo(() => getPostureAnalysis(assignments, industry), [assignments, industry]);
+  const progress = totalTasks > 0 ? 20 + ((assignedCount / totalTasks) * 55) : 20;
 
   const handleAssign = (taskId, levelId) => {
     setAssignments(prev => ({ ...prev, [taskId]: levelId }));
@@ -60,7 +61,6 @@ export default function SimulatorTasks({ industry, departments, onComplete, onBa
   const currentDept = departments[activeDept];
   const currentTasks = deptTasks[currentDept.id] || [];
 
-  // Count assigned per department
   const deptAssignedCount = (deptId) => {
     const tasks = deptTasks[deptId] || [];
     return tasks.filter(t => assignments[t.id]).length;
@@ -79,14 +79,14 @@ export default function SimulatorTasks({ industry, departments, onComplete, onBa
         <div className="animate-in">
           <button className="back-btn" onClick={onBack} style={{ marginBottom: '1rem' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-            Back to Setup
+            Back
           </button>
 
           <div style={{ marginBottom: '1.5rem' }}>
             <span className="landing-badge" style={{ marginBottom: '0.75rem', display: 'inline-block' }}>{industry}</span>
-            <h2 className="question-text" style={{ fontSize: '1.3rem', marginBottom: '0.25rem' }}>Assign Automation Levels</h2>
+            <h2 className="question-text" style={{ fontSize: '1.3rem', marginBottom: '0.25rem' }}>Design Your Human-AI Operating Model</h2>
             <p style={{ color: 'var(--slate-light)', fontSize: '0.85rem' }}>
-              For each task, choose how much AI involvement you want. Watch the trade-off meters respond in real time.
+              Every choice has consequences. Assign automation levels and watch the trade-offs shift in real time.
             </p>
           </div>
 
@@ -111,51 +111,99 @@ export default function SimulatorTasks({ industry, departments, onComplete, onBa
               </div>
 
               <div className="simulator-task-list">
-                {currentTasks.map(task => (
-                  <div className="simulator-task-row" key={task.id}>
-                    <span className="simulator-task-label">{task.label}</span>
-                    <div className="simulator-level-buttons">
-                      {AUTOMATION_LEVELS.map(level => (
-                        <button
-                          key={level.id}
-                          className={`simulator-level-btn${assignments[task.id] === level.id ? ' selected' : ''}`}
-                          data-level={level.id}
-                          onClick={() => handleAssign(task.id, level.id)}
-                          title={level.label}
-                        >
-                          {level.shortLabel}
-                        </button>
-                      ))}
+                {currentTasks.map(task => {
+                  const tier = getTaskTier(task.label);
+                  const currentLevel = assignments[task.id];
+                  const callout = currentLevel ? getConsequenceCallout(task.label, currentLevel, industry) : null;
+
+                  return (
+                    <div className={`simulator-task-block${callout ? ' has-callout' : ''}`} key={task.id}>
+                      <div className="simulator-task-row">
+                        <div className="simulator-task-label-wrap">
+                          {tier !== 'routine' && (
+                            <span className={`simulator-tier-badge tier-${tier}`} title={TIER_LABELS[tier]}>
+                              {TIER_ICONS[tier]}
+                            </span>
+                          )}
+                          <span className="simulator-task-label">{task.label}</span>
+                        </div>
+                        <div className="simulator-level-buttons">
+                          {AUTOMATION_LEVELS.map(level => (
+                            <button
+                              key={level.id}
+                              className={`simulator-level-btn${currentLevel === level.id ? ' selected' : ''}`}
+                              data-level={level.id}
+                              onClick={() => handleAssign(task.id, level.id)}
+                              title={level.label}
+                            >
+                              {level.shortLabel}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      {callout && (
+                        <div className={`simulator-callout callout-${callout.severity}`}>
+                          <span className="callout-icon">{callout.severity === 'danger' ? '!!' : '!'}</span>
+                          <span>{callout.text}</span>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
-            {/* Right: Trade-off meters */}
+            {/* Right: Posture + Meters */}
             <div className="simulator-meters-panel">
-              <h3 style={{ fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--teal)', marginBottom: '1.25rem', fontWeight: 600 }}>
-                Trade-off Analysis
-              </h3>
-              {METER_CONFIG.map(m => (
-                <div className="tradeoff-meter" key={m.key}>
-                  <div className="tradeoff-meter-header">
-                    <span className="tradeoff-meter-label">{m.label}</span>
-                    <span className="tradeoff-meter-value">{meters[m.key]}</span>
+              {/* Aggregate Posture */}
+              {posture && (
+                <div className="simulator-posture">
+                  <h3 className="meter-panel-heading">Automation Posture</h3>
+                  <div className="posture-bar">
+                    {posture.pct.full_ai > 0 && <div className="posture-segment" data-level="full_ai" style={{ width: `${posture.pct.full_ai}%` }} title={`Full AI: ${posture.pct.full_ai}%`} />}
+                    {posture.pct.ai_led > 0 && <div className="posture-segment" data-level="ai_led" style={{ width: `${posture.pct.ai_led}%` }} title={`AI-Led: ${posture.pct.ai_led}%`} />}
+                    {posture.pct.human_led > 0 && <div className="posture-segment" data-level="human_led" style={{ width: `${posture.pct.human_led}%` }} title={`Human-Led: ${posture.pct.human_led}%`} />}
+                    {posture.pct.full_human > 0 && <div className="posture-segment" data-level="full_human" style={{ width: `${posture.pct.full_human}%` }} title={`Full Human: ${posture.pct.full_human}%`} />}
                   </div>
-                  <div className="tradeoff-meter-track">
-                    <div
-                      className="tradeoff-meter-fill"
-                      style={{ width: `${meters[m.key]}%` }}
-                      data-zone={getMeterZone(meters[m.key])}
-                    />
+                  <div className="posture-legend">
+                    {AUTOMATION_LEVELS.map(l => (
+                      <span key={l.id} className="posture-legend-item">
+                        <span className="posture-dot" style={{ background: l.color }} />
+                        {posture.pct[l.id]}%
+                      </span>
+                    ))}
                   </div>
-                  <span className="tradeoff-meter-desc">{m.desc}</span>
+                  <p className="posture-interpretation">{posture.interpretation}</p>
                 </div>
-              ))}
-              <div style={{ marginTop: '1rem', fontSize: '0.75rem', color: 'var(--slate)', lineHeight: '1.5' }}>
-                Meters adjust based on your automation choices and <strong style={{ color: 'var(--slate-light)' }}>{industry}</strong> risk profile.
-              </div>
+              )}
+
+              {/* Trade-off Meters */}
+              <h3 className="meter-panel-heading" style={{ marginTop: posture ? '1.25rem' : 0 }}>Trade-off Analysis</h3>
+              {METER_KEYS.map(m => {
+                const value = meters[m.key];
+                const zone = getMeterZone(value);
+                const desc = getMeterDescription(industry, m.key);
+                const interp = getMeterInterpretation(m.key, value, industry, priorities);
+                return (
+                  <div className="tradeoff-meter" key={m.key}>
+                    <div className="tradeoff-meter-header">
+                      <span className="tradeoff-meter-label">{m.label}</span>
+                      <span className={`tradeoff-meter-value zone-${zone}`}>{value}</span>
+                    </div>
+                    <div className="tradeoff-meter-track">
+                      <div
+                        className="tradeoff-meter-fill"
+                        style={{ width: `${value}%` }}
+                        data-zone={zone}
+                      />
+                    </div>
+                    <span className="tradeoff-meter-desc">{desc}</span>
+                    {assignedCount > 0 && (
+                      <span className={`tradeoff-meter-interp zone-${zone}`}>{interp}</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 

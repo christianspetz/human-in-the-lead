@@ -19,7 +19,7 @@ export default function SimulatorSetup({ onComplete, onBack }) {
     <>
       <div className="progress-container">
         <div className="progress-bar-track">
-          <div className="progress-bar-fill" style={{ width: '10%' }} />
+          <div className="progress-bar-fill" style={{ width: '5%' }} />
         </div>
       </div>
       <div className="page-wrapper" style={{ maxWidth: '800px' }}>

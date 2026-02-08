@@ -4,7 +4,9 @@ import Diagnostic from './components/Diagnostic';
 import Analysis from './components/Analysis';
 import Results from './components/Results';
 import SimulatorSetup from './components/SimulatorSetup';
+import SimulatorPriorities from './components/SimulatorPriorities';
 import SimulatorTasks from './components/SimulatorTasks';
+import SimulatorReflection from './components/SimulatorReflection';
 import SimulatorAnalysis from './components/SimulatorAnalysis';
 import SimulatorResults from './components/SimulatorResults';
 
@@ -14,7 +16,9 @@ const SCREENS = {
   ANALYSIS: 'analysis',
   RESULTS: 'results',
   SIMULATOR_SETUP: 'simulator_setup',
+  SIMULATOR_PRIORITIES: 'simulator_priorities',
   SIMULATOR_TASKS: 'simulator_tasks',
+  SIMULATOR_REFLECTION: 'simulator_reflection',
   SIMULATOR_ANALYSIS: 'simulator_analysis',
   SIMULATOR_RESULTS: 'simulator_results',
 };
@@ -28,8 +32,11 @@ export default function App() {
 
   // Simulator state
   const [simConfig, setSimConfig] = useState(null);
+  const [simPriorities, setSimPriorities] = useState(null);
   const [simAssignments, setSimAssignments] = useState(null);
   const [simMeters, setSimMeters] = useState(null);
+  const [simTaskLabels, setSimTaskLabels] = useState(null);
+  const [simTaskDeptMap, setSimTaskDeptMap] = useState(null);
   const [simBlueprint, setSimBlueprint] = useState(null);
   const [simError, setSimError] = useState(null);
 
@@ -68,19 +75,31 @@ export default function App() {
 
   // ─── Simulator handlers ────────────────────────────────────
   const handleSimulatorStart = useCallback(() => {
-    setSimConfig(null); setSimAssignments(null); setSimMeters(null);
+    setSimConfig(null); setSimPriorities(null); setSimAssignments(null);
+    setSimMeters(null); setSimTaskLabels(null); setSimTaskDeptMap(null);
     setSimBlueprint(null); setSimError(null);
     setScreen(SCREENS.SIMULATOR_SETUP);
   }, []);
 
   const handleSimSetupComplete = useCallback((config) => {
     setSimConfig(config);
+    setScreen(SCREENS.SIMULATOR_PRIORITIES);
+  }, []);
+
+  const handleSimPrioritiesComplete = useCallback((priorities) => {
+    setSimPriorities(priorities);
     setScreen(SCREENS.SIMULATOR_TASKS);
   }, []);
 
-  const handleSimTasksComplete = useCallback(async (assignments, meters, taskLabels, taskDeptMap) => {
+  const handleSimTasksComplete = useCallback((assignments, meters, taskLabels, taskDeptMap) => {
     setSimAssignments(assignments);
     setSimMeters(meters);
+    setSimTaskLabels(taskLabels);
+    setSimTaskDeptMap(taskDeptMap);
+    setScreen(SCREENS.SIMULATOR_REFLECTION);
+  }, []);
+
+  const handleSimReflectionComplete = useCallback(async (reflections) => {
     setSimError(null);
     setScreen(SCREENS.SIMULATOR_ANALYSIS);
     try {
@@ -89,10 +108,12 @@ export default function App() {
         body: JSON.stringify({
           industry: simConfig.industry,
           departments: simConfig.departments,
-          assignments,
-          meters,
-          taskLabels,
-          taskDeptMap,
+          assignments: simAssignments,
+          meters: simMeters,
+          taskLabels: simTaskLabels,
+          taskDeptMap: simTaskDeptMap,
+          priorities: simPriorities,
+          reflections,
         })
       });
       if (!res.ok) {
@@ -104,12 +125,13 @@ export default function App() {
       setScreen(SCREENS.SIMULATOR_RESULTS);
     } catch (err) {
       setSimError(err.message);
-      setScreen(SCREENS.SIMULATOR_TASKS);
+      setScreen(SCREENS.SIMULATOR_REFLECTION);
     }
-  }, [simConfig]);
+  }, [simConfig, simAssignments, simMeters, simTaskLabels, simTaskDeptMap, simPriorities]);
 
   const handleSimStartOver = useCallback(() => {
-    setSimConfig(null); setSimAssignments(null); setSimMeters(null);
+    setSimConfig(null); setSimPriorities(null); setSimAssignments(null);
+    setSimMeters(null); setSimTaskLabels(null); setSimTaskDeptMap(null);
     setSimBlueprint(null); setSimError(null);
     setScreen(SCREENS.LANDING);
   }, []);
@@ -124,7 +146,9 @@ export default function App() {
       {screen === SCREENS.RESULTS && <Results results={results} answers={answers} userName={userData.name} error={error} onRestart={handleRestart} />}
 
       {screen === SCREENS.SIMULATOR_SETUP && <SimulatorSetup onComplete={handleSimSetupComplete} onBack={() => setScreen(SCREENS.LANDING)} />}
-      {screen === SCREENS.SIMULATOR_TASKS && <SimulatorTasks industry={simConfig?.industry} departments={simConfig?.departments || []} onComplete={handleSimTasksComplete} onBack={() => setScreen(SCREENS.SIMULATOR_SETUP)} />}
+      {screen === SCREENS.SIMULATOR_PRIORITIES && <SimulatorPriorities onComplete={handleSimPrioritiesComplete} onBack={() => setScreen(SCREENS.SIMULATOR_SETUP)} />}
+      {screen === SCREENS.SIMULATOR_TASKS && <SimulatorTasks industry={simConfig?.industry} departments={simConfig?.departments || []} priorities={simPriorities} onComplete={handleSimTasksComplete} onBack={() => setScreen(SCREENS.SIMULATOR_PRIORITIES)} />}
+      {screen === SCREENS.SIMULATOR_REFLECTION && <SimulatorReflection onComplete={handleSimReflectionComplete} onBack={() => setScreen(SCREENS.SIMULATOR_TASKS)} />}
       {screen === SCREENS.SIMULATOR_ANALYSIS && <SimulatorAnalysis />}
       {screen === SCREENS.SIMULATOR_RESULTS && <SimulatorResults blueprint={simBlueprint} meters={simMeters} industry={simConfig?.industry} departments={simConfig?.departments || []} assignments={simAssignments || {}} onStartOver={handleSimStartOver} />}
 

@@ -9,7 +9,7 @@ const simulateLimiter = rateLimit({
   standardHeaders: true, legacyHeaders: false, keyGenerator: (req) => req.ip
 });
 
-function buildPrompt(industry, departments, assignments, meters, taskLabels, taskDeptMap) {
+function buildPrompt(industry, departments, assignments, meters, taskLabels, taskDeptMap, priorities, reflections) {
   const automationLabelMap = {
     full_ai: 'Full AI',
     ai_led: 'AI-Led + Human Oversight',
@@ -40,6 +40,18 @@ Their trade-off meter readings are:
 - Speed/Throughput: ${meters.speed}/100 (higher = faster)
 - Employee Morale: ${meters.morale}/100 (higher = better morale)
 - Quality/Accuracy: ${meters.quality}/100 (higher = better quality)
+${priorities && Array.isArray(priorities) && priorities.length > 0 ? `
+The organization ranked their strategic priorities in this order:
+${priorities.map((p, i) => `${i + 1}. ${p.label}`).join('\n')}
+
+CRITICALLY: Analyze whether their automation choices ALIGN with these stated priorities. If they ranked a priority highly but their automation choices undermine it (e.g., ranking "Employee Satisfaction" #1 but automating 80%+ of tasks to Full AI), call this out explicitly as a misalignment. Conversely, note where their choices reflect their priorities well.` : ''}
+${reflections && typeof reflections === 'object' && Object.values(reflections).some(v => v && v.trim()) ? `
+The user shared these reflections after completing their automation assignments:
+${reflections.surprised ? `- What surprised them: "${reflections.surprised}"` : ''}
+${reflections.hardest ? `- Hardest decisions: "${reflections.hardest}"` : ''}
+${reflections.board ? `- What their board would prioritize differently: "${reflections.board}"` : ''}
+
+Incorporate these reflections into your analysis. Validate or challenge their observations. If they mention a specific tension, address it directly. If they mention board priorities that differ from their stated priorities, note the governance implications.` : ''}
 
 Provide your analysis using these exact section headings (use ### markdown headings):
 
@@ -60,16 +72,16 @@ Provide 3-4 specific, actionable recommendations. Each should reference a specif
 - **Culture Move** (ongoing): [specific action]
 
 ### Overall Assessment
-Rate this organization's overall AI transformation approach as one of: **Conservative**, **Balanced**, **Aggressive**, or **Misaligned**. Provide a 2-3 sentence explanation of the rating that references their specific trade-off profile.
+Rate this organization's overall AI transformation approach as one of: **Conservative**, **Balanced**, **Aggressive**, or **Misaligned**. Provide a 2-3 sentence explanation of the rating that references their specific trade-off profile.${priorities && Array.isArray(priorities) && priorities.length > 0 ? ' Include a Priority Alignment assessment (High/Medium/Low) explaining whether their automation choices match their stated priorities.' : ''}
 
-Total response: 600-900 words. Be specific and actionable throughout.`;
+Total response: 700-1000 words. Be specific and actionable throughout.`;
 
   return { systemPrompt, userPrompt };
 }
 
 router.post('/simulate', simulateLimiter, async (req, res) => {
   try {
-    const { industry, departments, assignments, meters, taskLabels, taskDeptMap } = req.body;
+    const { industry, departments, assignments, meters, taskLabels, taskDeptMap, priorities, reflections } = req.body;
 
     if (!industry || !departments || !assignments || !meters || !taskLabels || !taskDeptMap) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -78,7 +90,7 @@ router.post('/simulate', simulateLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Must select 2-3 departments' });
     }
 
-    const { systemPrompt, userPrompt } = buildPrompt(industry, departments, assignments, meters, taskLabels, taskDeptMap);
+    const { systemPrompt, userPrompt } = buildPrompt(industry, departments, assignments, meters, taskLabels, taskDeptMap, priorities, reflections);
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -89,7 +101,7 @@ router.post('/simulate', simulateLimiter, async (req, res) => {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
+        max_tokens: 2500,
         system: systemPrompt,
         messages: [{ role: 'user', content: userPrompt }],
       }),

@@ -785,6 +785,38 @@ export function getTasksForDepartment(industry, departmentId) {
   return industryTasks[departmentId] || DEFAULT_TASKS[departmentId] || [];
 }
 
+// ─── Task Risk Tiers ────────────────────────────────────────────────────────
+// Every task is classified as routine, judgment, or critical.
+// This determines how aggressively automation choices shift the meters.
+
+const CRITICAL_KEYWORDS = [
+  'compliance', 'regulatory', 'audit', 'safety', 'adverse event', 'pharmacovigilance',
+  'kyc', 'aml', 'hipaa', 'fda', 'gxp', 'fraud', 'sanctions', 'sox', 'breach',
+  'informed consent', 'controlled substance', 'deviation', 'capa', 'complaint',
+  'recall', 'nerc', 'osha', 'ferc', 'pci', 'gdpr', 'ccpa', 'anti-kickback',
+  'stark law', 'defect detection', 'quality inspection', 'quality control',
+  'incident reporting', 'incident investigation', 'data integrity',
+  'environmental compliance', 'product liability', 'consumer protection',
+  'food safety', 'patient safety', 'infection control', 'medication',
+  'spc monitoring', 'cybersecurity', 'threat detection', 'vulnerability',
+];
+
+const JUDGMENT_KEYWORDS = [
+  'forecasting', 'planning', 'strategy', 'evaluation', 'analysis', 'scoring',
+  'assessment', 'recruiting', 'screening', 'design', 'pricing', 'optimization',
+  'selection', 'review', 'decision', 'calibration', 'recommendation',
+  'segmentation', 'prediction', 'research', 'synthesis', 'protocol',
+  'architecture', 'benchmarking', 'negotiation', 'resolution', 'investigation',
+  'engagement', 'retention', 'talent', 'resource matching',
+];
+
+export function getTaskTier(label) {
+  const lower = label.toLowerCase();
+  if (CRITICAL_KEYWORDS.some(k => lower.includes(k))) return 'critical';
+  if (JUDGMENT_KEYWORDS.some(k => lower.includes(k))) return 'judgment';
+  return 'routine';
+}
+
 // ─── Scoring System ─────────────────────────────────────────────────────────
 
 export const BASE_SCORES = {
@@ -792,6 +824,28 @@ export const BASE_SCORES = {
   ai_led:     { cost: 40,  risk: -15, speed: 65,  morale: -20, quality: 55  },
   human_led:  { cost: 10,  risk: 20,  speed: 25,  morale: 30,  quality: 45  },
   full_human: { cost: 0,   risk: 10,  speed: 0,   morale: 40,  quality: 20  },
+};
+
+// Tier modifiers are ADDED to base scores. Critical tasks hit risk hard when automated.
+const TIER_MODIFIERS = {
+  critical: {
+    full_ai:    { cost: 0,  risk: -40, speed: 0,  morale: -10, quality: -15 },
+    ai_led:     { cost: 0,  risk: -15, speed: 0,  morale: -5,  quality: -5  },
+    human_led:  { cost: 0,  risk: 5,   speed: 0,  morale: 5,   quality: 5   },
+    full_human: { cost: 0,  risk: 5,   speed: 0,  morale: 0,   quality: 0   },
+  },
+  judgment: {
+    full_ai:    { cost: 0,  risk: -15, speed: 0,  morale: -5,  quality: -25 },
+    ai_led:     { cost: 0,  risk: 0,   speed: 0,  morale: 0,   quality: 5   },
+    human_led:  { cost: 0,  risk: 0,   speed: 0,  morale: 5,   quality: 10  },
+    full_human: { cost: 0,  risk: 0,   speed: 0,  morale: 0,   quality: 0   },
+  },
+  routine: {
+    full_ai:    { cost: 0,  risk: 0,   speed: 0,  morale: 0,   quality: 0   },
+    ai_led:     { cost: 0,  risk: 0,   speed: 0,  morale: 0,   quality: 0   },
+    human_led:  { cost: 0,  risk: 0,   speed: 0,  morale: 0,   quality: 0   },
+    full_human: { cost: 0,  risk: 0,   speed: 0,  morale: 0,   quality: 0   },
+  },
 };
 
 export const INDUSTRY_WEIGHTS = {
@@ -808,7 +862,8 @@ export const INDUSTRY_WEIGHTS = {
 
 const DIMENSIONS = ['cost', 'risk', 'speed', 'morale', 'quality'];
 
-export function calculateMeters(assignments, industry) {
+// calculateMeters now accounts for task tiers — needs taskLabels to classify
+export function calculateMeters(assignments, industry, taskLabels) {
   const weights = INDUSTRY_WEIGHTS[industry] || INDUSTRY_WEIGHTS['Other'];
   const taskIds = Object.keys(assignments);
 
@@ -822,8 +877,12 @@ export function calculateMeters(assignments, industry) {
     const level = assignments[taskId];
     if (!level || !BASE_SCORES[level]) continue;
     const base = BASE_SCORES[level];
+    const label = (taskLabels && taskLabels[taskId]) || '';
+    const tier = getTaskTier(label);
+    const tierMod = TIER_MODIFIERS[tier]?.[level] || {};
+
     for (const dim of DIMENSIONS) {
-      rawTotals[dim] += base[dim];
+      rawTotals[dim] += (base[dim] + (tierMod[dim] || 0));
     }
   }
 
@@ -831,9 +890,297 @@ export function calculateMeters(assignments, industry) {
   for (const dim of DIMENSIONS) {
     const avg = rawTotals[dim] / taskIds.length;
     const weighted = avg * weights[dim];
-    // Map from [-100, +100] to [0, 100]
     result[dim] = Math.max(0, Math.min(100, Math.round((weighted + 100) / 2)));
   }
 
   return result;
+}
+
+// ─── Industry-Specific Meter Descriptions ───────────────────────────────────
+
+const INDUSTRY_METER_DESC = {
+  'Pharma/Biotech/Life Sciences': {
+    cost: 'R&D burn rate, CRO costs, licensing overhead',
+    risk: 'GxP compliance, 21 CFR Part 11, patient safety',
+    speed: 'Trial timelines, regulatory submission velocity',
+    morale: 'Scientific workforce autonomy, lab vs desk roles',
+    quality: 'Data integrity, analytical accuracy, audit-readiness',
+  },
+  'Financial Services': {
+    cost: 'Headcount savings vs model risk infrastructure',
+    risk: 'Regulatory exposure (SOX, Basel, KYC/AML, SR 11-7)',
+    speed: 'Transaction throughput, settlement velocity',
+    morale: 'Front-office vs back-office displacement anxiety',
+    quality: 'Decision accuracy, false positive rates, audit trail',
+  },
+  'Manufacturing/Industrial': {
+    cost: 'Labor savings vs OT/IT integration costs',
+    risk: 'OSHA safety, environmental compliance, product liability',
+    speed: 'Production throughput, cycle time reduction',
+    morale: 'Shop floor workforce, union considerations, reskilling',
+    quality: 'Defect rates, SPC accuracy, first-pass yield',
+  },
+  'Technology/Telecom': {
+    cost: 'Engineering efficiency vs tooling sprawl',
+    risk: 'Data privacy (GDPR/CCPA), security posture, IP exposure',
+    speed: 'Release velocity, incident response time',
+    morale: 'Developer autonomy, "AI replacing engineers" narrative',
+    quality: 'Code quality, system reliability, customer experience',
+  },
+  'Energy/Utilities': {
+    cost: 'Grid maintenance savings vs SCADA security investment',
+    risk: 'NERC CIP compliance, public safety, grid reliability',
+    speed: 'Outage response, meter-to-cash cycle time',
+    morale: 'Field workforce, aging workforce transition, unions',
+    quality: 'Grid reliability metrics, billing accuracy, safety records',
+  },
+  'Retail/Consumer Goods': {
+    cost: 'Store labor optimization vs tech implementation costs',
+    risk: 'Consumer data privacy, product safety, brand reputation',
+    speed: 'Fulfillment speed, promotional agility, time-to-shelf',
+    morale: 'Store associates, seasonal workforce, corporate restructuring',
+    quality: 'Customer experience scores, order accuracy, personalization',
+  },
+  'Healthcare/Public Sector': {
+    cost: 'Revenue cycle efficiency vs EHR integration costs',
+    risk: 'HIPAA compliance, patient safety, clinical liability',
+    speed: 'Patient throughput, claims processing, lab turnaround',
+    morale: 'Clinical staff burnout, care team autonomy, public trust',
+    quality: 'Clinical outcomes, diagnostic accuracy, patient satisfaction',
+  },
+  'Professional Services': {
+    cost: 'Utilization gains vs knowledge management overhead',
+    risk: 'Client confidentiality, professional liability, independence',
+    speed: 'Engagement delivery speed, proposal turnaround',
+    morale: 'Associate/analyst displacement, partner buy-in, career paths',
+    quality: 'Deliverable quality, analytical rigor, client satisfaction',
+  },
+  'Other': {
+    cost: 'Savings vs AI licensing and integration costs',
+    risk: 'Compliance, errors, accountability gaps',
+    speed: 'Processing speed and throughput gains',
+    morale: 'Workforce sentiment and adoption readiness',
+    quality: 'Output accuracy and consistency',
+  },
+};
+
+export function getMeterDescription(industry, meterKey) {
+  const descs = INDUSTRY_METER_DESC[industry] || INDUSTRY_METER_DESC['Other'];
+  return descs[meterKey] || '';
+}
+
+// ─── Priority-to-Meter Mapping ───────────────────────────────────────────────
+
+export const PRIORITY_TO_METER = {
+  cost_efficiency: 'cost',
+  speed_throughput: 'speed',
+  employee_satisfaction: 'morale',
+  risk_compliance: 'risk',
+  quality_accuracy: 'quality',
+  customer_experience: null,
+};
+
+// ─── Meter Interpretation ───────────────────────────────────────────────────
+
+export function getMeterInterpretation(key, value, industry, priorities) {
+  const industryContext = {
+    'Financial Services': { riskWord: 'regulatory', qualityWord: 'decision' },
+    'Pharma/Biotech/Life Sciences': { riskWord: 'compliance', qualityWord: 'data integrity' },
+    'Manufacturing/Industrial': { riskWord: 'safety', qualityWord: 'defect' },
+    'Healthcare/Public Sector': { riskWord: 'patient safety', qualityWord: 'clinical' },
+    'Energy/Utilities': { riskWord: 'grid reliability', qualityWord: 'operational' },
+    'Retail/Consumer Goods': { riskWord: 'brand', qualityWord: 'customer experience' },
+    'Technology/Telecom': { riskWord: 'security', qualityWord: 'system reliability' },
+    'Professional Services': { riskWord: 'liability', qualityWord: 'deliverable' },
+  };
+  const ctx = industryContext[industry] || { riskWord: 'operational', qualityWord: 'output' };
+
+  let baseInterp = '';
+  if (key === 'cost') {
+    if (value >= 70) baseInterp = 'Aggressive savings — verify you have the AI infrastructure to deliver.';
+    else if (value >= 55) baseInterp = 'Strong cost case. Achievable if implementation is phased.';
+    else if (value >= 40) baseInterp = 'Moderate savings. Human-heavy choices limit cost upside.';
+    else baseInterp = 'Minimal cost impact. Consider whether the investment justifies the return.';
+  } else if (key === 'risk') {
+    if (value >= 70) baseInterp = `Low ${ctx.riskWord} exposure. Conservative choices are protecting you.`;
+    else if (value >= 50) baseInterp = `Moderate ${ctx.riskWord} risk. Some automation choices need oversight plans.`;
+    else if (value >= 35) baseInterp = `Elevated ${ctx.riskWord} exposure. Critical tasks may lack human safeguards.`;
+    else baseInterp = `High ${ctx.riskWord} risk. Automated critical functions create accountability gaps.`;
+  } else if (key === 'speed') {
+    if (value >= 70) baseInterp = 'Major throughput gain. Ensure downstream processes can absorb the volume.';
+    else if (value >= 50) baseInterp = 'Good velocity improvement across automated functions.';
+    else if (value >= 35) baseInterp = 'Moderate speed gains. Human-led processes are the bottleneck.';
+    else baseInterp = 'Minimal speed improvement. Heavy human involvement limits throughput.';
+  } else if (key === 'morale') {
+    if (value >= 65) baseInterp = 'Workforce feels empowered, not replaced. Strong adoption signal.';
+    else if (value >= 50) baseInterp = 'Mixed sentiment. Some roles feel supported, others threatened.';
+    else if (value >= 35) baseInterp = 'Displacement anxiety rising. Change management is critical.';
+    else baseInterp = 'Workforce resistance likely. Aggressive automation without a people strategy.';
+  } else if (key === 'quality') {
+    if (value >= 70) baseInterp = `Strong ${ctx.qualityWord} quality. AI augmentation is well-calibrated.`;
+    else if (value >= 50) baseInterp = `Good ${ctx.qualityWord} quality, but judgment-heavy tasks need monitoring.`;
+    else if (value >= 35) baseInterp = `${ctx.qualityWord} quality concerns. Full AI on judgment tasks is risky.`;
+    else baseInterp = `${ctx.qualityWord} quality at risk. Human expertise is being removed too aggressively.`;
+  }
+
+  // Priority-aware amplification
+  if (priorities && Array.isArray(priorities) && priorities.length > 0) {
+    const meterToPriority = { cost: 'cost_efficiency', speed: 'speed_throughput', morale: 'employee_satisfaction', risk: 'risk_compliance', quality: 'quality_accuracy' };
+    const priorityId = meterToPriority[key];
+    if (priorityId) {
+      const match = priorities.find(p => p.id === priorityId);
+      if (match && match.rank <= 2) {
+        if (value < 34) {
+          baseInterp = `You ranked ${match.label} #${match.rank} — this score is critical. ` + baseInterp;
+        } else if (value < 50) {
+          baseInterp = `A stated top priority (#${match.rank}) — needs attention. ` + baseInterp;
+        }
+      }
+    }
+  }
+
+  return baseInterp;
+}
+
+// ─── Consequence Callouts ───────────────────────────────────────────────────
+// Returns a warning string when a user makes a high-stakes automation choice.
+// null = no warning (safe choice).
+
+const INDUSTRY_RISK_CONTEXT = {
+  'Pharma/Biotech/Life Sciences': {
+    regulator: 'FDA/EMA',
+    framework: 'GxP and 21 CFR Part 11',
+    criticalStake: 'patient safety and data integrity',
+    judgmentStake: 'scientific rigor and regulatory defensibility',
+  },
+  'Financial Services': {
+    regulator: 'OCC, Fed, CFPB, and SEC',
+    framework: 'SOX, Basel III, and SR 11-7',
+    criticalStake: 'regulatory compliance and fiduciary duty',
+    judgmentStake: 'model risk and decision accountability',
+  },
+  'Manufacturing/Industrial': {
+    regulator: 'OSHA and EPA',
+    framework: 'ISO 9001 and ISA-95',
+    criticalStake: 'worker safety and product liability',
+    judgmentStake: 'production quality and engineering judgment',
+  },
+  'Technology/Telecom': {
+    regulator: 'FTC, EU regulators',
+    framework: 'GDPR, CCPA, and SOC 2',
+    criticalStake: 'data privacy and security posture',
+    judgmentStake: 'architectural decisions and system reliability',
+  },
+  'Energy/Utilities': {
+    regulator: 'FERC, NERC, and state PUCs',
+    framework: 'NERC CIP and OSHA',
+    criticalStake: 'grid reliability and public safety',
+    judgmentStake: 'load management and infrastructure decisions',
+  },
+  'Retail/Consumer Goods': {
+    regulator: 'FTC, FDA (food), and state AGs',
+    framework: 'PCI-DSS and consumer protection laws',
+    criticalStake: 'customer data and product safety',
+    judgmentStake: 'brand perception and customer experience',
+  },
+  'Healthcare/Public Sector': {
+    regulator: 'HHS/OCR, CMS, and Joint Commission',
+    framework: 'HIPAA, Stark Law, and Anti-Kickback',
+    criticalStake: 'patient safety and protected health information',
+    judgmentStake: 'clinical outcomes and care quality',
+  },
+  'Professional Services': {
+    regulator: 'professional licensing boards',
+    framework: 'professional ethics and liability standards',
+    criticalStake: 'client confidentiality and professional liability',
+    judgmentStake: 'analytical quality and advisory credibility',
+  },
+  'Other': {
+    regulator: 'relevant regulators',
+    framework: 'applicable compliance frameworks',
+    criticalStake: 'compliance and accountability',
+    judgmentStake: 'decision quality and oversight',
+  },
+};
+
+export function getConsequenceCallout(label, level, industry) {
+  const tier = getTaskTier(label);
+  if (tier === 'routine') return null;
+
+  const ctx = INDUSTRY_RISK_CONTEXT[industry] || INDUSTRY_RISK_CONTEXT['Other'];
+  const taskName = label;
+
+  if (tier === 'critical') {
+    if (level === 'full_ai') {
+      return {
+        severity: 'danger',
+        text: `Full automation of "${taskName}" creates significant ${ctx.criticalStake} risk. ${ctx.regulator} guidance requires human accountability for these decisions. ${ctx.framework} compliance may be compromised.`,
+      };
+    }
+    if (level === 'ai_led') {
+      return {
+        severity: 'warning',
+        text: `AI-led "${taskName}" with human oversight is viable but requires robust escalation protocols. Ensure ${ctx.framework} audit trails capture the human review step.`,
+      };
+    }
+  }
+
+  if (tier === 'judgment') {
+    if (level === 'full_ai') {
+      return {
+        severity: 'warning',
+        text: `"${taskName}" involves nuanced judgment that AI often handles inconsistently. Full automation risks ${ctx.judgmentStake} issues. Consider AI-Led with human oversight instead.`,
+      };
+    }
+  }
+
+  return null;
+}
+
+// ─── Posture Analysis ───────────────────────────────────────────────────────
+
+const INDUSTRY_AVG_POSTURE = {
+  'Pharma/Biotech/Life Sciences':   { full_ai: 5,  ai_led: 20, human_led: 45, full_human: 30 },
+  'Financial Services':             { full_ai: 8,  ai_led: 25, human_led: 40, full_human: 27 },
+  'Manufacturing/Industrial':       { full_ai: 12, ai_led: 28, human_led: 35, full_human: 25 },
+  'Technology/Telecom':             { full_ai: 18, ai_led: 35, human_led: 30, full_human: 17 },
+  'Energy/Utilities':               { full_ai: 6,  ai_led: 20, human_led: 40, full_human: 34 },
+  'Retail/Consumer Goods':          { full_ai: 15, ai_led: 30, human_led: 35, full_human: 20 },
+  'Healthcare/Public Sector':       { full_ai: 4,  ai_led: 18, human_led: 42, full_human: 36 },
+  'Professional Services':          { full_ai: 8,  ai_led: 22, human_led: 42, full_human: 28 },
+  'Other':                          { full_ai: 10, ai_led: 25, human_led: 38, full_human: 27 },
+};
+
+export function getPostureAnalysis(assignments, industry) {
+  const taskIds = Object.keys(assignments);
+  if (taskIds.length === 0) return null;
+
+  const counts = { full_ai: 0, ai_led: 0, human_led: 0, full_human: 0 };
+  for (const level of Object.values(assignments)) {
+    if (counts[level] !== undefined) counts[level]++;
+  }
+  const total = taskIds.length;
+  const pct = {
+    full_ai: Math.round((counts.full_ai / total) * 100),
+    ai_led: Math.round((counts.ai_led / total) * 100),
+    human_led: Math.round((counts.human_led / total) * 100),
+    full_human: Math.round((counts.full_human / total) * 100),
+  };
+
+  const benchmark = INDUSTRY_AVG_POSTURE[industry] || INDUSTRY_AVG_POSTURE['Other'];
+  const aiHeavy = pct.full_ai + pct.ai_led;
+  const benchmarkAiHeavy = benchmark.full_ai + benchmark.ai_led;
+
+  let interpretation = '';
+  if (aiHeavy > benchmarkAiHeavy + 20) {
+    interpretation = `Significantly more aggressive than the ${industry} average (${benchmarkAiHeavy}% AI-heavy vs your ${aiHeavy}%). This will demand strong governance and change management.`;
+  } else if (aiHeavy > benchmarkAiHeavy + 8) {
+    interpretation = `More automated than typical ${industry} organizations (${benchmarkAiHeavy}% AI-heavy vs your ${aiHeavy}%). Manageable with proper oversight.`;
+  } else if (aiHeavy < benchmarkAiHeavy - 8) {
+    interpretation = `More conservative than ${industry} peers (${benchmarkAiHeavy}% AI-heavy vs your ${aiHeavy}%). You may be leaving efficiency gains on the table.`;
+  } else {
+    interpretation = `In line with ${industry} norms (${benchmarkAiHeavy}% AI-heavy vs your ${aiHeavy}%). A balanced starting point.`;
+  }
+
+  return { counts, pct, benchmark, interpretation };
 }
