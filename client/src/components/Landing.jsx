@@ -74,6 +74,37 @@ export default function Landing({ onStart, onStartSimulator }) {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </button>
           </div>
+
+          {/* AI Infusion Lab Card */}
+          <div className="landing-tool-card" onClick={() => window.location.href = '/ai-infusion-lab.html'}>
+            <div className="landing-tool-icon">
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                <path d="M18 8v14l-6 10a3 3 0 002.6 4.5h18.8A3 3 0 0036 32l-6-10V8" stroke="#4F8CFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.8"/>
+                <path d="M16 8h16" stroke="#4F8CFF" strokeWidth="2" strokeLinecap="round"/>
+                <circle cx="22" cy="30" r="2" fill="#4F8CFF" opacity="0.6"/>
+                <circle cx="28" cy="28" r="1.5" fill="#4F8CFF" opacity="0.8"/>
+                <circle cx="25" cy="33" r="1" fill="#4F8CFF" opacity="0.5"/>
+                <path d="M22 18h4" stroke="#4F8CFF" strokeWidth="1.5" strokeLinecap="round" opacity="0.4"/>
+                <path d="M21 22h6" stroke="#4F8CFF" strokeWidth="1.5" strokeLinecap="round" opacity="0.4"/>
+              </svg>
+            </div>
+            <h3>AI Infusion Lab</h3>
+            <p className="landing-tool-desc">
+              Lead an 18-month AI adoption campaign. Make 21 strategic decisions infusing CoPilot, OpenAI & M365 into business services for operational excellence.
+            </p>
+            <div className="dimension-list" style={{ marginBottom: '1rem', marginTop: '0.75rem' }}>
+              <span className="dimension-tag">Adoption</span>
+              <span className="dimension-tag">Buy-In</span>
+              <span className="dimension-tag">Efficiency</span>
+              <span className="dimension-tag">Risk</span>
+              <span className="dimension-tag">Budget</span>
+            </div>
+            <span className="landing-tool-time">~30 minutes</span>
+            <button className="btn-infusion" style={{ width: '100%', marginTop: '0.75rem' }}>
+              Enter the Lab
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+          </div>
         </div>
 
         {/* Optional lead capture for diagnostic */}
