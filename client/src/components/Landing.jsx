@@ -129,3 +129,4 @@ export default function Landing({ onStart, onStartSimulator }) {
     </div>
   );
 }
+
