@@ -1,8 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const Anthropic = require('@anthropic-ai/sdk').default;
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 router.post('/reimagine', async (req, res) => {
   const { role } = req.body;
@@ -54,13 +51,22 @@ Return ONLY valid JSON (no markdown, no backticks, no preamble) with this exact 
 Include 6-8 tasks (sorted by hours saved descending), 5-6 new skills, and 3 phases (Days 1-30, 31-60, 61-90). Be specific to the actual role, not generic. Make hours realistic. Ensure task hours sum to the time_impact totals. Tone: encouraging career coach, not consulting report.`;
 
   try {
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
-      messages: [{ role: 'user', content: prompt }],
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        messages: [{ role: 'user', content: prompt }],
+      }),
     });
 
-    const text = message.content.map(c => c.text || '').join('');
+    const data = await response.json();
+    const text = (data.content || []).map(c => c.text || '').join('');
     const cleaned = text.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(cleaned);
 
