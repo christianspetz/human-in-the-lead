@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import Landing from './components/Landing';
 import Diagnostic from './components/Diagnostic';
 import Analysis from './components/Analysis';
@@ -25,8 +25,26 @@ const SCREENS = {
   ROLE_REIMAGINER: 'role_reimaginer',
 };
 
+// Map URL paths to screens
+const PATH_TO_SCREEN = {
+  '/reimagine': SCREENS.ROLE_REIMAGINER,
+  '/diagnostic': SCREENS.DIAGNOSTIC,
+  '/simulator': SCREENS.SIMULATOR_SETUP,
+};
+
+// Map screens to URL paths
+const SCREEN_TO_PATH = {
+  [SCREENS.ROLE_REIMAGINER]: '/reimagine',
+  [SCREENS.LANDING]: '/',
+};
+
+function getInitialScreen() {
+  const path = window.location.pathname.toLowerCase();
+  return PATH_TO_SCREEN[path] || SCREENS.LANDING;
+}
+
 export default function App() {
-  const [screen, setScreen] = useState(SCREENS.LANDING);
+  const [screen, setScreen] = useState(getInitialScreen);
   const [userData, setUserData] = useState({ name: '', email: '' });
   const [answers, setAnswers] = useState({});
   const [results, setResults] = useState(null);
@@ -42,7 +60,26 @@ export default function App() {
   const [simBlueprint, setSimBlueprint] = useState(null);
   const [simError, setSimError] = useState(null);
 
-  // ─── Diagnostic handlers ───────────────────────────────────
+  // Update URL when screen changes
+  useEffect(() => {
+    const newPath = SCREEN_TO_PATH[screen] || '/';
+    if (window.location.pathname !== newPath) {
+      window.history.pushState({}, '', newPath);
+    }
+  }, [screen]);
+
+  // Handle browser back/forward
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname.toLowerCase();
+      const newScreen = PATH_TO_SCREEN[path] || SCREENS.LANDING;
+      setScreen(newScreen);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // ——— Diagnostic handlers ———————————————————————
   const handleStart = useCallback((name, email) => {
     setUserData({ name, email });
     setScreen(SCREENS.DIAGNOSTIC);
@@ -75,7 +112,7 @@ export default function App() {
     setError(null); setUserData({ name: '', email: '' });
   }, []);
 
-  // ─── Simulator handlers ────────────────────────────────────
+  // ——— Simulator handlers ————————————————————————
   const handleSimulatorStart = useCallback(() => {
     setSimConfig(null); setSimPriorities(null); setSimAssignments(null);
     setSimMeters(null); setSimTaskLabels(null); setSimTaskDeptMap(null);
@@ -138,7 +175,7 @@ export default function App() {
     setScreen(SCREENS.LANDING);
   }, []);
 
-  // ─── Role Reimaginer handler ───────────────────────────────
+  // ——— Role Reimaginer handler ———————————————————
   const handleRoleReimaginerStart = useCallback(() => {
     setScreen(SCREENS.ROLE_REIMAGINER);
   }, []);
