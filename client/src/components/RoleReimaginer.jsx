@@ -1,47 +1,97 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+/* ═══════════════════════════════════════════════════════════════
+   CONSTANTS
+   ═══════════════════════════════════════════════════════════════ */
+
 const SAMPLE_RESULTS = {
-  role_summary: "Marketing Managers orchestrate brand strategy, campaign execution, team coordination, and performance analytics. AI transforms this role from execution-heavy to strategy-heavy \u2014 freeing you to focus on creative vision, leadership, and the work that actually moves the needle.",
+  role_summary: "Marketing Managers orchestrate brand strategy, campaign execution, team coordination, and performance analytics. AI transforms this role from execution-heavy to strategy-heavy — freeing you to focus on creative vision, leadership, and the work that actually moves the needle.",
   augmentation_score: 72,
   task_breakdown: [
-    { task: "Content Creation & Copywriting", ai_level: "high", description: "AI drafts copy, generates variations, and A/B tests messaging \u2014 you refine voice, approve tone, and add the strategic nuance only you can.", current_hours: 10, future_hours: 3 },
+    { task: "Content Creation & Copywriting", ai_level: "high", description: "AI drafts copy, generates variations, and A/B tests messaging — you refine voice, approve tone, and add the strategic nuance only you can.", current_hours: 10, future_hours: 3 },
     { task: "Campaign Performance Analysis", ai_level: "full", description: "AI dashboards auto-surface insights, anomalies, and optimization recommendations in real-time. You shift from pulling reports to acting on them.", current_hours: 8, future_hours: 1 },
     { task: "Audience Segmentation & Targeting", ai_level: "high", description: "AI models identify micro-segments and predict conversion likelihood. You focus on understanding why audiences behave the way they do.", current_hours: 6, future_hours: 1 },
-    { task: "Competitive & Market Research", ai_level: "high", description: "AI continuously monitors competitor activity and market trends \u2014 surfacing only what matters so you can think bigger.", current_hours: 6, future_hours: 1 },
-    { task: "Brand Strategy & Positioning", ai_level: "moderate", description: "AI provides data-driven inputs on brand perception, but creative vision and brand soul? That\u2019s all you.", current_hours: 6, future_hours: 4 },
+    { task: "Competitive & Market Research", ai_level: "high", description: "AI continuously monitors competitor activity and market trends — surfacing only what matters so you can think bigger.", current_hours: 6, future_hours: 1 },
+    { task: "Brand Strategy & Positioning", ai_level: "moderate", description: "AI provides data-driven inputs on brand perception, but creative vision and brand soul? That's all you.", current_hours: 6, future_hours: 4 },
     { task: "Budget Allocation & Media Planning", ai_level: "moderate", description: "AI optimizes spend across channels based on real-time performance. You make the big strategic bets on where to invest.", current_hours: 5, future_hours: 2 },
-    { task: "Team Leadership & Development", ai_level: "low", description: "Coaching, mentoring, and motivating your team remains deeply human. This is where your reclaimed hours go \u2014 investing in people.", current_hours: 8, future_hours: 7 },
+    { task: "Team Leadership & Development", ai_level: "low", description: "Coaching, mentoring, and motivating your team remains deeply human. This is where your reclaimed hours go — investing in people.", current_hours: 8, future_hours: 7 },
     { task: "Stakeholder Communication", ai_level: "low", description: "Presenting strategy to executives and building cross-functional alignment requires your judgment, persuasion, and relationships.", current_hours: 5, future_hours: 4 },
   ],
   new_skills: [
-    { skill: "Prompt Engineering & AI Direction", priority: "critical", description: "Learn to instruct AI tools effectively. The better your prompts, the better the output \u2014 and the less time you spend editing. Start by experimenting with one tool daily." },
+    { skill: "Prompt Engineering & AI Direction", priority: "critical", description: "Learn to instruct AI tools effectively. The better your prompts, the better the output — and the less time you spend editing. Start by experimenting with one tool daily." },
     { skill: "AI Output Evaluation", priority: "critical", description: "Build the judgment to quickly assess whether AI-generated content, data, and recommendations are accurate and on-brand. This becomes your superpower." },
     { skill: "Data Literacy & AI Analytics", priority: "high", description: "Get comfortable reading AI-driven dashboards and translating predictive models into compelling strategic narratives your team and leadership can act on." },
-    { skill: "AI-Augmented Workflow Design", priority: "high", description: "Learn to redesign your team\u2019s processes to plug AI in at the right moments. This makes you the person who scales the whole team\u2019s output." },
-    { skill: "Ethical AI & Brand Safety", priority: "moderate", description: "Understand the risks of AI-generated content \u2014 bias, hallucination, brand misalignment \u2014 so you can be the trusted guardrail." },
+    { skill: "AI-Augmented Workflow Design", priority: "high", description: "Learn to redesign your team's processes to plug AI in at the right moments. This makes you the person who scales the whole team's output." },
+    { skill: "Ethical AI & Brand Safety", priority: "moderate", description: "Understand the risks of AI-generated content — bias, hallucination, brand misalignment — so you can be the trusted guardrail." },
     { skill: "Strategic Thinking & Synthesis", priority: "critical", description: "As AI handles execution, the premium on connecting dots, seeing patterns, and making bold strategic bets goes way up. Lean into this." },
   ],
   transition_plan: [
-    { phase: "Explore & Experiment", period: "Days 1\u201330", actions: ["Map every recurring task you do and estimate time spent weekly", "Pick the 3 most repetitive, lowest-judgment tasks as your first AI experiments", "Try 2\u20133 AI tools for your top use case (content drafting or data analysis are great starts)", "Document your baseline: how long things take now, so you can measure improvement"] },
-    { phase: "Build Your AI Workflow", period: "Days 31\u201360", actions: ["Integrate AI tools into your daily workflow for your pilot tasks", "Create a simple review checklist for AI outputs (accuracy, tone, brand fit)", "Use your reclaimed hours intentionally: more 1:1s, more strategic thinking, more creative work", "Share what\u2019s working with your team \u2014 become the person who helps others adapt"] },
-    { phase: "Level Up & Lead", period: "Days 61\u201390", actions: ["Measure your impact: time saved, output quality, how it feels to work this way", "Expand AI into 2 more task areas based on what you\u2019ve learned", "Update your personal development plan to reflect your new AI-augmented skillset", "Create a simple playbook so your team can follow your lead"] },
+    { phase: "Explore & Experiment", period: "Days 1-30", actions: ["Map every recurring task you do and estimate time spent weekly", "Pick the 3 most repetitive, lowest-judgment tasks as your first AI experiments", "Try 2-3 AI tools for your top use case (content drafting or data analysis are great starts)", "Document your baseline: how long things take now, so you can measure improvement"] },
+    { phase: "Build Your AI Workflow", period: "Days 31-60", actions: ["Integrate AI tools into your daily workflow for your pilot tasks", "Create a simple review checklist for AI outputs (accuracy, tone, brand fit)", "Use your reclaimed hours intentionally: more 1:1s, more strategic thinking, more creative work", "Share what's working with your team — become the person who helps others adapt"] },
+    { phase: "Level Up & Lead", period: "Days 61-90", actions: ["Measure your impact: time saved, output quality, how it feels to work this way", "Expand AI into 2 more task areas based on what you've learned", "Update your personal development plan to reflect your new AI-augmented skillset", "Create a simple playbook so your team can follow your lead"] },
   ],
   time_impact: { current_weekly: 54, future_weekly: 23, hours_reclaimed: 31, strategic_uplift: "57%" }
 };
 
 const AI_LEVELS = {
-  full: { label: "AI Handles It", color: "#00e5c8", bg: "rgba(0,229,200,0.12)" },
-  high: { label: "AI + Your Review", color: "#00bcd4", bg: "rgba(0,188,212,0.12)" },
-  moderate: { label: "You Lead, AI Assists", color: "#7c8fa8", bg: "rgba(124,143,168,0.12)" },
-  low: { label: "Uniquely You", color: "#c4a1ff", bg: "rgba(196,161,255,0.12)" },
+  full:     { label: "AI Handles It",        color: "var(--teal-light)", bg: "var(--teal-dim)" },
+  high:     { label: "AI + Your Review",     color: "var(--teal)",       bg: "var(--teal-dim)" },
+  moderate: { label: "You Lead, AI Assists", color: "var(--slate-light)", bg: "rgba(148,163,184,0.1)" },
+  low:      { label: "Uniquely You",         color: "#A855F7",           bg: "rgba(168,85,247,0.1)" },
 };
-const PRIORITY_COLORS = { critical: "#ff6b8a", high: "#00e5c8", moderate: "#7c8fa8" };
+const PRIORITY_MAP = {
+  critical: { color: "var(--red)",          bg: "var(--red-dim)",          label: "Start Now" },
+  high:     { color: "var(--teal)",         bg: "var(--teal-dim)",         label: "Build Next" },
+  moderate: { color: "var(--slate-light)",  bg: "rgba(148,163,184,0.1)",   label: "Good to Know" },
+};
+
+const INDUSTRIES = [
+  "Technology", "Financial Services", "Healthcare", "Consulting",
+  "Retail & E-commerce", "Manufacturing", "Media & Entertainment",
+  "Education", "Government", "Nonprofit", "Other",
+];
+
 const ROLE_CATEGORIES = [
   { label: "Tech & Data", roles: ["Software Engineer", "Data Scientist", "UX Designer", "Product Manager", "Business Analyst"] },
   { label: "Finance & Ops", roles: ["Financial Analyst", "Accountant", "Operations Manager", "Supply Chain Analyst"] },
   { label: "People & Growth", roles: ["HR Director", "Recruiter", "Customer Success Manager", "Executive Assistant"] },
   { label: "Marketing & Sales", roles: ["Marketing Manager", "Sales Rep", "Content Strategist", "Project Manager", "Legal Counsel"] },
 ];
+
+const STRENGTHS = [
+  "Strategic Thinking", "Stakeholder Management", "Data Analysis",
+  "Creative Problem Solving", "Team Leadership", "Communication & Storytelling",
+  "Technical Skills", "Process Optimization", "Client Relationships",
+  "Decision Making Under Pressure", "Cross-functional Collaboration",
+  "Research & Synthesis", "Negotiation", "Project Management", "Mentoring & Coaching",
+];
+
+const CONCERNS = [
+  "AI replacing parts of my role", "Falling behind peers who adopt faster",
+  "Losing the creative parts of my work", "Not knowing where to start",
+  "AI making mistakes I'm accountable for", "Having to learn too much too fast",
+  "My industry being slow to adopt", "Losing human connection at work",
+  "Data privacy and ethical issues",
+];
+
+const GOALS = [
+  "More time for strategic work", "Better work-life balance",
+  "Lead bigger initiatives", "Develop new skills",
+  "Reduce repetitive busywork", "Become the AI expert on my team",
+  "Improve quality of my output", "Free up time for my team",
+  "Stay competitive in the job market", "Drive innovation in my org",
+];
+
+const STEPS = [
+  { id: "role",      title: "Your Role",      subtitle: "What do you do?" },
+  { id: "strengths", title: "Your Strengths",  subtitle: "What are you best at?" },
+  { id: "concerns",  title: "Your Concerns",   subtitle: "What worries you about AI?" },
+  { id: "goals",     title: "Your Goals",      subtitle: "What would you do with more time?" },
+];
+
+/* ═══════════════════════════════════════════════════════════════
+   SMALL COMPONENTS
+   ═══════════════════════════════════════════════════════════════ */
 
 function AnimatedNumber({ value, suffix = "", duration = 1200 }) {
   const [display, setDisplay] = useState(0);
@@ -58,24 +108,38 @@ function AnimatedNumber({ value, suffix = "", duration = 1200 }) {
   return <span>{display}{suffix}</span>;
 }
 
-function CircularGauge({ score, size = 160 }) {
+function CircularGauge({ score, size = 150 }) {
   const [animatedScore, setAnimatedScore] = useState(0);
   const radius = (size - 16) / 2;
   const circumference = 2 * Math.PI * radius;
   useEffect(() => { const t = setTimeout(() => setAnimatedScore(score), 300); return () => clearTimeout(t); }, [score]);
   const offset = circumference - (animatedScore / 100) * circumference;
-  const color = score > 66 ? "#00e5c8" : score > 33 ? "#00bcd4" : "#c4a1ff";
   return (
     <div style={{ position: "relative", width: size, height: size }}>
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="8" />
-        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke={color} strokeWidth="8" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: "stroke-dashoffset 1.5s cubic-bezier(0.4,0,0.2,1)" }} />
+        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="var(--navy-mid)" strokeWidth="8" />
+        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="var(--teal)" strokeWidth="8" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: "stroke-dashoffset 1.5s cubic-bezier(0.4,0,0.2,1)" }} />
       </svg>
       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-        <span style={{ fontSize: "2.4rem", fontWeight: 700, color, fontFamily: "'Space Mono', monospace" }}><AnimatedNumber value={score} suffix="%" /></span>
-        <span style={{ fontSize: "0.65rem", color: "#7c8fa8", textTransform: "uppercase", letterSpacing: "0.12em", marginTop: 2 }}>AI-Assistable</span>
+        <span style={{ fontSize: "2.2rem", fontWeight: 700, color: "var(--teal-light)", fontVariantNumeric: "tabular-nums" }}><AnimatedNumber value={score} suffix="%" /></span>
+        <span style={{ fontSize: "0.65rem", color: "var(--slate)", textTransform: "uppercase", letterSpacing: "0.1em", marginTop: 2 }}>AI-Assistable</span>
       </div>
     </div>
+  );
+}
+
+function Chip({ label, selected, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className={selected ? "option-btn selected" : "option-btn"}
+      style={{ display: "inline-flex", padding: "0.5rem 1rem", borderRadius: 100, fontSize: "0.82rem", width: "auto", gap: 6 }}
+    >
+      <span className="checkbox" style={{ width: 16, height: 16, borderRadius: 4, fontSize: "0.6rem" }}>
+        {selected ? "\u2713" : ""}
+      </span>
+      {label}
+    </button>
   );
 }
 
@@ -83,74 +147,116 @@ function TaskBar({ task, index }) {
   const level = AI_LEVELS[task.ai_level];
   const savedPct = ((task.current_hours - task.future_hours) / task.current_hours) * 100;
   const [visible, setVisible] = useState(false);
-  useEffect(() => { const t = setTimeout(() => setVisible(true), 150 * index); return () => clearTimeout(t); }, [index]);
+  useEffect(() => { const t = setTimeout(() => setVisible(true), 120 * index); return () => clearTimeout(t); }, [index]);
   return (
-    <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 12, padding: "20px 24px", marginBottom: 12, border: "1px solid rgba(255,255,255,0.06)", opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(12px)", transition: "all 0.5s cubic-bezier(0.4,0,0.2,1)" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
+    <div className="reimaginer-task-card" style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(12px)", transition: "all 0.5s cubic-bezier(0.4,0,0.2,1)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8, flexWrap: "wrap", gap: 8 }}>
         <div style={{ flex: 1, minWidth: 200 }}>
-          <div style={{ fontWeight: 600, color: "#e8edf3", fontSize: "0.95rem", marginBottom: 4 }}>{task.task}</div>
-          <div style={{ fontSize: "0.8rem", color: "#7c8fa8", lineHeight: 1.5 }}>{task.description}</div>
+          <div style={{ fontWeight: 600, color: "var(--pure-white)", fontSize: "0.92rem", marginBottom: 4 }}>{task.task}</div>
+          <div style={{ fontSize: "0.8rem", color: "var(--slate-light)", lineHeight: 1.55 }}>{task.description}</div>
         </div>
-        <span style={{ fontSize: "0.68rem", padding: "4px 12px", borderRadius: 20, background: level.bg, color: level.color, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", whiteSpace: "nowrap", border: `1px solid ${level.color}22` }}>{level.label}</span>
+        <span style={{ fontSize: "0.65rem", padding: "4px 12px", borderRadius: 20, background: level.bg, color: level.color, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{level.label}</span>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 14 }}>
-        <div style={{ flex: 1, height: 6, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden" }}>
-          <div style={{ width: visible ? `${savedPct}%` : "0%", height: "100%", borderRadius: 3, background: `linear-gradient(90deg, ${level.color}88, ${level.color})`, transition: "width 1.2s cubic-bezier(0.4,0,0.2,1) 0.3s" }} />
+      <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 12 }}>
+        <div style={{ flex: 1, height: 5, background: "var(--navy-mid)", borderRadius: 3, overflow: "hidden" }}>
+          <div style={{ width: visible ? `${savedPct}%` : "0%", height: "100%", borderRadius: 3, background: "linear-gradient(90deg, var(--teal-dim), var(--teal))", transition: "width 1.2s cubic-bezier(0.4,0,0.2,1) 0.3s" }} />
         </div>
-        <div style={{ fontSize: "0.75rem", color: "#7c8fa8", whiteSpace: "nowrap", minWidth: 120, textAlign: "right" }}>
-          <span style={{ color: level.color, fontWeight: 700, fontFamily: "'Space Mono', monospace" }}>{task.current_hours - task.future_hours}h</span> back / week
-          <span style={{ opacity: 0.5, marginLeft: 4 }}>({task.current_hours}h → {task.future_hours}h)</span>
+        <div style={{ fontSize: "0.75rem", color: "var(--slate-light)", whiteSpace: "nowrap", minWidth: 115, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+          <span style={{ color: "var(--teal)", fontWeight: 700 }}>{task.current_hours - task.future_hours}h</span> back / week
+          <span style={{ opacity: 0.5, marginLeft: 4 }}>({task.current_hours}&rarr;{task.future_hours}h)</span>
         </div>
       </div>
     </div>
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   MAIN COMPONENT
+   ═══════════════════════════════════════════════════════════════ */
+
 export default function RoleReimaginer({ onBack }) {
+  const [step, setStep] = useState(0);
   const [role, setRole] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [industry, setIndustry] = useState("");
+  const [strengths, setStrengths] = useState([]);
+  const [strengthOther, setStrengthOther] = useState("");
+  const [concerns, setConcerns] = useState([]);
+  const [concernOther, setConcernOther] = useState("");
+  const [goals, setGoals] = useState([]);
+  const [goalOther, setGoalOther] = useState("");
+  const [expandedCategory, setExpandedCategory] = useState(null);
   const [results, setResults] = useState(null);
   const [activeTab, setActiveTab] = useState("tasks");
   const [showEmailCapture, setShowEmailCapture] = useState(false);
   const [email, setEmail] = useState("");
   const [emailSubmitted, setEmailSubmitted] = useState(false);
-  const [expandedCategory, setExpandedCategory] = useState(null);
   const resultsRef = useRef(null);
   const inputRef = useRef(null);
 
-  const analyze = async () => {
-    if (!role.trim()) return;
-    setLoading(true); setResults(null); setShowEmailCapture(false); setEmailSubmitted(false);
+  useEffect(() => {
+    if (step === 0) setTimeout(() => inputRef.current?.focus(), 200);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [step]);
+
+  const canAdvance = () => {
+    if (step === 0) return role.trim().length > 0;
+    if (step === 1) return strengths.length >= 2;
+    if (step === 2) return concerns.length >= 1;
+    if (step === 3) return goals.length >= 1;
+    return false;
+  };
+
+  const advance = () => {
+    if (step < 3) setStep(step + 1);
+    else if (step === 3) runAnalysis();
+  };
+
+  const goBack = () => {
+    if (step > 0) setStep(step - 1);
+    else onBack();
+  };
+
+  const toggleChip = (list, setList, item, max = 5) => {
+    if (list.includes(item)) setList(list.filter(x => x !== item));
+    else if (list.length < max) setList([...list, item]);
+  };
+
+  const runAnalysis = async () => {
+    setStep(4);
+    const allStrengths = [...strengths, ...(strengthOther.trim() ? [strengthOther.trim()] : [])];
+    const allConcerns = [...concerns, ...(concernOther.trim() ? [concernOther.trim()] : [])];
+    const allGoals = [...goals, ...(goalOther.trim() ? [goalOther.trim()] : [])];
     try {
       const res = await fetch('/api/reimagine', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: role.trim() }),
+        body: JSON.stringify({ role: role.trim(), industry: industry || "Not specified", strengths: allStrengths, concerns: allConcerns, goals: allGoals }),
       });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || 'Analysis failed');
-      }
+      if (!res.ok) throw new Error('Analysis failed');
       const parsed = await res.json();
+      if (parsed.error) throw new Error(parsed.error);
       setResults(parsed);
+      setStep(5);
       setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
     } catch (err) {
       console.error(err);
       setResults(SAMPLE_RESULTS);
+      setStep(5);
       setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
-    } finally { setLoading(false); }
+    }
   };
 
   const handleCompareAnother = () => {
-    setResults(null); setRole(""); setActiveTab("tasks");
-    setTimeout(() => inputRef.current?.focus(), 100);
+    setResults(null); setRole(""); setIndustry(""); setStrengths([]); setStrengthOther("");
+    setConcerns([]); setConcernOther(""); setGoals([]); setGoalOther("");
+    setActiveTab("tasks"); setStep(0); setShowEmailCapture(false); setEmailSubmitted(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleShare = () => {
-    const text = `I just used the AI Role Reimaginer to see how AI will transform my role as a ${role}.\n\n${results.augmentation_score}% of my tasks can be AI-assisted \u2014 freeing up ${results.time_impact.hours_reclaimed}h/week for higher-impact work.\n\nTry it yourself \ud83d\udc47\nhttps://humaninthelead.ai`;
+    const text = `I just used the AI Role Reimaginer to see how AI will transform my role as ${role}.\n\n${results.augmentation_score}% of my tasks can be AI-assisted \u2014 freeing up ${results.time_impact.hours_reclaimed}h/week for higher-impact work.\n\nTry it yourself \ud83d\udc47\nhttps://humaninthelead.ai`;
     if (navigator.share) { navigator.share({ title: "AI Role Reimaginer", text }).catch(() => {}); }
-    else if (navigator.clipboard) { navigator.clipboard.writeText(text).then(() => { alert("Copied to clipboard! Paste it on LinkedIn."); }).catch(() => {}); }
+    else if (navigator.clipboard) { navigator.clipboard.writeText(text).then(() => alert("Copied to clipboard! Paste it on LinkedIn.")).catch(() => {}); }
   };
 
   const tabs = [
@@ -158,210 +264,289 @@ export default function RoleReimaginer({ onBack }) {
     { id: "skills", label: "How to Upskill", icon: "\u25C8" },
     { id: "plan", label: "Your 90-Day Plan", icon: "\u25B7" },
   ];
+  const phaseColors = ["var(--teal)", "var(--teal-light)", "#A855F7"];
+  const phaseBgs = ["var(--teal-dim)", "rgba(34,211,238,0.12)", "rgba(168,85,247,0.1)"];
+  const progress = step <= 3 ? ((step + 1) / 4) * 100 : 100;
 
   return (
-    <div style={{ maxWidth: 840, margin: "0 auto", padding: "48px 24px 80px", position: "relative" }}>
-      {/* Back button */}
-      <button onClick={onBack} style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "none", border: "none", color: "#7c8fa8", fontSize: "0.85rem", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", marginBottom: 24, padding: 0 }}>
-        ← Back to Tools
-      </button>
+    <div className="reimaginer-wrapper">
 
-      {/* Header */}
-      <div style={{ textAlign: "center", marginBottom: 48 }}>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", borderRadius: 20, background: "rgba(0,229,200,0.08)", border: "1px solid rgba(0,229,200,0.15)", fontSize: "0.72rem", color: "#00e5c8", textTransform: "uppercase", letterSpacing: "0.14em", fontWeight: 600, marginBottom: 20 }}>
-          <span style={{ fontSize: "0.9rem" }}>{"\u27E1"}</span> Human-in-the-Lead
-        </div>
-        <h1 style={{ fontSize: "clamp(2rem, 5vw, 3.2rem)", fontWeight: 700, lineHeight: 1.1, background: "linear-gradient(135deg, #e8edf3 0%, #00e5c8 50%, #00bcd4 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 16 }}>AI Role Reimaginer</h1>
-        <p style={{ fontSize: "1.05rem", color: "#7c8fa8", maxWidth: 560, margin: "0 auto 12px", lineHeight: 1.65 }}>See how AI can make you better at your job — what to offload, what skills to build, and your personal 90-day action plan.</p>
-        <span style={{ fontSize: "0.72rem", color: "#4a5568", letterSpacing: "0.08em", textTransform: "uppercase" }}>~2 minutes</span>
-      </div>
-
-      {/* Input */}
-      <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 16, padding: 32, border: "1px solid rgba(255,255,255,0.08)", marginBottom: 48 }}>
-        <label style={{ display: "block", fontSize: "0.72rem", color: "#7c8fa8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 12, fontWeight: 600 }}>What's Your Role?</label>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <input ref={inputRef} type="text" value={role} onChange={(e) => setRole(e.target.value)} onKeyDown={(e) => e.key === "Enter" && analyze()} placeholder="Type your job title or pick one below..." style={{ flex: 1, minWidth: 240, padding: "14px 20px", borderRadius: 10, background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.1)", color: "#e8edf3", fontSize: "1rem", outline: "none", fontFamily: "'DM Sans', sans-serif", transition: "border-color 0.3s" }} onFocus={(e) => { e.target.style.borderColor = "rgba(0,229,200,0.4)"; }} onBlur={(e) => { e.target.style.borderColor = "rgba(255,255,255,0.1)"; }} />
-          <button onClick={analyze} disabled={loading || !role.trim()} style={{ padding: "14px 32px", borderRadius: 10, border: "none", background: loading ? "rgba(0,229,200,0.2)" : "linear-gradient(135deg, #00e5c8, #00bcd4)", color: loading ? "#00e5c8" : "#0a0f1a", fontSize: "0.95rem", fontWeight: 700, cursor: loading ? "default" : "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.3s", whiteSpace: "nowrap", opacity: !role.trim() ? 0.4 : 1 }}>
-            {loading ? <span style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ animation: "pulse 1.2s infinite" }}>{"\u25C9"}</span> Analyzing...</span> : "Reimagine My Role \u2192"}
-          </button>
-        </div>
-        {/* Categories */}
-        <div style={{ marginTop: 20 }}>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-            {ROLE_CATEGORIES.map((cat) => (
-              <button key={cat.label} onClick={() => setExpandedCategory(expandedCategory === cat.label ? null : cat.label)} style={{ padding: "6px 14px", borderRadius: 8, background: expandedCategory === cat.label ? "rgba(0,229,200,0.1)" : "rgba(255,255,255,0.04)", border: `1px solid ${expandedCategory === cat.label ? "rgba(0,229,200,0.25)" : "rgba(255,255,255,0.08)"}`, color: expandedCategory === cat.label ? "#00e5c8" : "#7c8fa8", fontSize: "0.78rem", fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s" }}>{cat.label}</button>
-            ))}
+      {step <= 3 && (
+        <div className="progress-container">
+          <div className="progress-bar-track">
+            <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
           </div>
-          {expandedCategory && (
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", animation: "slideUp 0.3s ease" }}>
-              {ROLE_CATEGORIES.find(c => c.label === expandedCategory)?.roles.map((r) => (
-                <button key={r} onClick={() => { setRole(r); setExpandedCategory(null); }} style={{ padding: "6px 14px", borderRadius: 8, background: "rgba(0,229,200,0.04)", border: "1px solid rgba(0,229,200,0.12)", color: "#00bcd4", fontSize: "0.78rem", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s" }}
-                onMouseEnter={(e) => { e.target.style.background = "rgba(0,229,200,0.1)"; e.target.style.color = "#00e5c8"; }}
-                onMouseLeave={(e) => { e.target.style.background = "rgba(0,229,200,0.04)"; e.target.style.color = "#00bcd4"; }}>{r}</button>
-              ))}
-            </div>
-          )}
-          {!expandedCategory && <p style={{ fontSize: "0.72rem", color: "#3a4a5e", margin: 0 }}>Pick a category above, or type any role — even niche ones work.</p>}
-        </div>
-      </div>
-
-      {/* Loading */}
-      {loading && (
-        <div style={{ textAlign: "center", padding: "60px 0" }}>
-          <div style={{ width: 200, height: 4, borderRadius: 2, margin: "0 auto 20px", background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-            <div style={{ width: "40%", height: "100%", borderRadius: 2, background: "linear-gradient(90deg, transparent, #00e5c8, transparent)", backgroundSize: "200% 100%", animation: "shimmer 1.5s infinite" }} />
-          </div>
-          <p style={{ color: "#7c8fa8", fontSize: "0.85rem" }}>Reimagining the <strong style={{ color: "#00e5c8" }}>{role}</strong> role...</p>
         </div>
       )}
 
-      {/* Results */}
-      {results && !loading && (
-        <div ref={resultsRef} style={{ animation: "slideUp 0.6s cubic-bezier(0.4,0,0.2,1)" }}>
-          {/* Summary Cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 32 }}>
-            <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 16, padding: 28, border: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gridRow: "span 2" }}>
+      <button className="back-btn" onClick={goBack} style={{ marginBottom: 16, marginTop: step <= 3 ? 12 : 0 }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        {step === 0 ? "Back to Tools" : "Back"}
+      </button>
+
+      {step <= 3 && (
+        <div style={{ textAlign: "center", marginBottom: 36 }} className="animate-in">
+          <span className="landing-badge" style={{ marginBottom: 16, display: "inline-block" }}>Step {step + 1} of 4</span>
+          <h1 style={{ fontSize: "clamp(1.8rem, 4vw, 2.6rem)", marginBottom: 8 }}>{STEPS[step].title}</h1>
+          <p style={{ fontSize: "1rem", color: "var(--slate-light)", maxWidth: 480, margin: "0 auto" }}>{STEPS[step].subtitle}</p>
+        </div>
+      )}
+
+      {/* STEP 0: Role */}
+      {step === 0 && (
+        <div className="animate-in animate-in-delay-1">
+          <div className="reimaginer-input-card">
+            <label>Job Title</label>
+            <input ref={inputRef} type="text" value={role} onChange={(e) => setRole(e.target.value)} onKeyDown={(e) => e.key === "Enter" && canAdvance() && advance()} placeholder="e.g. Marketing Manager, Data Scientist, HR Director..." />
+            <div style={{ marginTop: 16 }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                {ROLE_CATEGORIES.map((cat) => (
+                  <button key={cat.label} className={`reimaginer-category-btn ${expandedCategory === cat.label ? 'active' : ''}`} onClick={() => setExpandedCategory(expandedCategory === cat.label ? null : cat.label)}>{cat.label}</button>
+                ))}
+              </div>
+              {expandedCategory && (
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", animation: "slideUp 0.3s ease" }}>
+                  {ROLE_CATEGORIES.find(c => c.label === expandedCategory)?.roles.map((r) => (
+                    <button key={r} className="reimaginer-role-btn" onClick={() => { setRole(r); setExpandedCategory(null); }}>{r}</button>
+                  ))}
+                </div>
+              )}
+              {!expandedCategory && <p style={{ fontSize: "0.72rem", color: "var(--slate)", margin: 0 }}>Pick a category or type any role.</p>}
+            </div>
+            <div style={{ marginTop: 20 }}>
+              <label>Industry <span style={{ fontWeight: 400, color: "var(--slate)", textTransform: "none", letterSpacing: 0 }}>(optional)</span></label>
+              <div className="select-wrapper">
+                <select value={industry} onChange={(e) => setIndustry(e.target.value)}>
+                  <option value="">Select your industry</option>
+                  {INDUSTRIES.map(ind => <option key={ind} value={ind}>{ind}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 1: Strengths */}
+      {step === 1 && (
+        <div className="animate-in animate-in-delay-1">
+          <div className="reimaginer-input-card">
+            <label>Pick 2-5 strengths that define you</label>
+            <p style={{ fontSize: "0.8rem", color: "var(--slate)", marginBottom: 16, marginTop: -4 }}>These help us show where AI amplifies your best work.</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {STRENGTHS.map(s => <Chip key={s} label={s} selected={strengths.includes(s)} onClick={() => toggleChip(strengths, setStrengths, s, 5)} />)}
+            </div>
+            <div style={{ marginTop: 16 }}>
+              <label>Anything else? <span style={{ fontWeight: 400, color: "var(--slate)", textTransform: "none", letterSpacing: 0 }}>(optional)</span></label>
+              <input type="text" value={strengthOther} onChange={(e) => setStrengthOther(e.target.value)} placeholder="e.g. Financial modeling, UI design..." style={{ width: "100%", padding: "0.7rem 1rem", borderRadius: 8, background: "var(--navy)", border: "1px solid var(--navy-mid)", color: "var(--white)", fontSize: "0.88rem", outline: "none", fontFamily: "var(--font-body)" }} />
+            </div>
+            <p style={{ fontSize: "0.72rem", color: "var(--teal)", marginTop: 12, fontWeight: 500 }}>
+              {strengths.length}/5 selected {strengths.length < 2 && "\u2014 pick at least 2"}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 2: Concerns */}
+      {step === 2 && (
+        <div className="animate-in animate-in-delay-1">
+          <div className="reimaginer-input-card">
+            <label>What concerns you most about AI?</label>
+            <p style={{ fontSize: "0.8rem", color: "var(--slate)", marginBottom: 16, marginTop: -4 }}>Pick 1-3. We'll address these directly in your results.</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {CONCERNS.map(c => <Chip key={c} label={c} selected={concerns.includes(c)} onClick={() => toggleChip(concerns, setConcerns, c, 3)} />)}
+            </div>
+            <div style={{ marginTop: 16 }}>
+              <label>Anything specific? <span style={{ fontWeight: 400, color: "var(--slate)", textTransform: "none", letterSpacing: 0 }}>(optional)</span></label>
+              <input type="text" value={concernOther} onChange={(e) => setConcernOther(e.target.value)} placeholder="e.g. My team is resistant to change..." style={{ width: "100%", padding: "0.7rem 1rem", borderRadius: 8, background: "var(--navy)", border: "1px solid var(--navy-mid)", color: "var(--white)", fontSize: "0.88rem", outline: "none", fontFamily: "var(--font-body)" }} />
+            </div>
+            <p style={{ fontSize: "0.72rem", color: "var(--teal)", marginTop: 12, fontWeight: 500 }}>
+              {concerns.length}/3 selected {concerns.length < 1 && "\u2014 pick at least 1"}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 3: Goals */}
+      {step === 3 && (
+        <div className="animate-in animate-in-delay-1">
+          <div className="reimaginer-input-card">
+            <label>If AI freed up 10+ hours a week, what would you do?</label>
+            <p style={{ fontSize: "0.8rem", color: "var(--slate)", marginBottom: 16, marginTop: -4 }}>Pick 1-3. Your plan will be built around these.</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {GOALS.map(g => <Chip key={g} label={g} selected={goals.includes(g)} onClick={() => toggleChip(goals, setGoals, g, 3)} />)}
+            </div>
+            <div style={{ marginTop: 16 }}>
+              <label>Dream goal? <span style={{ fontWeight: 400, color: "var(--slate)", textTransform: "none", letterSpacing: 0 }}>(optional)</span></label>
+              <input type="text" value={goalOther} onChange={(e) => setGoalOther(e.target.value)} placeholder="e.g. Launch a side project, write a book..." style={{ width: "100%", padding: "0.7rem 1rem", borderRadius: 8, background: "var(--navy)", border: "1px solid var(--navy-mid)", color: "var(--white)", fontSize: "0.88rem", outline: "none", fontFamily: "var(--font-body)" }} />
+            </div>
+            <p style={{ fontSize: "0.72rem", color: "var(--teal)", marginTop: 12, fontWeight: 500 }}>
+              {goals.length}/3 selected {goals.length < 1 && "\u2014 pick at least 1"}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Step Nav */}
+      {step <= 3 && (
+        <div className="question-nav">
+          <div />
+          <button className="btn-primary" onClick={advance} disabled={!canAdvance()} style={{ padding: "0.85rem 2.5rem" }}>
+            {step === 3 ? "Reimagine My Role \u2192" : "Continue \u2192"}
+          </button>
+        </div>
+      )}
+
+      {/* STEP 4: Loading */}
+      {step === 4 && (
+        <div className="analysis-screen" style={{ minHeight: "40vh" }}>
+          <div className="analysis-spinner" />
+          <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.4rem", color: "var(--pure-white)", marginBottom: 8 }}>Reimagining your role...</h2>
+          <p style={{ color: "var(--slate-light)", fontSize: "0.9rem", maxWidth: 400, lineHeight: 1.6 }}>
+            Analyzing how AI transforms the <strong style={{ color: "var(--teal)" }}>{role}</strong> role, factoring in your strengths and goals.
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginTop: 20, maxWidth: 400 }}>
+            {strengths.slice(0, 3).map(s => <span key={s} className="dimension-tag" style={{ animation: "pulse 2s infinite", animationDelay: `${Math.random()}s` }}>{s}</span>)}
+          </div>
+        </div>
+      )}
+
+      {/* STEP 5: Results */}
+      {step === 5 && results && (
+        <div ref={resultsRef}>
+          <div style={{ textAlign: "center", marginBottom: 32 }} className="animate-in">
+            <span className="landing-badge" style={{ marginBottom: 16, display: "inline-block" }}>Your Results</span>
+            <h1 style={{ fontSize: "clamp(1.8rem, 4vw, 2.6rem)", marginBottom: 4 }}>{role}</h1>
+            {industry && <p style={{ fontSize: "0.85rem", color: "var(--slate-light)" }}>{industry}</p>}
+          </div>
+
+          <div className="animate-in animate-in-delay-1" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 28 }}>
+            <div className="reimaginer-summary-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gridRow: "span 2", padding: "2rem 1.5rem" }}>
               <CircularGauge score={results.augmentation_score} />
-              <p style={{ fontSize: "0.78rem", color: "#7c8fa8", textAlign: "center", marginTop: 12, lineHeight: 1.5 }}>of your tasks can be enhanced with AI — freeing you for higher-impact work</p>
+              <p style={{ fontSize: "0.78rem", color: "var(--slate-light)", textAlign: "center", marginTop: 12, lineHeight: 1.5 }}>of your tasks can be enhanced with AI</p>
             </div>
-            <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 16, padding: 24, border: "1px solid rgba(255,255,255,0.06)" }}>
-              <div style={{ fontSize: "0.68rem", color: "#7c8fa8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Hours You Get Back / Week</div>
-              <div style={{ fontSize: "2.2rem", fontWeight: 700, color: "#00e5c8", fontFamily: "'Space Mono', monospace" }}><AnimatedNumber value={results.time_impact.hours_reclaimed} suffix="h" /></div>
-              <div style={{ fontSize: "0.78rem", color: "#7c8fa8", marginTop: 4 }}>{results.time_impact.current_weekly}h → {results.time_impact.future_weekly}h weekly</div>
+            <div className="reimaginer-summary-card">
+              <div style={{ fontSize: "0.65rem", color: "var(--slate)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Hours You Get Back / Week</div>
+              <div style={{ fontSize: "2.2rem", fontWeight: 700, color: "var(--teal-light)", fontVariantNumeric: "tabular-nums" }}><AnimatedNumber value={results.time_impact.hours_reclaimed} suffix="h" /></div>
+              <div style={{ fontSize: "0.78rem", color: "var(--slate-light)", marginTop: 4 }}>{results.time_impact.current_weekly}h &rarr; {results.time_impact.future_weekly}h weekly</div>
             </div>
-            <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 16, padding: 24, border: "1px solid rgba(255,255,255,0.06)" }}>
-              <div style={{ fontSize: "0.68rem", color: "#7c8fa8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>More Time for What Matters</div>
-              <div style={{ fontSize: "2.2rem", fontWeight: 700, color: "#c4a1ff", fontFamily: "'Space Mono', monospace" }}>{results.time_impact.strategic_uplift}</div>
-              <div style={{ fontSize: "0.78rem", color: "#7c8fa8", marginTop: 4 }}>Shift toward strategy & leadership</div>
+            <div className="reimaginer-summary-card">
+              <div style={{ fontSize: "0.65rem", color: "var(--slate)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>More Time for What Matters</div>
+              <div style={{ fontSize: "2.2rem", fontWeight: 700, color: "#A855F7", fontVariantNumeric: "tabular-nums" }}>{results.time_impact.strategic_uplift}</div>
+              <div style={{ fontSize: "0.78rem", color: "var(--slate-light)", marginTop: 4 }}>Shift toward strategy & leadership</div>
             </div>
           </div>
 
-          {/* Share + Email */}
-          <div style={{ display: "flex", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
-            <button onClick={handleShare} style={{ flex: 1, minWidth: 180, padding: "12px 20px", borderRadius: 10, background: "rgba(0,229,200,0.08)", border: "1px solid rgba(0,229,200,0.2)", color: "#00e5c8", fontSize: "0.85rem", fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(0,229,200,0.14)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(0,229,200,0.08)"; }}>
-              <span>{"\u2197"}</span> Share Your Results
-            </button>
+          <div className="animate-in animate-in-delay-2" style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
+            <button className="btn-secondary" onClick={handleShare} style={{ flex: 1, minWidth: 170, justifyContent: "center" }}>&nearr; Share Results</button>
             {!showEmailCapture && !emailSubmitted && (
-              <button onClick={() => setShowEmailCapture(true)} style={{ flex: 1, minWidth: 180, padding: "12px 20px", borderRadius: 10, background: "rgba(196,161,255,0.08)", border: "1px solid rgba(196,161,255,0.2)", color: "#c4a1ff", fontSize: "0.85rem", fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(196,161,255,0.14)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(196,161,255,0.08)"; }}>
-                <span>{"\u2709"}</span> Email My Full Report
-              </button>
+              <button className="btn-secondary" onClick={() => setShowEmailCapture(true)} style={{ flex: 1, minWidth: 170, justifyContent: "center", borderColor: "rgba(168,85,247,0.3)", color: "#A855F7" }}>&bull; Email My Report</button>
             )}
-            {emailSubmitted && <div style={{ flex: 1, minWidth: 180, padding: "12px 20px", borderRadius: 10, background: "rgba(0,229,200,0.06)", border: "1px solid rgba(0,229,200,0.15)", color: "#00e5c8", fontSize: "0.85rem", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>{"\u2713"} Report on its way!</div>}
+            {emailSubmitted && (
+              <div style={{ flex: 1, minWidth: 170, padding: "0.75rem 1.5rem", borderRadius: 8, background: "var(--teal-dim)", border: "1px solid rgba(6,182,212,0.2)", color: "var(--teal)", fontSize: "0.9rem", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>&check; Report on its way!</div>
+            )}
           </div>
 
-          {/* Email Capture */}
           {showEmailCapture && !emailSubmitted && (
-            <div style={{ padding: "20px 24px", borderRadius: 12, marginBottom: 24, background: "rgba(196,161,255,0.06)", border: "1px solid rgba(196,161,255,0.12)", animation: "slideUp 0.3s ease" }}>
-              <p style={{ fontSize: "0.82rem", color: "#b0bec5", marginBottom: 12 }}>Get your full breakdown + 90-day plan as a PDF. No spam — just your report.</p>
+            <div style={{ padding: "1.25rem 1.5rem", borderRadius: 12, marginBottom: 20, background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)", animation: "slideUp 0.3s ease" }}>
+              <p style={{ fontSize: "0.82rem", color: "var(--slate-lighter)", marginBottom: 12 }}>Get your full breakdown + 90-day plan as a PDF. No spam &mdash; just your report.</p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" onKeyDown={(e) => { if (e.key === "Enter" && email.includes("@")) { setEmailSubmitted(true); setShowEmailCapture(false); }}} style={{ flex: 1, minWidth: 200, padding: "10px 16px", borderRadius: 8, background: "rgba(0,0,0,0.3)", border: "1px solid rgba(196,161,255,0.2)", color: "#e8edf3", fontSize: "0.88rem", outline: "none", fontFamily: "'DM Sans', sans-serif" }} />
-                <button onClick={() => { if (email.includes("@")) { setEmailSubmitted(true); setShowEmailCapture(false); }}} style={{ padding: "10px 24px", borderRadius: 8, border: "none", background: email.includes("@") ? "linear-gradient(135deg, #c4a1ff, #9c7cdb)" : "rgba(196,161,255,0.2)", color: email.includes("@") ? "#0a0f1a" : "#7c8fa8", fontSize: "0.85rem", fontWeight: 700, cursor: email.includes("@") ? "pointer" : "default", fontFamily: "'DM Sans', sans-serif" }}>Send Report</button>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" onKeyDown={(e) => { if (e.key === "Enter" && email.includes("@")) { setEmailSubmitted(true); setShowEmailCapture(false); }}} style={{ flex: 1, minWidth: 200, padding: "0.65rem 1rem", borderRadius: 8, background: "var(--navy)", border: "1px solid var(--navy-mid)", color: "var(--white)", fontSize: "0.88rem", outline: "none", fontFamily: "var(--font-body)" }} />
+                <button onClick={() => { if (email.includes("@")) { setEmailSubmitted(true); setShowEmailCapture(false); }}} className="btn-primary" style={{ padding: "0.65rem 1.5rem", fontSize: "0.85rem", opacity: email.includes("@") ? 1 : 0.4 }}>Send Report</button>
               </div>
             </div>
           )}
 
-          {/* Summary */}
-          <div style={{ background: "rgba(0,229,200,0.04)", borderRadius: 12, padding: "20px 24px", border: "1px solid rgba(0,229,200,0.1)", marginBottom: 32, fontSize: "0.92rem", color: "#b0bec5", lineHeight: 1.7 }}>{results.role_summary}</div>
+          <div className="reimaginer-insight-box teal animate-in animate-in-delay-3" style={{ marginBottom: 28, fontSize: "0.92rem", lineHeight: 1.7 }}>{results.role_summary}</div>
 
-          {/* Tabs */}
-          <div style={{ display: "flex", gap: 4, marginBottom: 28, background: "rgba(255,255,255,0.03)", borderRadius: 12, padding: 4 }}>
+          <div style={{ display: "flex", gap: 4, marginBottom: 24, background: "var(--navy-light)", borderRadius: 12, padding: 4, border: "1px solid var(--navy-mid)" }}>
             {tabs.map((tab) => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ flex: 1, padding: "12px 16px", borderRadius: 10, border: "none", background: activeTab === tab.id ? "rgba(0,229,200,0.12)" : "transparent", color: activeTab === tab.id ? "#00e5c8" : "#7c8fa8", fontSize: "0.85rem", fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.3s", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                <span style={{ fontSize: "1.1rem" }}>{tab.icon}</span>
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`reimaginer-tab ${activeTab === tab.id ? 'active' : ''}`}>
+                <span className="tab-icon" style={{ fontSize: "1.1rem" }}>{tab.icon}</span>
                 <span>{tab.label}</span>
               </button>
             ))}
           </div>
 
-          {/* What Changes */}
           {activeTab === "tasks" && (
             <div>
-              <div style={{ display: "flex", gap: 16, marginBottom: 20, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 16, marginBottom: 16, flexWrap: "wrap" }}>
                 {Object.entries(AI_LEVELS).map(([key, val]) => (
                   <div key={key} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <div style={{ width: 8, height: 8, borderRadius: "50%", background: val.color }} />
-                    <span style={{ fontSize: "0.72rem", color: "#7c8fa8" }}>{val.label}</span>
+                    <span style={{ fontSize: "0.7rem", color: "var(--slate-light)" }}>{val.label}</span>
                   </div>
                 ))}
               </div>
               {results.task_breakdown.map((task, i) => <TaskBar key={i} task={task} index={i} />)}
-              <div style={{ marginTop: 20, padding: "16px 20px", borderRadius: 10, background: "rgba(196,161,255,0.06)", border: "1px solid rgba(196,161,255,0.12)", fontSize: "0.85rem", color: "#b0bec5", lineHeight: 1.6 }}>
-                <strong style={{ color: "#c4a1ff" }}>The takeaway:</strong> The tasks marked "Uniquely You" are where your real value lives — leadership, judgment, relationships, and creative vision. AI handles the rest so you can do more of what actually matters.
+              <div className="reimaginer-insight-box purple">
+                <strong style={{ color: "#A855F7" }}>The takeaway:</strong> The tasks marked "Uniquely You" are where your real value lives &mdash; leadership, judgment, relationships, and creative vision. AI handles the rest so you can do more of what actually matters.
               </div>
             </div>
           )}
 
-          {/* How to Upskill */}
           {activeTab === "skills" && (
             <div>
-              <p style={{ fontSize: "0.85rem", color: "#7c8fa8", marginBottom: 20, lineHeight: 1.6 }}>These are the skills that make you indispensable. Start with the ones marked "Start Now" — they'll have the biggest impact fastest.</p>
-              <div style={{ display: "grid", gap: 12 }}>
-                {results.new_skills.map((skill, i) => (
-                  <div key={i} style={{ background: "rgba(255,255,255,0.03)", borderRadius: 12, padding: "20px 24px", border: "1px solid rgba(255,255,255,0.06)", borderLeft: `3px solid ${PRIORITY_COLORS[skill.priority]}`, animation: "slideUp 0.5s cubic-bezier(0.4,0,0.2,1)", animationDelay: `${i * 100}ms`, animationFillMode: "both" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 8 }}>
-                      <span style={{ fontWeight: 600, color: "#e8edf3", fontSize: "0.95rem" }}>{skill.skill}</span>
-                      <span style={{ fontSize: "0.65rem", padding: "3px 10px", borderRadius: 12, background: `${PRIORITY_COLORS[skill.priority]}18`, color: PRIORITY_COLORS[skill.priority], fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                        {skill.priority === "critical" ? "Start Now" : skill.priority === "high" ? "Build Next" : "Good to Know"}
-                      </span>
+              <p style={{ fontSize: "0.85rem", color: "var(--slate-light)", marginBottom: 16, lineHeight: 1.6 }}>These are the skills that make you indispensable. Start with "Start Now" &mdash; they'll have the biggest impact fastest.</p>
+              <div style={{ display: "grid", gap: 10 }}>
+                {results.new_skills.map((skill, i) => {
+                  const p = PRIORITY_MAP[skill.priority];
+                  return (
+                    <div key={i} className="reimaginer-skill-card" style={{ borderLeft: `3px solid ${p.color}`, animationDelay: `${i * 100}ms` }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 8 }}>
+                        <span style={{ fontWeight: 600, color: "var(--pure-white)", fontSize: "0.92rem" }}>{skill.skill}</span>
+                        <span style={{ fontSize: "0.62rem", padding: "3px 10px", borderRadius: 12, background: p.bg, color: p.color, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>{p.label}</span>
+                      </div>
+                      <p style={{ fontSize: "0.82rem", color: "var(--slate-light)", lineHeight: 1.6 }}>{skill.description}</p>
                     </div>
-                    <p style={{ fontSize: "0.82rem", color: "#7c8fa8", lineHeight: 1.6 }}>{skill.description}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
-              <div style={{ marginTop: 20, padding: "16px 20px", borderRadius: 10, background: "rgba(0,229,200,0.04)", border: "1px solid rgba(0,229,200,0.1)", fontSize: "0.85rem", color: "#b0bec5", lineHeight: 1.6 }}>
-                <strong style={{ color: "#00e5c8" }}>You don't need to learn everything at once.</strong> Pick one "Start Now" skill and spend 30 minutes this week experimenting. That's how adoption actually works — small wins that build confidence.
+              <div className="reimaginer-insight-box teal">
+                <strong style={{ color: "var(--teal)" }}>You don't need to learn everything at once.</strong> Pick one "Start Now" skill and spend 30 minutes this week experimenting.
               </div>
             </div>
           )}
 
-          {/* 90-Day Plan */}
           {activeTab === "plan" && (
             <div style={{ position: "relative" }}>
-              <p style={{ fontSize: "0.85rem", color: "#7c8fa8", marginBottom: 24, lineHeight: 1.6 }}>Your personal roadmap. Start small, build confidence, then lead the way for others.</p>
-              <div style={{ position: "absolute", left: 19, top: 72, bottom: 24, width: 2, background: "linear-gradient(180deg, #00e5c8, #00bcd4, #c4a1ff)", borderRadius: 1 }} />
-              {results.transition_plan.map((phase, i) => {
-                const colors = ["#00e5c8", "#00bcd4", "#c4a1ff"];
-                const bgs = ["rgba(0,229,200,0.15)", "rgba(0,188,212,0.15)", "rgba(196,161,255,0.15)"];
-                return (
-                  <div key={i} style={{ display: "flex", gap: 24, marginBottom: 32, position: "relative", animation: "slideUp 0.5s cubic-bezier(0.4,0,0.2,1)", animationDelay: `${i * 200}ms`, animationFillMode: "both" }}>
-                    <div style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, background: bgs[i], border: `2px solid ${colors[i]}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.85rem", fontWeight: 700, color: colors[i], fontFamily: "'Space Mono', monospace" }}>{i + 1}</div>
-                    <div style={{ flex: 1, background: "rgba(255,255,255,0.03)", borderRadius: 12, padding: "20px 24px", border: "1px solid rgba(255,255,255,0.06)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-                        <span style={{ fontWeight: 700, color: "#e8edf3", fontSize: "1.05rem" }}>{phase.phase}</span>
-                        <span style={{ fontSize: "0.72rem", color: "#7c8fa8", fontFamily: "'Space Mono', monospace", background: "rgba(255,255,255,0.04)", padding: "4px 12px", borderRadius: 6 }}>{phase.period}</span>
-                      </div>
-                      <div style={{ display: "grid", gap: 10 }}>
-                        {phase.actions.map((action, j) => (
-                          <div key={j} style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: "0.85rem", color: "#b0bec5", lineHeight: 1.5 }}>
-                            <span style={{ color: colors[i], fontSize: "0.6rem", marginTop: 5, flexShrink: 0 }}>{"\u25CF"}</span>
-                            {action}
-                          </div>
-                        ))}
-                      </div>
+              <p style={{ fontSize: "0.85rem", color: "var(--slate-light)", marginBottom: 24, lineHeight: 1.6 }}>Your personal roadmap. Start small, build confidence, then lead the way.</p>
+              <div style={{ position: "absolute", left: 19, top: 68, bottom: 20, width: 2, background: "linear-gradient(180deg, var(--teal), var(--teal-light), #A855F7)", borderRadius: 1 }} />
+              {results.transition_plan.map((phase, i) => (
+                <div key={i} style={{ display: "flex", gap: 20, marginBottom: 28, position: "relative", animation: "slideUp 0.5s cubic-bezier(0.4,0,0.2,1)", animationDelay: `${i * 200}ms`, animationFillMode: "both" }}>
+                  <div style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, background: phaseBgs[i], border: `2px solid ${phaseColors[i]}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.85rem", fontWeight: 700, color: phaseColors[i], fontVariantNumeric: "tabular-nums" }}>{i + 1}</div>
+                  <div className="reimaginer-phase-card">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
+                      <span style={{ fontWeight: 700, color: "var(--pure-white)", fontSize: "1rem" }}>{phase.phase}</span>
+                      <span className="dimension-tag" style={{ margin: 0 }}>{phase.period}</span>
+                    </div>
+                    <div style={{ display: "grid", gap: 8 }}>
+                      {phase.actions.map((action, j) => (
+                        <div key={j} style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: "0.85rem", color: "var(--slate-lighter)", lineHeight: 1.5 }}>
+                          <span style={{ color: phaseColors[i], fontSize: "0.55rem", marginTop: 6, flexShrink: 0 }}>&bull;</span>
+                          {action}
+                        </div>
+                      ))}
                     </div>
                   </div>
-                );
-              })}
-              <div style={{ marginTop: 8, marginLeft: 64, padding: "16px 20px", borderRadius: 10, background: "rgba(196,161,255,0.06)", border: "1px solid rgba(196,161,255,0.12)", fontSize: "0.85rem", color: "#b0bec5", lineHeight: 1.6 }}>
-                <strong style={{ color: "#c4a1ff" }}>By day 90</strong>, you won't just be keeping up with AI — you'll be the person others come to for guidance. That's the real career advantage.
+                </div>
+              ))}
+              <div className="reimaginer-insight-box purple" style={{ marginLeft: 60 }}>
+                <strong style={{ color: "#A855F7" }}>By day 90</strong>, you won't just be keeping up with AI &mdash; you'll be the person others come to for guidance.
               </div>
             </div>
           )}
 
-          {/* Compare + CTA */}
-          <div style={{ marginTop: 48, display: "grid", gap: 16 }}>
-            <button onClick={handleCompareAnother} style={{ width: "100%", padding: "20px 24px", borderRadius: 14, background: "rgba(0,229,200,0.06)", border: "1px solid rgba(0,229,200,0.15)", color: "#e8edf3", fontSize: "1rem", fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.3s", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(0,229,200,0.12)"; e.currentTarget.style.borderColor = "rgba(0,229,200,0.3)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(0,229,200,0.06)"; e.currentTarget.style.borderColor = "rgba(0,229,200,0.15)"; }}>
-              <span style={{ fontSize: "1.2rem" }}>{"\u21BB"}</span> Compare Another Role
-              <span style={{ fontSize: "0.78rem", color: "#7c8fa8", fontWeight: 400 }}>— try your manager's, your team's, or your dream job</span>
+          <div style={{ marginTop: 40, display: "grid", gap: 14 }}>
+            <button onClick={handleCompareAnother} className="btn-secondary" style={{ width: "100%", padding: "1.1rem 1.5rem", fontSize: "0.95rem", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+              &circlearrowleft; Compare Another Role
+              <span style={{ fontSize: "0.78rem", color: "var(--slate-light)", fontWeight: 400 }}>&mdash; try your manager's, your team's, or your dream job</span>
             </button>
-            <div style={{ textAlign: "center", padding: "24px", background: "rgba(255,255,255,0.02)", borderRadius: 14, border: "1px solid rgba(255,255,255,0.06)" }}>
-              <p style={{ fontSize: "0.82rem", color: "#4a5568" }}>Want to assess your whole organization? Try the <button onClick={onBack} style={{ background: "none", border: "none", color: "#00e5c8", fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", padding: 0 }}>AI Readiness Diagnostic</button> or the <button onClick={onBack} style={{ background: "none", border: "none", color: "#00bcd4", fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", padding: 0 }}>Workforce Simulator</button>.</p>
+            <div style={{ textAlign: "center", padding: "1.25rem", background: "var(--navy-light)", borderRadius: 12, border: "1px solid var(--navy-mid)" }}>
+              <p style={{ fontSize: "0.82rem", color: "var(--slate)" }}>
+                Want to assess your whole organization? Try the{' '}
+                <button onClick={onBack} style={{ background: "none", border: "none", color: "var(--teal)", fontWeight: 700, cursor: "pointer", fontFamily: "var(--font-body)", fontSize: "0.82rem", padding: 0 }}>AI Readiness Diagnostic</button> or the{' '}
+                <button onClick={onBack} style={{ background: "none", border: "none", color: "#A855F7", fontWeight: 700, cursor: "pointer", fontFamily: "var(--font-body)", fontSize: "0.82rem", padding: 0 }}>Workforce Simulator</button>.
+              </p>
             </div>
           </div>
         </div>
