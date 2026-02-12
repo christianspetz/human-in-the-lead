@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function Landing({ onStart, onStartSimulator }) {
+export default function Landing({ onStart, onStartSimulator, onStartRoleReimaginer }) {
   const [showCapture, setShowCapture] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -105,6 +105,33 @@ export default function Landing({ onStart, onStartSimulator }) {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </button>
           </div>
+
+          {/* Role Reimaginer Card */}
+          <div className="landing-tool-card" onClick={onStartRoleReimaginer}>
+            <div className="landing-tool-icon">
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                <circle cx="24" cy="18" r="8" stroke="#00e5c8" strokeWidth="2" opacity="0.5"/>
+                <path d="M12 38c0-6.627 5.373-12 12-12s12 5.373 12 12" stroke="#00e5c8" strokeWidth="2" strokeLinecap="round" opacity="0.3"/>
+                <path d="M30 16l4-4m0 0l4 4m-4-4v10" stroke="#00e5c8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.9"/>
+              </svg>
+            </div>
+            <h3>AI Role Reimaginer</h3>
+            <p className="landing-tool-desc">
+              Enter any job title to see how AI transforms that role — what to offload, what skills to build, and a personal 90-day action plan.
+            </p>
+            <div className="dimension-list" style={{ marginBottom: '1rem', marginTop: '0.75rem' }}>
+              <span className="dimension-tag">Tasks</span>
+              <span className="dimension-tag">Skills</span>
+              <span className="dimension-tag">Hours</span>
+              <span className="dimension-tag">Upskill</span>
+              <span className="dimension-tag">90-Day Plan</span>
+            </div>
+            <span className="landing-tool-time">~2 minutes</span>
+            <button className="btn-reimaginer" style={{ width: '100%', marginTop: '0.75rem' }}>
+              Reimagine My Role
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+          </div>
         </div>
 
         {/* Optional lead capture for diagnostic */}
@@ -129,4 +156,3 @@ export default function Landing({ onStart, onStartSimulator }) {
     </div>
   );
 }
-
