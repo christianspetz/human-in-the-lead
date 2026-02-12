@@ -342,7 +342,7 @@ export default function RoleReimaginer({ onBack }) {
               value={compliments}
               onChange={(e) => setCompliments(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && canAdvance()) { e.preventDefault(); advance(); }}}
-              placeholder='e.g. "You always know how to explain complex things simply" or "You\'re the person everyone comes to when things go sideways"'
+              placeholder="e.g. I always know how to explain complex things simply, or I'm the person everyone comes to when things go sideways"
               rows={4}
               style={{ width: "100%", padding: "0.85rem 1rem", borderRadius: 10, background: "var(--navy)", border: "1px solid var(--navy-mid)", color: "var(--white)", fontSize: "0.92rem", outline: "none", fontFamily: "var(--font-body)", resize: "vertical", lineHeight: 1.6 }}
             />
