@@ -72,7 +72,7 @@ const STEPS = [
   { id: "concern",    title: "AI Concern Level",  subtitle: "How much is AI on your mind?" },
   { id: "compliments", title: "Your Superpower",   subtitle: "What do people compliment you on at work?" },
   { id: "growth",     title: "Your Growth Edge",  subtitle: "What do you wish you were better at?" },
-  { id: "goals",      title: "Your Ambition",     subtitle: "Where do you want to be in 1\u20132 years?" },
+  { id: "goals",      title: "Your Ambition",     subtitle: "Where do you want to be in 1-2 years?" },
 ];
 
 /* ═══════════════════════════════════════════════════════════════
@@ -381,7 +381,7 @@ export default function RoleReimaginer({ onBack }) {
       {step === 4 && (
         <div className="animate-in animate-in-delay-1">
           <div className="reimaginer-input-card">
-            <label>What are your professional goals for the next 1\u20132 years?</label>
+            <label>What are your professional goals for the next 1-2 years?</label>
             <p style={{ fontSize: "0.8rem", color: "var(--slate)", marginBottom: 12, marginTop: -4 }}>
               Promotion? Career pivot? Starting something new? Your 90-day plan will be built around getting you there.
             </p>
