@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fintech AI — Strategic Command</title>
+<meta name="description" content="Interactive strategy simulator for enterprise AI adoption in fintech. Navigate client relationships, drive implementations, and shape the product roadmap." />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0b0e17; color: #e2e8f0; font-family: 'Söhne', 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+  #root { min-height: 100vh; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #0b0e17; }
+  ::-webkit-scrollbar-thumb { background: rgba(78,205,196,0.2); border-radius: 3px; }
+  ::selection { background: rgba(78,205,196,0.3); }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
+
+const CLIENTS = {
+  banking: { name: "Meridian National Bank", vertical: "Banking", tier: "Tier 1", revenue: "$4.2M ARR", logo: "\u{1F3E6}", desc: "Top-20 US bank, 18M retail accounts. Exploring AI for fraud detection, credit decisioning, and customer service automation." },
+  payments: { name: "VelocityPay", vertical: "Payments", tier: "Tier 1", revenue: "$2.8M ARR", logo: "\u26A1", desc: "High-growth payment processor handling 2B+ transactions/year. Needs real-time AI risk scoring and merchant analytics." },
+  wealth: { name: "Apex Wealth Advisors", vertical: "Wealth Management", tier: "Tier 2", revenue: "$1.9M ARR", logo: "\u{1F4C8}", desc: "RIA platform serving 400+ advisors. Wants AI-driven portfolio optimization and client engagement scoring." },
+  insurance: { name: "Sentinel Insurance Group", vertical: "Insurance", tier: "Tier 1", revenue: "$3.1M ARR", logo: "\u{1F6E1}\uFE0F", desc: "P&C carrier, $12B GWP. Focused on AI claims automation, underwriting models, and catastrophe risk prediction." },
+  lending: { name: "CreditForge", vertical: "Lending", tier: "Tier 2", revenue: "$2.1M ARR", logo: "\u{1F511}", desc: "Digital lending platform, $8B originations. Needs AI credit scoring, adverse action explainability, and portfolio monitoring." },
+};
+
+const PORTFOLIOS = [
+  { id: "alpha", name: "Enterprise Growth", clients: ["banking", "payments", "insurance"], desc: "High-revenue, high-complexity. Maximum enterprise exposure with demanding stakeholders." },
+  { id: "beta", name: "Vertical Expansion", clients: ["banking", "wealth", "lending"], desc: "Credit-adjacent verticals with regulatory overlap. Strong product synergy potential." },
+  { id: "gamma", name: "Platform Scale", clients: ["payments", "insurance", "lending"], desc: "Transaction-heavy portfolio. Scalability and real-time processing are paramount." },
+];
+
+const RANDOM_EVENTS = [
+  { title: "Client Escalation", desc: "Your largest client's EVP of Technology emails the CEO directly, bypassing you, to complain about implementation delays. The CEO forwards it to you with 'Please handle.'", impact: { clientSat: -8, teamAlign: -5 }, icon: "\u{1F6A8}" },
+  { title: "Competitor Acquisition", desc: "Your top competitor just acquired a compliance-AI startup. Three of your clients' procurement teams are requesting 'competitive landscape updates' \u2014 a buying signal that they're evaluating alternatives.", impact: { clientSat: -5, revenue: -3 }, icon: "\u2694\uFE0F" },
+  { title: "Product Breakthrough", desc: "Your ML team achieves a 40% reduction in false positive rates on transaction monitoring. This is genuinely industry-leading. No one outside the company knows yet.", impact: { productInfluence: +5, implSuccess: +3 }, icon: "\u{1F9EA}" },
+  { title: "Regulatory Shift", desc: "The OCC issues new guidance on AI model governance in banking, requiring explainability documentation for all AI-driven credit decisions. Two of your implementations are affected.", impact: { implSuccess: -6, clientSat: -4 }, icon: "\u2696\uFE0F" },
+  { title: "Key Hire Departure", desc: "Your lead solutions architect \u2014 the one who knows every client's infrastructure \u2014 just gave two weeks' notice. They're going to a competitor.", impact: { teamAlign: -10, implSuccess: -5 }, icon: "\u{1F6AA}" },
+  { title: "Surprise Budget Unlock", desc: "One of your clients just closed a strong quarter and their CFO has approved accelerated AI spend. They want to triple their implementation scope for next quarter.", impact: { revenue: +8, clientSat: +3 }, icon: "\u{1F4B0}" },
+  { title: "Industry Recognition", desc: "A major fintech analyst firm wants to feature your company's implementation methodology in their annual report. They need a client willing to be a reference.", impact: { productInfluence: +5 }, icon: "\u{1F3C6}" },
+  { title: "Data Breach Scare", desc: "A fintech company in your space (not you) suffers a major data breach. Your clients' CISOs are now demanding emergency security reviews of all AI integrations.", impact: { clientSat: -6, implSuccess: -4 }, icon: "\u{1F512}" },
+];
+
+const QUARTERS = [
+  {
+    name: "Q1", title: "Onboarding & Discovery", subtitle: "Establish relationships, assess technical landscapes, set the foundation.",
+    scenarios: [
+      { id: "q1s1", title: "The Custom Build Request", context: "Your Tier 1 banking client's Chief Digital Officer pulls you aside after a roadmap presentation. They want a custom AI solution for real-time sanctions screening that would take your product in a fundamentally new direction \u2014 moving from batch processing to streaming inference. It's a $1.8M expansion opportunity, but your platform wasn't designed for this.", options: [
+        { label: "Accept the Custom Build", desc: "Commit to building it. The revenue is significant and it deepens the relationship. You'll need to pull 3 engineers off the core roadmap for 2 quarters.", impact: { revenue: +12, productInfluence: -5, teamAlign: -8, clientSat: +6, implSuccess: -4 }, playbook: "High risk. Custom builds create technical debt and set precedents. Other clients will expect the same treatment. Revenue is real but margin-destructive." },
+        { label: "Redirect to Existing Capabilities", desc: "Show them how your current batch processing with near-real-time webhooks can meet 90% of their requirements. Position the gap as a future roadmap item.", impact: { revenue: -3, productInfluence: +2, teamAlign: +5, clientSat: -4, implSuccess: +6 }, playbook: "Efficient but risks being perceived as inflexible. Works if your existing capability genuinely meets their SLA. Document the gap for product." },
+        { label: "Propose Co-Development Partnership", desc: "Structure a joint development agreement where they fund 60% of the build, you retain IP, and it becomes a platform capability. Requires legal, longer timeline, executive buy-in on both sides.", impact: { revenue: +5, productInfluence: +10, teamAlign: +2, clientSat: +2, implSuccess: -2 }, playbook: "Strategically optimal but execution-heavy. Co-development only works with a client who has patience and a genuine partnership mindset. Get the terms right." },
+        { label: "Bring Engineering to the Table", desc: "Arrange a technical deep-dive between your engineering leads and their architecture team. Let the engineers scope it together before making any commitment.", impact: { revenue: +2, productInfluence: +4, teamAlign: +8, clientSat: +3, implSuccess: +3 }, playbook: "Strong move. Engineers talking to engineers often uncovers that the actual need is simpler than the exec framing. Builds trust across organizations." },
+      ]},
+      { id: "q1s2", title: "The Skeptical CTO", context: "Your biggest client's CTO, a 25-year banking technology veteran, is openly skeptical about AI accuracy in their fraud detection workflow. In a steering committee meeting, she says: 'I've seen three AI vendors come through here. The models work in the lab and fail in production. Show me why you're different.' The room goes quiet. Your client champion (the VP of Digital) looks nervous.", options: [
+        { label: "Propose a Shadow Deployment", desc: "Suggest running your AI model alongside their existing rules engine for 90 days. No production impact, full transparency on comparative performance. Let the data speak.", impact: { clientSat: +8, implSuccess: +5, revenue: -2, productInfluence: +3, teamAlign: +2 }, playbook: "Best practice for skeptical stakeholders. Shadow deployments are low-risk proof points. The 90-day timeline is long but builds genuine trust." },
+        { label: "Present Case Studies & Benchmarks", desc: "Share anonymized results from similar implementations \u2014 false positive reduction rates, processing time improvements, and audit findings. Frame it as evidence, not a pitch.", impact: { clientSat: +3, implSuccess: +2, revenue: +1, productInfluence: +1, teamAlign: 0 }, playbook: "Necessary but insufficient alone. Case studies help but a technical CTO wants to see performance on THEIR data." },
+        { label: "Invite Her to Your R&D Lab", desc: "Offer an exclusive half-day at your R&D facility. Let her meet your ML team, see the training pipeline, review model governance. Make it technical, not commercial.", impact: { clientSat: +6, implSuccess: +3, revenue: 0, productInfluence: +6, teamAlign: +4 }, playbook: "High-impact relationship move. Technical leaders respect transparency. This also gives your ML team direct access to her domain expertise." },
+        { label: "Acknowledge the Concern Directly", desc: "Say: 'You're right to be skeptical. Most AI in fraud detection underperforms because vendors optimize for demo metrics, not production realities. Here's what we do differently...'", impact: { clientSat: +5, implSuccess: +4, revenue: +2, productInfluence: +2, teamAlign: +1 }, playbook: "Emotionally intelligent. Validating her concern disarms the room. But you need to back it up with substance." },
+      ]},
+      { id: "q1s3", title: "The Impossible Timeline", context: "Your sales team closed a deal with a payment processor that includes a 12-week implementation timeline for real-time risk scoring integration. Your engineering lead just told you it's a 20-week effort minimum \u2014 the client's API gateway is a custom-built legacy system that requires significant adapter work. The client's go-live date is tied to a regulatory deadline. Sales is already celebrating the commission.", options: [
+        { label: "Negotiate a Phased Approach", desc: "Go back to the client with a proposal: Phase 1 (12 weeks) delivers core risk scoring via a simplified integration path. Phase 2 (8 weeks) completes the full API gateway integration.", impact: { clientSat: +2, implSuccess: +7, revenue: +1, teamAlign: +6, productInfluence: +1 }, playbook: "The professional answer. Phased delivery protects your team while keeping the client's regulatory deadline." },
+        { label: "Commit and Surge Resources", desc: "Pull engineers from other projects, bring in contractors, run extended sprints. Meet the 12-week deadline. Deal with the burnout and project disruption later.", impact: { clientSat: +6, implSuccess: -3, revenue: +4, teamAlign: -10, productInfluence: -3 }, playbook: "Dangerous. Hero culture wins short-term but destroys team morale and other client timelines." },
+        { label: "Escalate to CRO", desc: "Bring the timeline gap to the Chief Revenue Officer. Frame it as: 'Sales made a commitment engineering can't deliver. We need to either renegotiate or significantly increase resourcing.'", impact: { clientSat: -2, implSuccess: +3, revenue: -1, teamAlign: +4, productInfluence: +2 }, playbook: "Mature move that addresses the systemic issue. But come with solutions, not just problems." },
+        { label: "Find a Technical Shortcut", desc: "Your team has an experimental middleware layer that could bypass the legacy API gateway issue. It's not fully tested in production, but it could shave 6 weeks off the timeline.", impact: { clientSat: +4, implSuccess: -5, revenue: +3, teamAlign: -2, productInfluence: +3 }, playbook: "High-variance play. If it works, you're a genius. If it fails in production, you've created a crisis." },
+      ]},
+      { id: "q1s4", title: "The Competitor Feature", context: "Your top client just sent you a link to your competitor's press release. They've launched 'InstantExplain' \u2014 an AI explainability layer for credit decisions that generates plain-language adverse action notices automatically. Your client's head of lending writes: 'When will you have this?' Your product team has this on the H2 roadmap, but it's 6+ months away.", options: [
+        { label: "Accelerate the Roadmap", desc: "Go to your CPO and make the case to pull explainability forward. Use the client request as ammunition. Risk: other roadmap items get deprioritized.", impact: { clientSat: +5, productInfluence: +8, revenue: +2, teamAlign: -4, implSuccess: -2 }, playbook: "This is exactly how client-facing leaders should influence roadmaps \u2014 with concrete demand signals. But be honest about what gets delayed." },
+        { label: "Downplay and Differentiate", desc: "Respond with: 'We've evaluated approaches like InstantExplain. Our architecture takes a fundamentally different approach to explainability that's more robust for regulatory scrutiny.'", impact: { clientSat: -2, productInfluence: +1, revenue: 0, teamAlign: +2, implSuccess: +1 }, playbook: "Risky if the client sees through it. Only works if you genuinely have a differentiated approach." },
+        { label: "Partner or Integrate", desc: "Explore whether a third-party explainability tool can be integrated into your platform as a bridge solution while your own solution matures.", impact: { clientSat: +4, productInfluence: -3, revenue: -1, teamAlign: +1, implSuccess: +4 }, playbook: "Pragmatic. Shows the client you prioritize their needs over your ego. But be careful about creating dependency." },
+        { label: "Turn It Into Intelligence", desc: "Survey all your clients about explainability needs. Bring the aggregated demand data to the product team. Frame it as a market signal, not a single client request.", impact: { clientSat: +1, productInfluence: +6, revenue: +1, teamAlign: +5, implSuccess: 0 }, playbook: "The most strategic play. Individual client requests are anecdotes; aggregated demand data is a business case." },
+      ]},
+    ],
+  },
+  {
+    name: "Q2", title: "Implementation & Delivery", subtitle: "Navigate technical challenges, scope changes, and cross-functional friction.",
+    scenarios: [
+      { id: "q2s1", title: "The Requirements Shift", context: "You're 8 weeks into a 16-week fraud detection implementation for your banking client. Their new Chief Risk Officer (hired 3 weeks ago) just redefined the success criteria. Originally: reduce false positives by 30%. Now: achieve 99.7% precision on SAR-reportable transactions while maintaining the false positive target. This is a fundamentally harder problem.", options: [
+        { label: "Absorb the Change", desc: "Accept the new requirements. Your ML team can retrain the models, but it adds 6 weeks and significant compute costs. Don't charge the client.", impact: { clientSat: +8, implSuccess: -4, revenue: -5, teamAlign: -6, productInfluence: +2 }, playbook: "Generous but sets a bad precedent. Every new executive will feel empowered to redefine success mid-stream." },
+        { label: "Scope It as Phase 2", desc: "Acknowledge the CRO's requirements as valid. Propose completing the original scope on time, then scoping the SAR precision work as a separate Phase 2 engagement.", impact: { clientSat: +2, implSuccess: +6, revenue: +4, teamAlign: +5, productInfluence: +1 }, playbook: "Textbook scope management. Protects your team, captures additional revenue, and still validates priorities." },
+        { label: "Negotiate the Trade-off", desc: "Present the technical trade-off directly: 'We can hit 99.7% SAR precision OR the 30% false positive reduction in the current timeline, but not both. Which is your priority?'", impact: { clientSat: -1, implSuccess: +4, revenue: +1, teamAlign: +3, productInfluence: +3 }, playbook: "Honest and technically sound. But new CROs often want to prove they're raising the bar." },
+        { label: "Bring in Your Chief Data Scientist", desc: "Arrange a working session between your Chief Data Scientist and the client's CRO. Let them jointly design the evaluation framework.", impact: { clientSat: +5, implSuccess: +2, revenue: +1, teamAlign: +2, productInfluence: +6 }, playbook: "Elegant move. Executive-to-executive technical conversations often reveal that the real requirement is narrower than stated." },
+      ]},
+      { id: "q2s2", title: "The Integration Crisis", context: "A critical data integration between your AI platform and your payment client's core processing system is failing intermittently. Transactions are timing out 15% of the time. The client's VP of Engineering says your API is unstable. Your engineering team's logs show the client's system is sending malformed payloads. Both sides are escalating. The client has a board meeting in 2 weeks.", options: [
+        { label: "War Room \u2014 Joint Investigation", desc: "Propose an immediate joint war room with engineers from both sides. Share your logs openly. Agree to a shared incident report.", impact: { clientSat: +4, implSuccess: +7, teamAlign: +6, revenue: 0, productInfluence: +2 }, playbook: "Best practice for integration issues. Joint war rooms eliminate finger-pointing and solve problems faster." },
+        { label: "Fix It Quietly on Your Side", desc: "Have your team build defensive coding around the malformed payloads and implement retry logic. Don't surface the root cause to the client.", impact: { clientSat: +6, implSuccess: +3, teamAlign: -4, revenue: +2, productInfluence: -2 }, playbook: "Short-term expedient. Your engineers will resent absorbing the client's technical debt." },
+        { label: "Escalate with Data", desc: "Send a detailed technical analysis to the client's CTO showing the payload issues with timestamps and log evidence. Professional, factual.", impact: { clientSat: -4, implSuccess: +4, teamAlign: +5, revenue: -1, productInfluence: +1 }, playbook: "Necessary when the VP is being unreasonable, but going over someone's head is a relationship risk." },
+        { label: "Offer a Dedicated Integration Engineer", desc: "Embed one of your senior engineers at the client site for 2 weeks to work directly with their team. Frame it as 'acceleration support.'", impact: { clientSat: +7, implSuccess: +5, teamAlign: -3, revenue: -3, productInfluence: +3 }, playbook: "High-touch and expensive, but creates deep technical relationship." },
+      ]},
+      { id: "q2s3", title: "The Pattern Recognition Opportunity", context: "In your monthly portfolio review, you notice something: three clients \u2014 across banking, payments, and lending \u2014 have independently requested similar capabilities around transaction pattern analysis for anomaly detection. Each framed it differently, but the underlying ML architecture would be identical. Your product team hasn't connected these dots. Engineering is already at 110% capacity.", options: [
+        { label: "Write the Internal Business Case", desc: "Document the pattern formally. Quantify the combined TAM across all three verticals. Present it to the CPO and CTO as a platform capability, not three custom builds.", impact: { productInfluence: +10, teamAlign: +4, revenue: +3, clientSat: +2, implSuccess: -1 }, playbook: "This is THE Principal-level move. Translating client patterns into platform strategy is what separates this role from a solutions engineer." },
+        { label: "Solve It for One Client First", desc: "Build it for your highest-value client as a custom solution. Learn from the implementation, then productize it for the other two.", impact: { productInfluence: +3, teamAlign: +1, revenue: +5, clientSat: +4, implSuccess: +3 }, playbook: "Common approach but leaves money on the table. The first client gets custom treatment (expensive), and the other two wait." },
+        { label: "Propose a Client Advisory Board", desc: "Invite all three clients to a confidential product advisory session on anomaly detection. Let them share use cases. Use the collective input to design the feature.", impact: { productInfluence: +8, clientSat: +6, revenue: +2, teamAlign: +2, implSuccess: 0 }, playbook: "Sophisticated play. Client advisory boards create buy-in and reduce product risk." },
+        { label: "Hire to Solve It", desc: "Make the case to hire 2 additional ML engineers dedicated to this cross-vertical capability. It's a $500K+ investment, but it unblocks the roadmap.", impact: { productInfluence: +5, teamAlign: +6, revenue: -2, clientSat: +1, implSuccess: +4 }, playbook: "Strategic if you can get budget approval. The risk is time-to-hire in a competitive ML talent market." },
+      ]},
+      { id: "q2s4", title: "The Compliance Curveball", context: "Your lending client's compliance team has flagged a concern: your AI credit scoring model may produce disparate impact across protected classes under ECOA and fair lending regulations. They want to pause the implementation until you can provide adverse impact testing results and model documentation that satisfies their examiner.", options: [
+        { label: "Pause and Remediate", desc: "Accept the pause. Dedicate your fairness and compliance team to producing a comprehensive Model Risk Management (MRM) package. Timeline: 4-6 weeks.", impact: { implSuccess: -6, clientSat: +3, productInfluence: +5, teamAlign: +2, revenue: -3 }, playbook: "The right call. Regulatory risk is existential for lending clients. Plus, the MRM package becomes a reusable asset." },
+        { label: "Bring in Outside Counsel", desc: "Engage a specialized AI regulatory law firm to independently validate your model and produce a legal opinion.", impact: { implSuccess: -3, clientSat: +5, productInfluence: +3, teamAlign: 0, revenue: -4 }, playbook: "Strong for high-stakes lending implementations. Third-party validation is a powerful risk mitigant." },
+        { label: "Challenge the Premise", desc: "Present your existing bias testing methodology to the compliance team. Show that you already test for disparate impact using industry-standard approaches.", impact: { implSuccess: +2, clientSat: -3, productInfluence: +1, teamAlign: +3, revenue: +2 }, playbook: "Only works if your existing methodology is genuinely robust. If the compliance team feels you're dismissing their concerns, you'll lose trust permanently." },
+        { label: "Propose a Regulatory Sandbox", desc: "Suggest running the model in a monitoring-only mode within a controlled population segment. No credit decisions are made by the AI. Collect demographic performance data for 60 days.", impact: { implSuccess: +1, clientSat: +4, productInfluence: +6, teamAlign: +1, revenue: -1 }, playbook: "Clever approach that keeps the implementation moving forward while building the compliance evidence." },
+      ]},
+      { id: "q2s5", title: "The Resource Contention", context: "Two of your clients need the same specialist \u2014 your senior NLP engineer who is the only person with production experience in financial document understanding. Client A (insurance) needs her for claims automation. Client B (banking) needs her for regulatory document parsing. Both implementations are on critical path.", options: [
+        { label: "Prioritize by Revenue Impact", desc: "Assign her to whichever client represents more ARR and expansion potential. Be transparent with the other client about the delay.", impact: { revenue: +5, clientSat: -3, teamAlign: +2, implSuccess: +1, productInfluence: 0 }, playbook: "Rational but cold. Revenue-based prioritization is defensible internally but the deprioritized client will feel like a second-class citizen." },
+        { label: "Split Her Time 50/50", desc: "Have her alternate weeks between projects. Context-switching is expensive, but both clients see progress.", impact: { revenue: +1, clientSat: 0, teamAlign: -4, implSuccess: -3, productInfluence: 0 }, playbook: "The worst option disguised as fairness. Context-switching destroys engineering productivity." },
+        { label: "Upskill a Junior Engineer", desc: "Pair a promising junior engineer with your senior NLP specialist for an intensive 2-week knowledge transfer. Then the junior takes one project with close mentorship.", impact: { revenue: -1, clientSat: +1, teamAlign: +8, implSuccess: -2, productInfluence: +2 }, playbook: "Best long-term answer. Single points of failure in engineering are a strategic risk. This is leadership, not just resource management." },
+        { label: "Outsource One Project", desc: "Bring in a specialized NLP consulting firm to handle one of the implementations under your team's architectural guidance.", impact: { revenue: -3, clientSat: +3, teamAlign: -1, implSuccess: +2, productInfluence: -2 }, playbook: "Pragmatic if you have a trusted consulting partner. The risk is quality." },
+      ]},
+    ],
+  },
+  {
+    name: "Q3", title: "Scale & Influence", subtitle: "Leverage momentum, shape strategy, navigate organizational dynamics.",
+    scenarios: [
+      { id: "q3s1", title: "The Breakthrough Dilemma", context: "Your R&D team just demonstrated something remarkable: a new approach to real-time transaction analysis that reduces inference latency by 80% while improving accuracy. This is potentially a market-defining capability. Your CPO is excited. Your CEO wants to announce it. You have to decide: who sees this first?", options: [
+        { label: "Exclusive Preview to Top Client", desc: "Give your highest-value banking client first access. Frame it as a strategic partnership benefit.", impact: { clientSat: +8, revenue: +6, productInfluence: +4, teamAlign: +1, implSuccess: +2 }, playbook: "Strong relationship play. Exclusive access creates loyalty. Risk: other clients feel deprioritized." },
+        { label: "Launch at Money20/20", desc: "Save it for the industry's biggest fintech conference. Maximum market impact, establishes thought leadership.", impact: { clientSat: -2, revenue: +3, productInfluence: +10, teamAlign: +3, implSuccess: 0 }, playbook: "Best for market positioning. But brief your clients before the announcement." },
+        { label: "Quiet Rollout to All Clients", desc: "Roll it into your platform as a feature update. No fanfare \u2014 just deliver value.", impact: { clientSat: +4, revenue: +1, productInfluence: -2, teamAlign: +5, implSuccess: +6 }, playbook: "Humble and client-centric. But you're leaving enormous marketing and positioning value on the table." },
+        { label: "Beta Program with Design Partners", desc: "Select 2-3 clients across different verticals as design partners. They get early access in exchange for detailed feedback.", impact: { clientSat: +5, revenue: +2, productInfluence: +6, teamAlign: +4, implSuccess: +4 }, playbook: "The most rigorous approach. Design partners provide real-world validation." },
+      ]},
+      { id: "q3s2", title: "The Churn Threat", context: "Your insurance client's newly appointed COO calls you directly. She's blunt: 'Your platform is expensive and we're only using 40% of what we're paying for. I have a competitor proposal that's 30% cheaper. I need you to either match the price or give me a compelling reason to stay within 2 weeks.'", options: [
+        { label: "Defend on Value, Not Price", desc: "Request a meeting with the COO and bring detailed ROI analysis: claims processing time reduction, accuracy improvements, and cost avoidance metrics.", impact: { clientSat: +3, revenue: +2, productInfluence: +2, implSuccess: +3, teamAlign: +1 }, playbook: "The right first move. Never lead with price concessions. But the ROI analysis better be compelling." },
+        { label: "Offer a Restructured Deal", desc: "Propose a revised contract: lower the base price by 15%, but add usage-based pricing. Include a 90-day adoption program.", impact: { clientSat: +6, revenue: -3, productInfluence: 0, implSuccess: +1, teamAlign: +2 }, playbook: "Commercially sophisticated. Usage-based pricing aligns incentives." },
+        { label: "Call Her Bluff", desc: "Respond professionally but don't panic. A 30% cheaper competitor is likely comparing apples to oranges. Ask for a detailed feature comparison.", impact: { clientSat: -5, revenue: +4, productInfluence: +1, implSuccess: 0, teamAlign: +3 }, playbook: "Bold but dangerous. If you're wrong, you've just lost a $3M+ client by being arrogant." },
+        { label: "Escalate to Your CEO", desc: "Brief your CEO and propose a joint executive meeting. Reframe from a vendor review to a strategic partnership discussion.", impact: { clientSat: +4, revenue: +1, productInfluence: +3, implSuccess: 0, teamAlign: -2 }, playbook: "Powerful escalation if your CEO is good at these conversations." },
+      ]},
+      { id: "q3s3", title: "The Board Presentation", context: "Your CEO asks you to present the 'Voice of the Client' at the next board meeting. You have 15 minutes. The board wants to understand: What are enterprise fintech clients actually asking for? Where should the company invest? The board includes two former bank CEOs and a prominent fintech VC.", options: [
+        { label: "Synthesize into 3 Themes", desc: "Distill all client feedback into three strategic themes. Map each theme to market size, client demand intensity, and your competitive position.", impact: { productInfluence: +10, teamAlign: +5, clientSat: +2, revenue: +3, implSuccess: +1 }, playbook: "Textbook executive communication. Board members think in themes, not feature lists. Three is the right number." },
+        { label: "Lead with Client Stories", desc: "Tell three compelling client narratives \u2014 the transformation journey, the problem solved, the business impact delivered.", impact: { productInfluence: +7, clientSat: +5, revenue: +2, teamAlign: +2, implSuccess: +2 }, playbook: "Emotionally compelling, especially for a board with former operators." },
+        { label: "Present the Data", desc: "Show aggregated NPS, feature request frequency analysis, pipeline composition by vertical, and revenue concentration metrics.", impact: { productInfluence: +5, teamAlign: +3, clientSat: 0, revenue: +4, implSuccess: +1 }, playbook: "Safe and professional. The VC board member will appreciate the analytical rigor." },
+        { label: "Be Provocative", desc: "Open with: 'Our clients are asking for the wrong things \u2014 and it's our job to know the difference.' Then present what clients ask for vs. what the market needs.", impact: { productInfluence: +12, teamAlign: -2, clientSat: -3, revenue: +1, implSuccess: 0 }, playbook: "High risk, high reward. If the board trusts you, this positions you as a strategic thinker." },
+      ]},
+      { id: "q3s4", title: "The Regulatory Earthquake", context: "The CFPB issues a sweeping new rule requiring all AI-driven financial decisions to include real-time explainability and consumer appeal mechanisms. Effective in 180 days. Your banking client needs full compliance. Your lending client is panicking. Your product team hasn't started building appeal mechanism functionality.", options: [
+        { label: "Emergency Client Briefings", desc: "Within 48 hours, hold individual briefings with each affected client. Present a preliminary impact assessment and a 90-day compliance roadmap.", impact: { clientSat: +8, implSuccess: -2, productInfluence: +4, teamAlign: -1, revenue: +2 }, playbook: "Speed matters in regulatory events. Clients remember who showed up first with useful information." },
+        { label: "Form a Compliance Task Force", desc: "Stand up an internal cross-functional team. Map every implementation against the new rule. Produce a company-wide response plan before communicating to clients.", impact: { clientSat: +2, implSuccess: +4, productInfluence: +6, teamAlign: +7, revenue: +1 }, playbook: "Thorough and systematic. But clients may hear from competitors first." },
+        { label: "Turn It Into Product Opportunity", desc: "Frame the regulation as a massive product opportunity: every fintech company needs explainability and appeal mechanisms. If you build it first, you own the compliance layer.", impact: { clientSat: +1, implSuccess: -1, productInfluence: +10, teamAlign: +3, revenue: +5 }, playbook: "Visionary thinking. Regulations create markets. But your existing clients need help NOW." },
+        { label: "Host an Industry Roundtable", desc: "Invite clients, prospects, and regulatory experts to a private roundtable on the new rule. Position your company as the convener and thought leader.", impact: { clientSat: +5, implSuccess: 0, productInfluence: +8, teamAlign: +2, revenue: +3 }, playbook: "Power move for market positioning. Convening authority is a leadership signal." },
+      ]},
+    ],
+  },
+  {
+    name: "Q4", title: "Strategic Positioning", subtitle: "Plan for the future, secure your legacy, build sustainable advantage.",
+    scenarios: [
+      { id: "q4s1", title: "The R&D Investment Decision", context: "Annual planning. The CEO gives you 15 minutes to advocate for R&D investment direction. The company can make one major bet. Your clients' input and market analysis point to three options:", options: [
+        { label: "Agentic AI for Financial Operations", desc: "Autonomous AI agents that can execute multi-step financial workflows. Massive TAM, early market, high technical risk. No competitor has a production offering.", impact: { productInfluence: +10, revenue: +4, clientSat: +3, teamAlign: -3, implSuccess: -2 }, playbook: "Highest upside but longest payoff timeline. First-mover advantage is real but so is first-mover risk." },
+        { label: "Unified Risk Intelligence Platform", desc: "Consolidate fraud, credit, compliance, and market risk into a single AI-driven platform. Strong demand, two competitors building this.", impact: { productInfluence: +5, revenue: +7, clientSat: +6, teamAlign: +4, implSuccess: +3 }, playbook: "The safe bet that's still a good bet. Sometimes the strategic answer is execution, not innovation." },
+        { label: "Regulatory AI Co-Pilot", desc: "AI-powered regulatory compliance assistant. Every financial institution needs this. Moderate technical complexity. One client offered to co-develop.", impact: { productInfluence: +7, revenue: +5, clientSat: +5, teamAlign: +5, implSuccess: +4 }, playbook: "The 'Goldilocks' option. Differentiated enough to win, practical enough to ship." },
+        { label: "Present All Three with Framework", desc: "Don't advocate for one. Present a decision framework and let the CEO and CTO decide. Your value is the analysis, not the opinion.", impact: { productInfluence: +3, revenue: +2, clientSat: +2, teamAlign: +6, implSuccess: +2 }, playbook: "Intellectually humble but potentially seen as indecisive. At the Principal level, leadership wants conviction." },
+      ]},
+      { id: "q4s2", title: "The Exclusive Feature Demand", context: "Your most profitable client ($4.2M ARR) requests an exclusive feature: a custom AI model trained on their proprietary data for competitive advantage in credit decisioning. They'll pay $800K extra. Your product team says: 'We don't build exclusives. Everything goes on the platform.' The client's CFO has already approved the budget.", options: [
+        { label: "Find the Middle Ground", desc: "Propose a 'private model environment' \u2014 a platform capability where any enterprise client can train models on their proprietary data. The client gets what they need, it becomes a platform feature.", impact: { clientSat: +6, revenue: +5, productInfluence: +8, teamAlign: +4, implSuccess: +2 }, playbook: "The golden answer \u2014 if you can architect it. This is exactly the kind of client-to-product translation the role demands." },
+        { label: "Side with Product", desc: "Tell the client that exclusive features aren't part of your model. Offer enhanced model customization within existing parameters.", impact: { clientSat: -6, revenue: -4, productInfluence: +3, teamAlign: +6, implSuccess: +2 }, playbook: "Principled but expensive. You need to offer something compelling as an alternative." },
+        { label: "Accept with a Sunset Clause", desc: "Build the exclusive feature with a 12-month exclusivity window. After 12 months, the capability becomes available to the platform.", impact: { clientSat: +7, revenue: +7, productInfluence: +2, teamAlign: -3, implSuccess: +1 }, playbook: "Commercially creative. Time-bounded exclusivity is a real business model." },
+        { label: "Escalate the Decision", desc: "Bring the full picture to the CEO and let leadership make the call. This is above your pay grade.", impact: { clientSat: +1, revenue: +1, productInfluence: -2, teamAlign: +3, implSuccess: +1 }, playbook: "Honest about organizational dynamics but potentially seen as abdication at the Principal level." },
+      ]},
+      { id: "q4s3", title: "The Year-End Framing", context: "End of fiscal year. You need to present your portfolio's annual impact to the CEO, the board, and internal stakeholders. You have strong results across multiple dimensions, but you need to choose your narrative frame \u2014 it will shape how leadership thinks about your role and your function's budget next year.", options: [
+        { label: "Lead with Revenue", desc: "Frame everything through financial impact: NRR, expansion revenue, pipeline generated, revenue protected through retention. Show your function directly drives the P&L.", impact: { revenue: +10, clientSat: +1, productInfluence: -1, teamAlign: +2, implSuccess: +1 }, playbook: "Safe and universally understood. Revenue stories get budget. But if you're only a revenue story, you're a fancy account manager." },
+        { label: "Lead with Product Influence", desc: "Show how your client insights directly shaped the product roadmap. Map features shipped to client conversations that inspired them.", impact: { revenue: +2, clientSat: +2, productInfluence: +10, teamAlign: +4, implSuccess: +2 }, playbook: "Unique and powerful positioning. If you can show your function makes the product better, you become indispensable." },
+        { label: "Lead with Client Transformation", desc: "Tell the stories of how your clients' businesses changed. The bank that reduced fraud losses by $12M. The lender that expanded to new credit segments.", impact: { revenue: +3, clientSat: +8, productInfluence: +3, teamAlign: +1, implSuccess: +3 }, playbook: "Emotionally compelling and client-centric. Board members who are former operators love transformation stories." },
+        { label: "Lead with Strategic Positioning", desc: "Zoom out. Show where the company sits in the competitive landscape because of the work your team did. Market intelligence, competitive wins, category-defining implementations.", impact: { revenue: +1, clientSat: +3, productInfluence: +6, teamAlign: +3, implSuccess: +2 }, playbook: "Ambitious framing that positions you as a strategic leader. Vague strategy talk without specifics will fall flat." },
+      ]},
+      { id: "q4s4", title: "The Succession Planning", context: "Your CEO tells you: 'What you've done this year is exactly what we needed. Now I need you to scale it. Build the team and the playbooks so this isn't dependent on you.' You have budget for 2 hires and need to decide the team structure.", options: [
+        { label: "Hire Two Senior ICs", desc: "Two experienced Principal-level individual contributors, each owning half the portfolio. Fast impact, high cost, potential ego conflicts.", impact: { teamAlign: +8, clientSat: +4, implSuccess: +3, revenue: +2, productInfluence: +1 }, playbook: "Gets you capacity immediately but creates coordination overhead. Two of you doesn't scale; it just buys time." },
+        { label: "Hire a Manager + a Technical Lead", desc: "One client relationship manager for day-to-day stakeholder management. One technical solutions architect for implementation quality. You shift to strategy.", impact: { teamAlign: +6, clientSat: +5, implSuccess: +6, revenue: +3, productInfluence: +4 }, playbook: "Best structural answer. Separating relationship management from technical leadership creates specialization and scale." },
+        { label: "Hire One + Build an Offshore Pod", desc: "One senior US-based hire plus a 3-person offshore implementation team. More total capacity, lower cost, timezone challenges.", impact: { teamAlign: +2, clientSat: +2, implSuccess: +5, revenue: +5, productInfluence: 0 }, playbook: "Cost-efficient for implementation throughput. But enterprise client management is high-touch." },
+        { label: "Systematize Before Hiring", desc: "Before hiring anyone, spend Q1 documenting your playbooks, building templates, creating the operational infrastructure. Then hire into a system.", impact: { teamAlign: +10, clientSat: -1, implSuccess: +2, revenue: -2, productInfluence: +6 }, playbook: "The most mature answer. Systems scale better than people. But your CEO wants scale NOW." },
+      ]},
+    ],
+  },
+];
+
+const KPI_CONFIG = [
+  { key: "clientSat", label: "Client Satisfaction", icon: "\u{1F465}", color: "#4ECDC4", desc: "Enterprise stakeholder trust & NPS" },
+  { key: "implSuccess", label: "Implementation Success", icon: "\u2699\uFE0F", color: "#45B7D1", desc: "On-time, on-scope delivery rate" },
+  { key: "productInfluence", label: "Product Influence", icon: "\u{1F9ED}", color: "#96CEB4", desc: "Roadmap impact & R&D alignment" },
+  { key: "revenue", label: "Revenue Pipeline", icon: "\u{1F4CA}", color: "#FFEAA7", desc: "NRR, expansion & pipeline growth" },
+  { key: "teamAlign", label: "Team Alignment", icon: "\u{1F91D}", color: "#DDA0DD", desc: "Engineering & cross-functional trust" },
+];
+
+const getGrade = (score) => {
+  if (score >= 90) return { grade: "S", label: "Exceptional", color: "#FFD700" };
+  if (score >= 75) return { grade: "A", label: "Outstanding", color: "#4ECDC4" };
+  if (score >= 60) return { grade: "B", label: "Strong", color: "#45B7D1" };
+  if (score >= 45) return { grade: "C", label: "Developing", color: "#FFEAA7" };
+  if (score >= 30) return { grade: "D", label: "Struggling", color: "#FF6B6B" };
+  return { grade: "F", label: "Critical", color: "#FF4444" };
+};
+
+const getOverallTitle = (avg) => {
+  if (avg >= 85) return "Chief Client & Product Officer Material";
+  if (avg >= 70) return "Principal-Level Strategist";
+  if (avg >= 55) return "Senior Solutions Leader";
+  if (avg >= 40) return "Solid Operator, Growing Strategically";
+  return "Tactical Executor \u2014 Needs Strategic Development";
+};
+
+const clamp = (val, min = 0, max = 100) => Math.max(min, Math.min(max, val));
+
+function AIImplementationCommand() {
+  const [phase, setPhase] = useState("intro");
+  const [portfolio, setPortfolio] = useState(null);
+  const [quarterIndex, setQuarterIndex] = useState(0);
+  const [scenarioIndex, setScenarioIndex] = useState(0);
+  const [kpis, setKpis] = useState({ clientSat: 50, implSuccess: 50, productInfluence: 50, revenue: 50, teamAlign: 50 });
+  const [decisions, setDecisions] = useState([]);
+  const [showPlaybook, setShowPlaybook] = useState(false);
+  const [playbookGlobal, setPlaybookGlobal] = useState(false);
+  const [currentEvent, setCurrentEvent] = useState(null);
+  const [usedEvents, setUsedEvents] = useState([]);
+  const [animating, setAnimating] = useState(false);
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [expandedDecision, setExpandedDecision] = useState(null);
+
+  const currentQuarter = QUARTERS[quarterIndex];
+  const currentScenario = currentQuarter?.scenarios[scenarioIndex];
+  const totalScenarios = QUARTERS.reduce((acc, q) => acc + q.scenarios.length, 0);
+  const completedScenarios = decisions.length;
+
+  const applyImpact = useCallback((impact) => {
+    setKpis((prev) => {
+      const next = { ...prev };
+      Object.entries(impact).forEach(([key, val]) => {
+        if (next[key] !== undefined) next[key] = clamp(next[key] + val);
+      });
+      return next;
+    });
+  }, []);
+
+  const handleDecision = (option, optionIndex) => {
+    setSelectedOption(optionIndex);
+    setAnimating(true);
+    setTimeout(() => {
+      const decision = {
+        quarter: currentQuarter.name, scenario: currentScenario.title, scenarioId: currentScenario.id,
+        choice: option.label, impact: option.impact, playbook: option.playbook, optionIndex,
+        context: currentScenario.context, allOptions: currentScenario.options,
+      };
+      setDecisions((prev) => [...prev, decision]);
+      applyImpact(option.impact);
+      const nextScenarioIndex = scenarioIndex + 1;
+      if (nextScenarioIndex < currentQuarter.scenarios.length) {
+        setScenarioIndex(nextScenarioIndex);
+      } else {
+        const nextQuarterIndex = quarterIndex + 1;
+        if (nextQuarterIndex < QUARTERS.length) {
+          const available = RANDOM_EVENTS.filter((_, i) => !usedEvents.includes(i));
+          if (available.length > 0) {
+            const idx = RANDOM_EVENTS.indexOf(available[Math.floor(Math.random() * available.length)]);
+            setCurrentEvent(RANDOM_EVENTS[idx]);
+            setUsedEvents((prev) => [...prev, idx]);
+            setPhase("event");
+          } else {
+            setQuarterIndex(nextQuarterIndex);
+            setScenarioIndex(0);
+          }
+        } else {
+          setPhase("results");
+        }
+      }
+      setSelectedOption(null);
+      setAnimating(false);
+    }, 600);
+  };
+
+  const handleEventDismiss = () => {
+    applyImpact(currentEvent.impact);
+    setCurrentEvent(null);
+    setQuarterIndex((prev) => prev + 1);
+    setScenarioIndex(0);
+    setPhase("game");
+  };
+
+  const kpiAvg = Math.round(Object.values(kpis).reduce((a, b) => a + b, 0) / 5);
+
+  const S = {
+    app: { background: "#0b0e17", color: "#e2e8f0", minHeight: "100vh", fontFamily: "'S\u00F6hne', 'Helvetica Neue', Arial, sans-serif", position: "relative", overflow: "hidden" },
+    noise: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "repeating-conic-gradient(#ffffff03 0% 25%, transparent 0% 50%) 0 0 / 4px 4px", pointerEvents: "none", zIndex: 0 },
+    container: { maxWidth: "960px", margin: "0 auto", padding: "24px 20px", position: "relative", zIndex: 1 },
+    header: { textAlign: "center", marginBottom: "32px", paddingTop: "20px" },
+    badge: { display: "inline-block", padding: "6px 16px", background: "rgba(78,205,196,0.1)", border: "1px solid rgba(78,205,196,0.3)", borderRadius: "20px", fontSize: "11px", fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", color: "#4ECDC4", marginBottom: "16px" },
+    title: { fontSize: "clamp(28px,5vw,42px)", fontWeight: 700, background: "linear-gradient(135deg,#e2e8f0 0%,#4ECDC4 50%,#45B7D1 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", lineHeight: 1.15, marginBottom: "12px", letterSpacing: "-0.5px" },
+    subtitle: { fontSize: "15px", color: "#8892b0", maxWidth: "600px", margin: "0 auto", lineHeight: 1.6 },
+    card: { background: "#131829", border: "1px solid rgba(78,205,196,0.12)", borderRadius: "12px", padding: "28px", marginBottom: "16px", transition: "all 0.3s ease" },
+    btn: { display: "block", width: "100%", padding: "16px 20px", background: "#131829", border: "1px solid rgba(78,205,196,0.2)", borderRadius: "10px", color: "#e2e8f0", cursor: "pointer", textAlign: "left", fontSize: "14px", lineHeight: 1.5, transition: "all 0.25s ease", marginBottom: "10px" },
+    primary: { display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "14px 32px", background: "linear-gradient(135deg,#4ECDC4,#45B7D1)", border: "none", borderRadius: "10px", color: "#0b0e17", fontWeight: 700, fontSize: "15px", cursor: "pointer", transition: "all 0.3s ease", letterSpacing: "0.3px" },
+    kpiBar: { display: "flex", gap: "8px", padding: "16px 20px", background: "#0d1020", borderRadius: "10px", border: "1px solid rgba(78,205,196,0.08)", marginBottom: "24px", flexWrap: "wrap", justifyContent: "center" },
+    kpiItem: { display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", minWidth: "80px", flex: 1 },
+    progressOuter: { width: "100%", height: "4px", background: "rgba(255,255,255,0.06)", borderRadius: "2px", overflow: "hidden" },
+    quarterNav: { display: "flex", gap: "8px", marginBottom: "24px", justifyContent: "center" },
+  };
+
+  const KPIDisplay = () => (
+    <div style={S.kpiBar}>
+      {KPI_CONFIG.map(({ key, label, icon, color }) => (
+        <div key={key} style={S.kpiItem}>
+          <div style={{ fontSize: "16px" }}>{icon}</div>
+          <div style={{ fontSize: "10px", color: "#8892b0", textAlign: "center", lineHeight: 1.2 }}>{label.split(" ")[0]}</div>
+          <div style={{ fontSize: "16px", fontWeight: 700, color }}>{kpis[key]}</div>
+          <div style={S.progressOuter}>
+            <div style={{ width: kpis[key] + "%", height: "100%", background: color, borderRadius: "2px", transition: "width 0.8s cubic-bezier(0.4,0,0.2,1)" }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const QuarterNav = () => (
+    <div style={S.quarterNav}>
+      {QUARTERS.map((q, i) => (
+        <div key={q.name} style={{
+          padding: "8px 20px", borderRadius: "8px", fontSize: "13px", fontWeight: 600,
+          background: i === quarterIndex ? "rgba(78,205,196,0.15)" : i < quarterIndex ? "rgba(78,205,196,0.06)" : "rgba(255,255,255,0.03)",
+          border: "1px solid " + (i === quarterIndex ? "#4ECDC4" : i < quarterIndex ? "rgba(78,205,196,0.2)" : "rgba(255,255,255,0.06)"),
+          color: i === quarterIndex ? "#4ECDC4" : i < quarterIndex ? "#8892b0" : "#4a5568",
+          transition: "all 0.3s ease",
+        }}>{q.name}</div>
+      ))}
+    </div>
+  );
+
+  const OptionButton = ({ option, index, onClick }) => {
+    const [hovered, setHovered] = useState(false);
+    const isSelected = selectedOption === index;
+    return (
+      <button style={{
+        ...S.btn,
+        ...(hovered ? { borderColor: "#4ECDC4", background: "rgba(78,205,196,0.08)", transform: "translateX(4px)" } : {}),
+        ...(isSelected ? { borderColor: "#4ECDC4", background: "rgba(78,205,196,0.15)", boxShadow: "0 0 20px rgba(78,205,196,0.1)" } : {}),
+        opacity: animating && !isSelected ? 0.4 : 1,
+      }}
+        onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+        onClick={() => !animating && onClick(option, index)} disabled={animating}
+      >
+        <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
+          <span style={{
+            display: "inline-flex", alignItems: "center", justifyContent: "center", width: "28px", height: "28px",
+            borderRadius: "8px", background: isSelected ? "#4ECDC4" : "rgba(78,205,196,0.1)",
+            color: isSelected ? "#0b0e17" : "#4ECDC4", fontSize: "13px", fontWeight: 700, flexShrink: 0,
+          }}>{String.fromCharCode(65 + index)}</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 600, marginBottom: "4px", color: hovered || isSelected ? "#4ECDC4" : "#e2e8f0" }}>{option.label}</div>
+            <div style={{ fontSize: "13px", color: "#8892b0", lineHeight: 1.5 }}>{option.desc}</div>
+          </div>
+        </div>
+      </button>
+    );
+  };
+
+  if (phase === "intro") {
+    return (
+      <div style={S.app}><div style={S.noise} /><div style={S.container}>
+        <div style={S.header}>
+          <div style={S.badge}>Interactive Strategy Simulator</div>
+          <h1 style={S.title}>Fintech AI &mdash; Strategic Command</h1>
+          <p style={S.subtitle}>Enterprise AI Adoption in Fintech &mdash; From Client Strategy to Product Roadmap</p>
+        </div>
+        <div style={{ ...S.card, textAlign: "center", padding: "40px 28px" }}>
+          <div style={{ fontSize: "48px", marginBottom: "16px" }}>{"\u{1F3AF}"}</div>
+          <h2 style={{ fontSize: "22px", fontWeight: 700, marginBottom: "12px", color: "#e2e8f0" }}>Step Into the Role</h2>
+          <p style={{ color: "#8892b0", lineHeight: 1.7, maxWidth: "560px", margin: "0 auto 24px", fontSize: "14px" }}>
+            You are the <strong style={{ color: "#4ECDC4" }}>Principal of Client & Product Solutions</strong> at an AI-native fintech company. Over 4 quarters, you'll navigate enterprise relationships, drive complex implementations, shape the product roadmap, and prove you can scale AI adoption across the financial services industry.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px", marginBottom: "32px" }}>
+            {[{ n: "16-18", l: "Strategic Decisions" }, { n: "5", l: "KPIs Tracked" }, { n: "4", l: "Quarters" }, { n: "\u221E", l: "Trade-offs" }].map(({ n, l }) => (
+              <div key={l} style={{ padding: "16px", background: "rgba(78,205,196,0.04)", borderRadius: "8px", border: "1px solid rgba(78,205,196,0.08)" }}>
+                <div style={{ fontSize: "24px", fontWeight: 700, color: "#4ECDC4" }}>{n}</div>
+                <div style={{ fontSize: "11px", color: "#8892b0", marginTop: "4px" }}>{l}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
+            <button style={S.primary} onClick={() => setPhase("portfolio")} onMouseEnter={(e) => e.target.style.transform = "translateY(-2px)"} onMouseLeave={(e) => e.target.style.transform = "translateY(0)"}>Begin Simulation &rarr;</button>
+            <button style={{ ...S.primary, background: "transparent", border: "1px solid rgba(78,205,196,0.3)", color: "#4ECDC4" }} onClick={() => { setPlaybookGlobal(true); setPhase("portfolio"); }}>{"\u{1F393}"} Strategy Guide Mode</button>
+          </div>
+          {playbookGlobal && <p style={{ fontSize: "12px", color: "#4ECDC4", marginTop: "12px", opacity: 0.8 }}>Strategy Guide enabled</p>}
+        </div>
+      </div></div>
+    );
+  }
+
+  if (phase === "portfolio") {
+    return (
+      <div style={S.app}><div style={S.noise} /><div style={S.container}>
+        <div style={S.header}>
+          <div style={S.badge}>Portfolio Selection</div>
+          <h1 style={{ ...S.title, fontSize: "clamp(24px,4vw,34px)" }}>Choose Your Client Portfolio</h1>
+          <p style={S.subtitle}>Each portfolio presents different strategic challenges and industry dynamics.</p>
+        </div>
+        {PORTFOLIOS.map((p) => {
+          const [hovered, setHovered] = useState(false);
+          return (
+            <div key={p.id} style={{ ...S.card, ...(hovered ? { border: "1px solid rgba(78,205,196,0.35)", boxShadow: "0 4px 24px rgba(78,205,196,0.08)" } : {}), cursor: "pointer" }}
+              onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} onClick={() => { setPortfolio(p); setPhase("game"); }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px", flexWrap: "wrap", gap: "8px" }}>
+                <div>
+                  <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#e2e8f0", marginBottom: "4px" }}>{p.name}</h3>
+                  <p style={{ fontSize: "13px", color: "#8892b0" }}>{p.desc}</p>
+                </div>
+                <span style={{ padding: "4px 12px", background: "rgba(78,205,196,0.1)", border: "1px solid rgba(78,205,196,0.2)", borderRadius: "6px", fontSize: "12px", color: "#4ECDC4", fontWeight: 600, whiteSpace: "nowrap" }}>Select &rarr;</span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "10px" }}>
+                {p.clients.map((cid) => { const c = CLIENTS[cid]; return (
+                  <div key={cid} style={{ padding: "14px", background: "rgba(255,255,255,0.02)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.04)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                      <span style={{ fontSize: "20px" }}>{c.logo}</span>
+                      <div><div style={{ fontSize: "14px", fontWeight: 600, color: "#e2e8f0" }}>{c.name}</div><div style={{ fontSize: "11px", color: "#8892b0" }}>{c.vertical} &middot; {c.tier} &middot; {c.revenue}</div></div>
+                    </div>
+                    <p style={{ fontSize: "12px", color: "#6b7280", lineHeight: 1.5 }}>{c.desc}</p>
+                  </div>
+                ); })}
+              </div>
+            </div>
+          );
+        })}
+      </div></div>
+    );
+  }
+
+  if (phase === "event") {
+    return (
+      <div style={S.app}><div style={S.noise} /><div style={S.container}>
+        <QuarterNav /><KPIDisplay />
+        <div style={{ ...S.card, border: "1px solid rgba(255,107,107,0.3)", background: "linear-gradient(135deg,#131829 0%,rgba(255,107,107,0.04) 100%)", textAlign: "center", padding: "48px 28px" }}>
+          <div style={{ fontSize: "56px", marginBottom: "16px" }}>{currentEvent.icon}</div>
+          <div style={{ ...S.badge, background: "rgba(255,107,107,0.1)", borderColor: "rgba(255,107,107,0.3)", color: "#FF6B6B" }}>Quarterly Event</div>
+          <h2 style={{ fontSize: "24px", fontWeight: 700, marginBottom: "12px", color: "#e2e8f0" }}>{currentEvent.title}</h2>
+          <p style={{ color: "#8892b0", lineHeight: 1.7, maxWidth: "520px", margin: "0 auto 16px", fontSize: "14px" }}>{currentEvent.desc}</p>
+          <div style={{ display: "flex", gap: "8px", justifyContent: "center", flexWrap: "wrap", marginBottom: "28px" }}>
+            {Object.entries(currentEvent.impact).map(([key, val]) => { const cfg = KPI_CONFIG.find(k => k.key === key); return (
+              <span key={key} style={{ padding: "4px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: 600, background: val > 0 ? "rgba(78,205,196,0.1)" : "rgba(255,107,107,0.1)", color: val > 0 ? "#4ECDC4" : "#FF6B6B", border: "1px solid " + (val > 0 ? "rgba(78,205,196,0.2)" : "rgba(255,107,107,0.2)") }}>
+                {cfg?.icon} {cfg?.label.split(" ")[0]} {val > 0 ? "+" + val : val}
+              </span>
+            ); })}
+          </div>
+          <button style={S.primary} onClick={handleEventDismiss}>Continue to {QUARTERS[quarterIndex + 1]?.name} &rarr;</button>
+        </div>
+      </div></div>
+    );
+  }
+
+  if (phase === "results") {
+    return (
+      <div style={S.app}><div style={S.noise} /><div style={S.container}>
+        <div style={S.header}>
+          <div style={S.badge}>Simulation Complete</div>
+          <h1 style={{ ...S.title, fontSize: "clamp(24px,4vw,36px)" }}>Your Leadership Scorecard</h1>
+        </div>
+        <div style={{ ...S.card, textAlign: "center", padding: "36px", marginBottom: "20px" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "96px", height: "96px", borderRadius: "50%", background: "linear-gradient(135deg," + getGrade(kpiAvg).color + "22," + getGrade(kpiAvg).color + "08)", border: "3px solid " + getGrade(kpiAvg).color, marginBottom: "16px" }}>
+            <span style={{ fontSize: "40px", fontWeight: 800, color: getGrade(kpiAvg).color }}>{getGrade(kpiAvg).grade}</span>
+          </div>
+          <h2 style={{ fontSize: "22px", fontWeight: 700, marginBottom: "6px", color: "#e2e8f0" }}>{getOverallTitle(kpiAvg)}</h2>
+          <p style={{ color: "#8892b0", fontSize: "14px" }}>Overall Score: {kpiAvg}/100</p>
+        </div>
+        <div style={S.card}>
+          <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#e2e8f0", marginBottom: "20px" }}>KPI Breakdown</h3>
+          {KPI_CONFIG.map(({ key, label, icon, color, desc }) => { const val = kpis[key]; const g = getGrade(val); return (
+            <div key={key} style={{ marginBottom: "20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                <div><span style={{ fontSize: "16px", marginRight: "8px" }}>{icon}</span><span style={{ fontWeight: 600, fontSize: "14px" }}>{label}</span><span style={{ fontSize: "12px", color: "#6b7280", marginLeft: "8px" }}>{desc}</span></div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ fontSize: "18px", fontWeight: 700, color }}>{val}</span>
+                  <span style={{ padding: "2px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: 700, background: g.color + "18", color: g.color }}>{g.grade}</span>
+                </div>
+              </div>
+              <div style={{ ...S.progressOuter, height: "8px", borderRadius: "4px" }}>
+                <div style={{ width: val + "%", height: "100%", background: "linear-gradient(90deg," + color + "," + color + "88)", borderRadius: "4px", transition: "width 1.2s cubic-bezier(0.4,0,0.2,1)" }} />
+              </div>
+            </div>
+          ); })}
+        </div>
+        <div style={{ textAlign: "center", margin: "20px 0" }}>
+          <button style={{ ...S.primary, background: showPlaybook ? "rgba(78,205,196,0.15)" : "transparent", border: "1px solid rgba(78,205,196,0.3)", color: "#4ECDC4" }} onClick={() => setShowPlaybook(!showPlaybook)}>
+            {showPlaybook ? "Hide" : "Show"} Strategy Playbook Analysis
+          </button>
+        </div>
+        <div style={S.card}>
+          <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#e2e8f0", marginBottom: "20px" }}>Decision Review</h3>
+          {decisions.map((d, i) => (
+            <div key={i} style={{ padding: "16px", background: "rgba(255,255,255,0.02)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.04)", marginBottom: "10px", cursor: "pointer" }} onClick={() => setExpandedDecision(expandedDecision === i ? null : i)}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: "11px", color: "#4ECDC4", fontWeight: 600, marginBottom: "4px" }}>{d.quarter} &middot; {d.scenario}</div>
+                  <div style={{ fontSize: "14px", fontWeight: 600, color: "#e2e8f0" }}>{d.choice}</div>
+                </div>
+                <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                  {Object.entries(d.impact).map(([key, val]) => val !== 0 && (
+                    <span key={key} style={{ fontSize: "11px", fontWeight: 600, color: val > 0 ? "#4ECDC4" : "#FF6B6B" }}>
+                      {KPI_CONFIG.find(k => k.key === key)?.icon}{val > 0 ? "+" + val : val}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              {expandedDecision === i && (
+                <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                  <p style={{ fontSize: "13px", color: "#8892b0", lineHeight: 1.6, marginBottom: "12px" }}>
+                    <strong style={{ color: "#e2e8f0" }}>Situation:</strong> {d.context?.slice(0, 200)}...
+                  </p>
+                  {showPlaybook && (
+                    <div style={{ padding: "12px", background: "rgba(78,205,196,0.04)", borderRadius: "6px", border: "1px solid rgba(78,205,196,0.1)" }}>
+                      <div style={{ fontSize: "11px", fontWeight: 600, color: "#4ECDC4", marginBottom: "6px" }}>{"\u{1F4CB}"} PLAYBOOK ANALYSIS</div>
+                      <p style={{ fontSize: "13px", color: "#8892b0", lineHeight: 1.6 }}>{d.playbook}</p>
+                    </div>
+                  )}
+                  {showPlaybook && d.allOptions && (
+                    <div style={{ marginTop: "10px" }}>
+                      <div style={{ fontSize: "11px", fontWeight: 600, color: "#8892b0", marginBottom: "6px" }}>All options:</div>
+                      {d.allOptions.map((opt, oi) => (
+                        <div key={oi} style={{ padding: "8px 12px", marginBottom: "6px", borderRadius: "6px", background: oi === d.optionIndex ? "rgba(78,205,196,0.08)" : "transparent", border: "1px solid " + (oi === d.optionIndex ? "rgba(78,205,196,0.2)" : "rgba(255,255,255,0.04)") }}>
+                          <div style={{ fontSize: "13px", fontWeight: 600, color: oi === d.optionIndex ? "#4ECDC4" : "#e2e8f0" }}>{oi === d.optionIndex ? "\u2713 " : ""}{opt.label}</div>
+                          <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "2px" }}>{opt.playbook}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <div style={{ textAlign: "center", padding: "32px 0" }}>
+          <button style={S.primary} onClick={() => {
+            setPhase("intro"); setPortfolio(null); setQuarterIndex(0); setScenarioIndex(0);
+            setKpis({ clientSat: 50, implSuccess: 50, productInfluence: 50, revenue: 50, teamAlign: 50 });
+            setDecisions([]); setShowPlaybook(false); setPlaybookGlobal(false); setUsedEvents([]); setExpandedDecision(null);
+          }}>Restart Simulation</button>
+        </div>
+      </div></div>
+    );
+  }
+
+  // GAME PHASE
+  const lastDecision = decisions[decisions.length - 1];
+
+  return (
+    <div style={S.app}><div style={S.noise} /><div style={S.container}>
+      <QuarterNav /><KPIDisplay />
+      {playbookGlobal && lastDecision && (
+        <div style={{ padding: "14px 18px", background: "rgba(78,205,196,0.04)", borderRadius: "8px", border: "1px solid rgba(78,205,196,0.1)", marginBottom: "16px", fontSize: "13px" }}>
+          <div style={{ fontWeight: 600, color: "#4ECDC4", marginBottom: "4px", fontSize: "11px" }}>{"\u{1F4CB}"} LAST DECISION &mdash; {lastDecision.choice}</div>
+          <p style={{ color: "#8892b0", lineHeight: 1.6 }}>{lastDecision.playbook}</p>
+        </div>
+      )}
+      <div style={{ marginBottom: "20px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
+          <span style={S.badge}>{currentQuarter.name} &mdash; {currentQuarter.title}</span>
+          <span style={{ fontSize: "12px", color: "#6b7280" }}>{scenarioIndex + 1}/{currentQuarter.scenarios.length}</span>
+        </div>
+        <p style={{ fontSize: "13px", color: "#6b7280" }}>{currentQuarter.subtitle}</p>
+      </div>
+      <div style={S.card}>
+        <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#e2e8f0", marginBottom: "12px" }}>{currentScenario.title}</h2>
+        <p style={{ fontSize: "14px", color: "#8892b0", lineHeight: 1.7, marginBottom: "24px" }}>{currentScenario.context}</p>
+        <div style={{ marginBottom: "8px" }}>
+          <div style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "12px" }}>Choose Your Approach</div>
+          {currentScenario.options.map((opt, i) => (
+            <OptionButton key={i} option={opt} index={i} onClick={handleDecision} />
+          ))}
+        </div>
+      </div>
+      <div style={{ textAlign: "center", padding: "16px 0" }}>
+        <div style={{ fontSize: "12px", color: "#6b7280" }}>Decision {completedScenarios + 1} of {totalScenarios}</div>
+        <div style={{ ...S.progressOuter, maxWidth: "200px", margin: "8px auto 0", height: "3px" }}>
+          <div style={{ width: (completedScenarios / totalScenarios) * 100 + "%", height: "100%", background: "linear-gradient(90deg,#4ECDC4,#45B7D1)", borderRadius: "2px", transition: "width 0.5s ease" }} />
+        </div>
+      </div>
+    </div></div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(AIImplementationCommand));
+</script>
+</body>
+</html>

@@ -70,3 +70,14 @@ autoMigrate().then(() => {
     console.log(`Server running on port ${PORT}`);
   });
 });
+
+const simulateRouter = require('./routes/simulate');
+
+const reimagineRouter = require('./routes/reimagine');
+
+app.use('/api', simulateRouter);
+
+app.use('/api', reimagineRouter);
+
+
+

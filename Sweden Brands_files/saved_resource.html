@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<!-- saved from url=(0012)about:srcdoc -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.13/html-to-image.min.js" integrity="sha512-iZ2ORl595Wx6miw+GuadDet4WQbdSWS3JLMoNfY8cRGoEFy6oT3G9IbcrBeL6AfkgpA51ETt/faX6yLV+/gFJg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+      (function() {
+        const originalConsole = window.console;
+        window.console = {
+          log: (...args) => {
+            originalConsole.log(...args);
+            window.parent.postMessage({ type: 'console', message: args.join(' ') }, '*');
+          },
+          error: (...args) => {
+            originalConsole.error(...args);
+            window.parent.postMessage({ type: 'console', message: 'Error: ' + args.join(' ') }, '*');
+          },
+          warn: (...args) => {
+            originalConsole.warn(...args);
+            window.parent.postMessage({ type: 'console', message: 'Warning: ' + args.join(' ') }, '*');
+          }
+        };
+
+        let requestId = 0;
+        let callbacksMap = new Map();
+        let streamControllers = new Map();
+        
+        window.claude = {
+          complete: (prompt) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'claudeComplete', id, prompt }, '*');
+            });
+          }
+        };
+
+        window.storage = {
+          get: (key, shared = false) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'storageGet', id, key, shared }, '*');
+            });
+          },
+          set: (key, value, shared = false) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'storageSet', id, key, value, shared }, '*');
+            });
+          },
+          delete: (key, shared = false) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'storageDelete', id, key, shared }, '*');
+            });
+          },
+          list: (prefix, shared = false) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'storageList', id, prefix, shared }, '*');
+            });
+          }
+        };
+
+        let pendingBlobs = new Map();
+        URL.createObjectURL = (blob) => {
+          // Store the blob and create an ID and URL for it
+          const blobId = `blob-${Date.now()}-${Math.random()}`;
+          pendingBlobs.set(blobId, blob);
+          return `blob-request://${blobId}`;
+        };
+
+        URL.revokeObjectURL = (url) => {
+          // Remove the blob from our store
+          const blobId = url.replace("blob-request://", "");
+          pendingBlobs.delete(blobId);
+        };
+
+        const getBlobFromURL = (url) => {
+          const blobId = url.replace("blob-request://", "");
+          return pendingBlobs.get(blobId);
+        };
+
+        // Override global fetch with streaming support
+        window.fetch = (url, init = {}) => {
+          return new Promise((resolve, reject) => {
+            const id = requestId++;
+            const channelId = `fetch-${id}-${Date.now()}`;
+            
+            callbacksMap.set(id, { 
+              resolve: (response) => {
+                // Create a ReadableStream for the response body
+                const stream = new ReadableStream({
+                  start(controller) {
+                    streamControllers.set(channelId, controller);
+                  },
+                  cancel() {
+                    streamControllers.delete(channelId);
+                  }
+                });
+                
+                // Create and return the Response with the stream
+                resolve(new Response(stream, {
+                  status: response.status,
+                  statusText: response.statusText,
+                  headers: response.headers
+                }));
+              },
+              reject,
+              channelId
+            });
+            
+            window.parent.postMessage({
+              type: 'proxyFetch',
+              id,
+              url,
+              init,
+              channelId
+            }, '*');
+          });
+        };
+
+        window.addEventListener('message', async (event) => {
+          if (event.data.type === 'takeScreenshot') {
+            const rootElement = document.getElementById('artifacts-component-root-html');
+            if (!rootElement) {
+              window.parent.postMessage({
+                type: 'screenshotError',
+                error: new Error('Root element not found'),
+              }, '*');
+            }
+            const screenshot = await htmlToImage.toPng(rootElement, {
+              imagePlaceholder:
+                "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUGFdjePDgwX8ACOQDoNsk0PMAAAAASUVORK5CYII=",
+            });
+            window.parent.postMessage({
+              type: 'screenshotData',
+              data: screenshot,
+            }, '*');
+          } else if (event.data.type === 'claudeComplete') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.completion);
+            }
+            callbacksMap.delete(event.data.id);
+          } else if (event.data.type === 'proxyFetchResponse') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+              callbacksMap.delete(event.data.id);
+            } else {
+              // Initial response with headers, status, etc.
+              callback.resolve({
+                status: event.data.status,
+                statusText: event.data.statusText,
+                headers: event.data.headers
+              });
+              // Don't delete the callback yet if streaming
+              if (!event.data.body) {
+                callbacksMap.delete(event.data.id);
+              }
+            }
+          } else if (event.data.type === 'proxyFetchStream') {
+            // Handle streaming data chunks
+            const controller = streamControllers.get(event.data.channelId);
+            if (controller) {
+              if (event.data.error) {
+                controller.error(new Error(event.data.error));
+                streamControllers.delete(event.data.channelId);
+              } else if (event.data.done) {
+                controller.close();
+                streamControllers.delete(event.data.channelId);
+                // Clean up the callback
+                const callback = Array.from(callbacksMap.entries()).find(
+                  ([_, value]) => value.channelId === event.data.channelId
+                );
+                if (callback) {
+                  callbacksMap.delete(callback[0]);
+                }
+              } else if (event.data.chunk) {
+                controller.enqueue(new Uint8Array(event.data.chunk));
+              }
+            }
+          } else if (event.data.type === 'storageGet') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.result);
+            }
+            callbacksMap.delete(event.data.id);
+          } else if (event.data.type === 'storageSet') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.result);
+            }
+            callbacksMap.delete(event.data.id);
+          } else if (event.data.type === 'storageDelete') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.result);
+            }
+            callbacksMap.delete(event.data.id);
+          } else if (event.data.type === 'storageList') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.result);
+            }
+            callbacksMap.delete(event.data.id);
+          }
+        });
+
+        window.addEventListener('click', (event) => {
+          const isEl = event.target instanceof HTMLElement;
+          if (!isEl) return;
+    
+          // find ancestor links
+          const linkEl = event.target.closest("a");
+          if (!linkEl || !linkEl.href) return;
+    
+          event.preventDefault();
+          event.stopImmediatePropagation();
+    
+          if (linkEl.href.startsWith("blob-request:")) {
+            const blob = getBlobFromURL(linkEl.href);
+            if (!blob) return;
+            void blob.arrayBuffer().then((data) => {
+              window.parent.postMessage({
+                type: "downloadFile",
+                filename: linkEl.download,
+                data,
+                mimeType: blob.type || "application/octet-stream",
+              });
+            });
+          } else if (linkEl.href.startsWith("data:")) {
+            const [header, base64Data] = linkEl.href.split(",");
+            const mimeMatch = header.match(/data:([^;]+)/);
+            const mimeType = mimeMatch ? mimeMatch[1] : "application/octet-stream";
+            const binaryString = atob(base64Data);
+            const data = Uint8Array.from(binaryString, (c) =>
+              c.charCodeAt(0),
+            ).buffer;
+            window.parent.postMessage({
+              type: "downloadFile",
+              filename: linkEl.download,
+              data,
+              mimeType,
+            });
+          } else {
+            let linkUrl;
+            try {
+              linkUrl = new URL(linkEl.href);
+            } catch (error) {
+              return;
+            }
+    
+            if (linkUrl.hostname === window.location.hostname) return;
+      
+            window.parent.postMessage({
+              type: 'openExternal',
+              href: linkEl.href,
+            }, '*');
+          }
+      });
+
+        const originalOpen = window.open;
+        window.open = function (url) {
+          window.parent.postMessage({
+            type: "openExternal",
+            href: url,
+          }, "*");
+        };
+
+        window.addEventListener('error', (event) => {
+          window.parent.postMessage({ type: 'console', message: 'Uncaught Error: ' + event.message }, '*');
+        });
+      })();
+    </script>
+  
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The ShelfScore 10 — AI Visibility Index</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&amp;family=JetBrains+Mono:wght@400;600&amp;family=DM+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --card-hover: #1c2129;
+    --border: #21262d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --green: #2dca72;
+    --green-dim: rgba(45, 202, 114, 0.15);
+    --yellow: #f0c74f;
+    --yellow-dim: rgba(240, 199, 79, 0.15);
+    --red: #f85149;
+    --red-dim: rgba(248, 81, 73, 0.15);
+    --orange: #f0883e;
+    --orange-dim: rgba(240, 136, 62, 0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .noise {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .glow-top {
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 500px;
+    background: radial-gradient(ellipse, rgba(45, 202, 114, 0.08), transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 60px 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+
+  .badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--green);
+    background: var(--green-dim);
+    border: 1px solid rgba(45, 202, 114, 0.25);
+    padding: 6px 16px;
+    border-radius: 100px;
+    margin-bottom: 24px;
+  }
+
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(36px, 6vw, 56px);
+    font-weight: 400;
+    line-height: 1.1;
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+  }
+
+  h1 .accent {
+    color: var(--green);
+  }
+
+  .subtitle {
+    font-size: 17px;
+    color: var(--muted);
+    max-width: 560px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .stats-row {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 32px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .stat-value.red { color: var(--red); }
+  .stat-value.yellow { color: var(--yellow); }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+
+  /* Ranking Table */
+  .table-container {
+    margin-bottom: 48px;
+  }
+
+  .table-header {
+    display: grid;
+    grid-template-columns: 50px 1fr 100px 70px 120px;
+    padding: 12px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .table-header span:nth-child(3),
+  .table-header span:nth-child(4) {
+    text-align: center;
+  }
+
+  .table-header span:nth-child(5) {
+    text-align: right;
+  }
+
+  .brand-row {
+    display: grid;
+    grid-template-columns: 50px 1fr 100px 70px 120px;
+    align-items: center;
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--border);
+    transition: all 0.2s ease;
+    cursor: default;
+    animation: slideIn 0.4s ease forwards;
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  .brand-row:hover {
+    background: var(--card);
+  }
+
+  @keyframes slideIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .rank {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  .brand-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .brand-name {
+    font-weight: 600;
+    font-size: 16px;
+  }
+
+  .brand-category {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .score-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .score-bar-track {
+    width: 60px;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 1s ease;
+  }
+
+  .score-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    font-weight: 600;
+    min-width: 24px;
+    text-align: right;
+  }
+
+  .grade-badge {
+    display: flex;
+    justify-content: center;
+  }
+
+  .grade-badge span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 4px;
+    min-width: 32px;
+    text-align: center;
+  }
+
+  .grade-c { background: var(--yellow-dim); color: var(--yellow); border: 1px solid rgba(240, 199, 79, 0.3); }
+  .grade-d { background: var(--orange-dim); color: var(--orange); border: 1px solid rgba(240, 136, 62, 0.3); }
+  .grade-f { background: var(--red-dim); color: var(--red); border: 1px solid rgba(248, 81, 73, 0.3); }
+
+  .verdict {
+    font-size: 13px;
+    text-align: right;
+    font-weight: 500;
+  }
+
+  .verdict-emerging { color: var(--yellow); }
+  .verdict-barely { color: var(--orange); }
+  .verdict-invisible { color: var(--red); }
+
+  .color-green { color: var(--green); }
+  .color-yellow { color: var(--yellow); }
+  .color-orange { color: var(--orange); }
+  .color-red { color: var(--red); }
+
+  /* Key Findings */
+  .findings {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+
+  .finding-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    transition: border-color 0.2s;
+  }
+
+  .finding-card:hover {
+    border-color: rgba(45, 202, 114, 0.3);
+  }
+
+  .finding-icon {
+    font-size: 28px;
+    margin-bottom: 12px;
+  }
+
+  .finding-title {
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .finding-text {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* Methodology */
+  .methodology {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    margin-bottom: 48px;
+  }
+
+  .methodology h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    font-weight: 400;
+    margin-bottom: 16px;
+  }
+
+  .methodology p {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 12px;
+  }
+
+  .method-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .method-item {
+    text-align: center;
+    padding: 16px;
+    background: var(--bg);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  .method-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--green);
+  }
+
+  .method-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+
+  /* Footer CTA */
+  .footer-cta {
+    text-align: center;
+    padding: 48px 24px;
+    background: linear-gradient(180deg, transparent, rgba(45, 202, 114, 0.03));
+    border-radius: 16px;
+    border: 1px solid var(--border);
+  }
+
+  .footer-cta h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    font-weight: 400;
+    margin-bottom: 12px;
+  }
+
+  .footer-cta p {
+    color: var(--muted);
+    font-size: 15px;
+    margin-bottom: 24px;
+  }
+
+  .cta-btn {
+    display: inline-block;
+    background: var(--green);
+    color: var(--bg);
+    font-weight: 700;
+    font-size: 15px;
+    padding: 14px 36px;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+  }
+
+  .cta-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 24px rgba(45, 202, 114, 0.3);
+  }
+
+  .shelfscore-logo {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 48px;
+    letter-spacing: 1px;
+  }
+
+  .shelfscore-logo span { color: var(--green); }
+
+  .date-stamp {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 8px;
+    opacity: 0.6;
+  }
+
+  @media (max-width: 640px) {
+    .table-header, .brand-row {
+      grid-template-columns: 36px 1fr 80px 50px;
+    }
+    .table-header span:nth-child(5),
+    .verdict { display: none; }
+    .stats-row { gap: 24px; }
+    .findings { grid-template-columns: 1fr; }
+    .method-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body id="artifacts-component-root-html">
+
+<div class="noise"></div>
+<div class="glow-top"></div>
+
+<div class="container">
+
+  <div class="header">
+    <div class="badge">February 2025 Index</div>
+    <h1>The ShelfScore <span class="accent">10</span></h1>
+    <p class="subtitle">How visible are Sweden's biggest consumer brands when AI recommends products? We scored 10 iconic brands across ChatGPT and Grok. The results are brutal.</p>
+
+    <div class="stats-row">
+      <div class="stat">
+        <div class="stat-value red">34</div>
+        <div class="stat-label">Avg Score /100</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value yellow">0</div>
+        <div class="stat-label">Brands Above 50</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">10</div>
+        <div class="stat-label">Brands Rated</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">6</div>
+        <div class="stat-label">Categories</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <div class="table-header">
+      <span>#</span>
+      <span>Brand</span>
+      <span>Score</span>
+      <span>Grade</span>
+      <span>Verdict</span>
+    </div>
+
+    <div class="brand-row" style="animation-delay: 0.05s">
+      <div class="rank">01</div>
+      <div class="brand-info">
+        <div class="brand-name">Babybjörn</div>
+        <div class="brand-category">Baby</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:47%;background:var(--yellow)"></div></div>
+        <div class="score-number color-yellow">47</div>
+      </div>
+      <div class="grade-badge"><span class="grade-c">C</span></div>
+      <div class="verdict verdict-emerging">Emerging</div>
+    </div>
+
+    <div class="brand-row" style="animation-delay: 0.1s">
+      <div class="rank">02</div>
+      <div class="brand-info">
+        <div class="brand-name">Oatly</div>
+        <div class="brand-category">Coffee / Plant-based</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:46%;background:var(--yellow)"></div></div>
+        <div class="score-number color-yellow">46</div>
+      </div>
+      <div class="grade-badge"><span class="grade-c">C</span></div>
+      <div class="verdict verdict-emerging">Emerging</div>
+    </div>
+
+    <div class="brand-row" style="animation-delay: 0.15s">
+      <div class="rank">03</div>
+      <div class="brand-info">
+        <div class="brand-name">SACHAJUAN</div>
+        <div class="brand-category">Skincare / Haircare</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:43%;background:var(--orange)"></div></div>
+        <div class="score-number color-orange">43</div>
+      </div>
+      <div class="grade-badge"><span class="grade-d">D</span></div>
+      <div class="verdict verdict-barely">Barely Visible</div>
+    </div>
+
+    <div class="brand-row" style="animation-delay: 0.2s">
+      <div class="rank">04</div>
+      <div class="brand-info">
+        <div class="brand-name">Cervera</div>
+        <div class="brand-category">Cookware</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:40%;background:var(--orange)"></div></div>
+        <div class="score-number color-orange">40</div>
+      </div>
+      <div class="grade-badge"><span class="grade-d">D</span></div>
+      <div class="verdict verdict-barely">Barely Visible</div>
+    </div>
+
+    <div class="brand-row" style="animation-delay: 0.25s">
+      <div class="rank">04</div>
+      <div class="brand-info">
+        <div class="brand-name">Houdini</div>
+        <div class="brand-category">Outdoor / Fitness</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:40%;background:var(--orange)"></div></div>
+        <div class="score-number color-orange">40</div>
+      </div>
+      <div class="grade-badge"><span class="grade-d">D</span></div>
+      <div class="verdict verdict-barely">Barely Visible</div>
+    </div>
+
+    <div class="brand-row" style="animation-delay: 0.3s">
+      <div class="rank">04</div>
+      <div class="brand-info">
+        <div class="brand-name">Lyko</div>
+        <div class="brand-category">Skincare / Beauty</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:40%;background:var(--orange)"></div></div>
+        <div class="score-number color-orange">40</div>
+      </div>
+      <div class="grade-badge"><span class="grade-d">D</span></div>
+      <div class="verdict verdict-barely">Barely Visible</div>
+    </div>
+
+    <div class="brand-row" style="animation-delay: 0.35s">
+      <div class="rank">07</div>
+      <div class="brand-info">
+        <div class="brand-name">Stronger</div>
+        <div class="brand-category">Fitness / Activewear</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:38%;background:var(--orange)"></div></div>
+        <div class="score-number color-orange">38</div>
+      </div>
+      <div class="grade-badge"><span class="grade-d">D</span></div>
+      <div class="verdict verdict-barely">Barely Visible</div>
+    </div>
+
+    <div class="brand-row" style="animation-delay: 0.4s">
+      <div class="rank">08</div>
+      <div class="brand-info">
+        <div class="brand-name">Löfbergs</div>
+        <div class="brand-category">Coffee</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:15%;background:var(--red)"></div></div>
+        <div class="score-number color-red">15</div>
+      </div>
+      <div class="grade-badge"><span class="grade-f">F</span></div>
+      <div class="verdict verdict-invisible">Invisible</div>
+    </div>
+
+    <div class="brand-row" style="animation-delay: 0.45s">
+      <div class="rank">09</div>
+      <div class="brand-info">
+        <div class="brand-name">Björn Borg</div>
+        <div class="brand-category">Underwear / Fitness</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:14%;background:var(--red)"></div></div>
+        <div class="score-number color-red">14</div>
+      </div>
+      <div class="grade-badge"><span class="grade-f">F</span></div>
+      <div class="verdict verdict-invisible">Invisible</div>
+    </div>
+
+    <div class="brand-row" style="animation-delay: 0.5s; opacity: 0.5; border-bottom: none;">
+      <div class="rank">10</div>
+      <div class="brand-info">
+        <div class="brand-name">Gymgrossisten</div>
+        <div class="brand-category">Supplements</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:0%;background:var(--muted)"></div></div>
+        <div class="score-number" style="color:var(--muted)">—</div>
+      </div>
+      <div class="grade-badge"><span style="font-family:&#39;JetBrains Mono&#39;,monospace;font-size:13px;color:var(--muted)">...</span></div>
+      <div class="verdict" style="color:var(--muted);font-style:italic">Auditing</div>
+    </div>
+
+  </div>
+
+  <!-- Key Findings -->
+  <div class="findings">
+    <div class="finding-card">
+      <div class="finding-icon">🚫</div>
+      <div class="finding-title">Zero brands above 50</div>
+      <div class="finding-text">Not a single Swedish brand in our index scores above 50/100. AI recommends international competitors instead.</div>
+    </div>
+    <div class="finding-card">
+      <div class="finding-icon">👻</div>
+      <div class="finding-title">2 brands are invisible</div>
+      <div class="finding-text">Björn Borg and Löfbergs — household names in Sweden — score below 15. AI doesn't know they exist.</div>
+    </div>
+    <div class="finding-card">
+      <div class="finding-icon">📉</div>
+      <div class="finding-title">Average score: 34/100</div>
+      <div class="finding-text">The average Swedish consumer brand gets recommended by AI roughly 1 in 4 times. That's a D grade.</div>
+    </div>
+    <div class="finding-card">
+      <div class="finding-icon">🏆</div>
+      <div class="finding-title">"Best" is still mediocre</div>
+      <div class="finding-text">Babybjörn tops the list at 47 — a C grade. "Emerging" means competitors still lead in most queries.</div>
+    </div>
+  </div>
+
+  <!-- Methodology -->
+  <div class="methodology">
+    <h3>Methodology</h3>
+    <p>Each brand was audited using 75 purchase-intent prompts (e.g., "What's the best baby carrier?", "recommend a Swedish coffee brand") sent to ChatGPT and Grok. We measured how often each brand appeared in the AI response and calculated a visibility score from 0 to 100.</p>
+    <p>Scores reflect AI recommendations as of February 11, 2025. Gemini data pending (quota reset). Perplexity integration in progress.</p>
+    <div class="method-grid">
+      <div class="method-item">
+        <div class="method-value">75</div>
+        <div class="method-label">Prompts / Brand</div>
+      </div>
+      <div class="method-item">
+        <div class="method-value">2</div>
+        <div class="method-label">AI Engines</div>
+      </div>
+      <div class="method-item">
+        <div class="method-value">150</div>
+        <div class="method-label">Data Points / Brand</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="footer-cta">
+    <h2>Where does <span class="accent">your</span> brand rank?</h2>
+    <p>Get a free AI visibility audit — 75 prompts, real data, revenue impact estimate.</p>
+    <a href="https://shelfscore.ai/" class="cta-btn">Get Your Score →</a>
+  </div>
+
+  <div class="shelfscore-logo"><span>Shelf</span>Score</div>
+  <div class="date-stamp">February 2025 · shelfscore.ai</div>
+
+</div>
+
+
+
+</body></html>
