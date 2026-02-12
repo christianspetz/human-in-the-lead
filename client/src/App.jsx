@@ -9,6 +9,7 @@ import SimulatorTasks from './components/SimulatorTasks';
 import SimulatorReflection from './components/SimulatorReflection';
 import SimulatorAnalysis from './components/SimulatorAnalysis';
 import SimulatorResults from './components/SimulatorResults';
+import RoleReimaginer from './components/RoleReimaginer';
 
 const SCREENS = {
   LANDING: 'landing',
@@ -21,6 +22,7 @@ const SCREENS = {
   SIMULATOR_REFLECTION: 'simulator_reflection',
   SIMULATOR_ANALYSIS: 'simulator_analysis',
   SIMULATOR_RESULTS: 'simulator_results',
+  ROLE_REIMAGINER: 'role_reimaginer',
 };
 
 export default function App() {
@@ -136,11 +138,16 @@ export default function App() {
     setScreen(SCREENS.LANDING);
   }, []);
 
+  // ─── Role Reimaginer handler ───────────────────────────────
+  const handleRoleReimaginerStart = useCallback(() => {
+    setScreen(SCREENS.ROLE_REIMAGINER);
+  }, []);
+
   return (
     <div className="app-container">
       <div className="bg-glow" /><div className="bg-glow-2" />
 
-      {screen === SCREENS.LANDING && <Landing onStart={handleStart} onStartSimulator={handleSimulatorStart} />}
+      {screen === SCREENS.LANDING && <Landing onStart={handleStart} onStartSimulator={handleSimulatorStart} onStartRoleReimaginer={handleRoleReimaginerStart} />}
       {screen === SCREENS.DIAGNOSTIC && <Diagnostic onComplete={handleDiagnosticComplete} onBack={() => setScreen(SCREENS.LANDING)} />}
       {screen === SCREENS.ANALYSIS && <Analysis />}
       {screen === SCREENS.RESULTS && <Results results={results} answers={answers} userName={userData.name} error={error} onRestart={handleRestart} />}
@@ -151,6 +158,8 @@ export default function App() {
       {screen === SCREENS.SIMULATOR_REFLECTION && <SimulatorReflection onComplete={handleSimReflectionComplete} onBack={() => setScreen(SCREENS.SIMULATOR_TASKS)} />}
       {screen === SCREENS.SIMULATOR_ANALYSIS && <SimulatorAnalysis />}
       {screen === SCREENS.SIMULATOR_RESULTS && <SimulatorResults blueprint={simBlueprint} meters={simMeters} industry={simConfig?.industry} departments={simConfig?.departments || []} assignments={simAssignments || {}} onStartOver={handleSimStartOver} />}
+
+      {screen === SCREENS.ROLE_REIMAGINER && <RoleReimaginer onBack={() => setScreen(SCREENS.LANDING)} />}
 
       <footer className="app-footer">
         <p style={{ fontSize: '0.7rem', color: 'var(--slate)', marginBottom: '0.75rem', maxWidth: '500px', margin: '0 auto 0.75rem', lineHeight: '1.5' }}>
