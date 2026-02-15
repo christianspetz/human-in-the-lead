@@ -10,6 +10,7 @@ import SimulatorReflection from './components/SimulatorReflection';
 import SimulatorAnalysis from './components/SimulatorAnalysis';
 import SimulatorResults from './components/SimulatorResults';
 import RoleReimaginer from './components/RoleReimaginer';
+import ArclineGate from './components/ArclineGate';
 
 const SCREENS = {
   LANDING: 'landing',
@@ -23,6 +24,7 @@ const SCREENS = {
   SIMULATOR_ANALYSIS: 'simulator_analysis',
   SIMULATOR_RESULTS: 'simulator_results',
   ROLE_REIMAGINER: 'role_reimaginer',
+  ARCLINE: 'arcline',
 };
 
 // Map URL paths to screens
@@ -30,6 +32,7 @@ const PATH_TO_SCREEN = {
   '/reimagine': SCREENS.ROLE_REIMAGINER,
   '/diagnostic': SCREENS.DIAGNOSTIC,
   '/simulator': SCREENS.SIMULATOR_SETUP,
+  '/arcline': SCREENS.ARCLINE,
 };
 
 // Map screens to URL paths
@@ -197,6 +200,8 @@ export default function App() {
       {screen === SCREENS.SIMULATOR_RESULTS && <SimulatorResults blueprint={simBlueprint} meters={simMeters} industry={simConfig?.industry} departments={simConfig?.departments || []} assignments={simAssignments || {}} onStartOver={handleSimStartOver} />}
 
       {screen === SCREENS.ROLE_REIMAGINER && <RoleReimaginer onBack={() => setScreen(SCREENS.LANDING)} />}
+
+      {screen === SCREENS.ARCLINE && <ArclineGate />}
 
       <footer className="app-footer">
         <p style={{ fontSize: '0.7rem', color: 'var(--slate)', marginBottom: '0.75rem', maxWidth: '500px', margin: '0 auto 0.75rem', lineHeight: '1.5' }}>

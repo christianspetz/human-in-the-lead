@@ -9,6 +9,7 @@ const pdfRouter = require('./routes/pdf');
 const statsRouter = require('./routes/stats');
 const simulateRouter = require('./routes/simulate');
 const reimagineRouter = require('./routes/reimagine');
+const arclineRoutes = require('./routes/arcline');
 const app = express();
 const PORT = process.env.PORT || 3000;
 // Middleware
@@ -28,6 +29,7 @@ app.use('/api', pdfRouter);
 app.use('/api', statsRouter);
 app.use('/api', simulateRouter);
 app.use('/api', reimagineRouter);
+app.use('/api/arcline', arclineRoutes);
 // Serve React build in production
 const clientBuildPath = path.join(__dirname, '..', 'client', 'dist');
 app.use(express.static(clientBuildPath));
