@@ -1244,12 +1244,31 @@ const MAIN_TABS = [
 ];
 
 export default function ArclineWorkspace() {
+  const [entered, setEntered] = useState(false);
   const [activeTab, setActiveTab] = useState("concept");
   const [frictionLog, setFrictionLog] = useState([]);
 
   const loadSampleFriction = () => {
     setFrictionLog(SAMPLE_FRICTION);
   };
+
+  if (!entered) return (
+    <div style={{ minHeight: "100vh", background: BG, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT }}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet" />
+      <div style={{ textAlign: "center" }}>
+        <div style={{ fontSize: 42, fontFamily: SERIF, color: CREAM, fontWeight: 400, letterSpacing: "-0.5px", marginBottom: 8 }}>◈ Arcline</div>
+        <div style={{ fontSize: 12, color: "#555", letterSpacing: "3px", textTransform: "uppercase", marginBottom: 48 }}>Principal Workspace</div>
+        <div style={{ fontSize: 15, color: "#777", lineHeight: 1.7, maxWidth: 440, margin: "0 auto 40px" }}>
+          A product concept, implementation simulator, and roadmap generator for Avantos AI — built by Christian Spetz.
+        </div>
+        <button onClick={() => setEntered(true)}
+          style={{ background: GOLD, color: "#111", border: "none", borderRadius: 10, padding: "14px 36px", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: FONT, letterSpacing: "0.5px" }}>
+          Enter Workspace
+        </button>
+        <div style={{ marginTop: 48, fontSize: 11, color: "#333" }}>humaninthelead.ai</div>
+      </div>
+    </div>
+  );
 
   return (
     <div style={{ minHeight: "100vh", background: BG, color: "#D4D0C8", fontFamily: FONT }}>
