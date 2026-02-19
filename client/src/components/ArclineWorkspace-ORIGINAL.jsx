@@ -164,7 +164,7 @@ function FoundationView() {
         {[{ label: "Household Members", value: "4", sub: "Margaret, David, Emily, Jason" }, { label: "Entities & Trusts", value: "3", sub: "Trust, LLC, Foundation" }, { label: "Active Products", value: "4", sub: "Portfolio, PE, Estate, Insurance" }, { label: "Graph Connections", value: "23", sub: "Cross-linked relationships" }].map((m, i) => (
           <div key={i} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: "14px 16px",
             opacity: animated ? 1 : 0, transform: animated ? "translateY(0)" : "translateY(8px)", transition: `all 0.4s ease ${0.3 + i * 0.1}s` }}>
-            <div style={{ fontSize: 9, color: "#AAA", textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>{m.label}</div>
+            <div style={{ fontSize: 9, color: "#555", textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>{m.label}</div>
             <div style={{ fontSize: 22, fontFamily: SERIF, color: CREAM, fontWeight: 300, margin: "4px 0 2px" }}>{m.value}</div>
             <div style={{ fontSize: 10, color: "#666" }}>{m.sub}</div>
           </div>
@@ -201,15 +201,15 @@ function OnboardingView() {
                 background: step.status === "complete" ? "#4A9A7E" : step.status === "active" ? GOLD : CARD,
                 border: step.status === "pending" ? "2px solid #333" : "2px solid transparent",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 13, color: step.status === "pending" ? "#666" : "#111", fontWeight: 700 }}>
+                fontSize: 13, color: step.status === "pending" ? "#444" : "#111", fontWeight: 700 }}>
                 {step.status === "complete" ? "✓" : step.status === "active" ? "●" : (i + 1)}
               </div>
               {i < ONBOARDING_CLIENT.steps.length - 1 && <div style={{ width: 2, flex: 1, minHeight: 16, background: step.status === "complete" ? "#4A9A7E33" : "#1E1E1C" }} />}
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: 13, fontWeight: 500, color: step.status === "pending" ? "#999" : "#D4D0C8" }}>{step.name}</span>
-                <span style={{ fontSize: 9, color: "#666", fontFamily: "monospace" }}>{step.source}</span>
+                <span style={{ fontSize: 13, fontWeight: 500, color: step.status === "pending" ? "#555" : "#D4D0C8" }}>{step.name}</span>
+                <span style={{ fontSize: 9, color: "#444", fontFamily: "monospace" }}>{step.source}</span>
               </div>
               {step.ai && <div style={{ fontSize: 11, color: "#8A8A7A", marginTop: 4, display: "flex", gap: 5, alignItems: "flex-start", lineHeight: 1.5 }}>
                 <span style={{ color: GOLD, fontSize: 9, marginTop: 2, flexShrink: 0 }}>⚡</span>{step.ai}
@@ -241,7 +241,7 @@ function AgentsView() {
                 <div style={{ fontSize: 10, color: "#666" }}>{agent.persona}</div>
               </div>
             </div>
-            <span style={{ fontSize: 9, color: "#AAA", textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>{agent.focus}</span>
+            <span style={{ fontSize: 9, color: "#555", textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>{agent.focus}</span>
           </div>
           {expanded === i && (
             <div style={{ marginTop: 16, paddingTop: 14, borderTop: `1px solid ${agent.color}15` }}>
@@ -280,10 +280,10 @@ function ServicingView() {
         ))}
       </div>
       <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: "16px 18px", marginBottom: 16 }}>
-        <div style={{ fontSize: 9, color: "#AAA", textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginBottom: 8 }}>Trigger Event Detected</div>
+        <div style={{ fontSize: 9, color: "#555", textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginBottom: 8 }}>Trigger Event Detected</div>
         <div style={{ fontSize: 14, color: CREAM, fontWeight: 500, lineHeight: 1.5 }}>"{SERVICING_EVENTS[activeEvent].trigger}"</div>
       </div>
-      <div style={{ fontSize: 9, color: "#AAA", textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginBottom: 10 }}>AI-Generated Action Plan</div>
+      <div style={{ fontSize: 9, color: "#555", textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginBottom: 10 }}>AI-Generated Action Plan</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {SERVICING_EVENTS[activeEvent].actions.map((action, i) => {
           const st = statusStyles[action.status];
@@ -292,17 +292,17 @@ function ServicingView() {
               opacity: animated ? 1 : 0, transform: animated ? "translateX(0)" : "translateX(-10px)", transition: `all 0.3s ease ${i * 0.1}s` }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12.5, color: "#C8C4B8", lineHeight: 1.4 }}>{action.text}</div>
-                <div style={{ fontSize: 9, color: "#AAA", marginTop: 3 }}>Agent: {action.agent}</div>
+                <div style={{ fontSize: 9, color: "#555", marginTop: 3 }}>Agent: {action.agent}</div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ fontSize: 8, padding: "3px 10px", borderRadius: 10, background: st.bg, color: st.color, fontWeight: 700, letterSpacing: "0.5px" }}>{st.label}</span>
-                <button style={{ background: "none", border: "1px solid #333", borderRadius: 6, padding: "4px 10px", fontSize: 9, color: "#AAA", cursor: "pointer", fontFamily: FONT }}>Approve</button>
+                <button style={{ background: "none", border: "1px solid #333", borderRadius: 6, padding: "4px 10px", fontSize: 9, color: "#888", cursor: "pointer", fontFamily: FONT }}>Approve</button>
               </div>
             </div>
           );
         })}
       </div>
-      <div style={{ fontSize: 10, color: "#AAA", marginTop: 14, fontStyle: "italic", lineHeight: 1.5 }}>↑ Every action requires human approval before execution. The AI recommends and prepares — the advisor decides.</div>
+      <div style={{ fontSize: 10, color: "#555", marginTop: 14, fontStyle: "italic", lineHeight: 1.5 }}>↑ Every action requires human approval before execution. The AI recommends and prepares — the advisor decides.</div>
     </div>
   );
 }
@@ -328,7 +328,7 @@ function ComplianceView() {
             <span style={{ fontSize: 8, padding: "2px 8px", borderRadius: 8, background: "#4A9A7E22", color: GREEN, fontWeight: 700, letterSpacing: "0.5px" }}>{c.status}</span>
           </div>
           <div style={{ fontSize: 12.5, fontWeight: 500, color: "#D4D0C8", marginBottom: 4 }}>{c.title}</div>
-          <div style={{ fontSize: 10.5, color: "#AAA", lineHeight: 1.5 }}>{c.desc}</div>
+          <div style={{ fontSize: 10.5, color: "#777", lineHeight: 1.5 }}>{c.desc}</div>
         </div>
       ))}
     </div>
@@ -386,9 +386,9 @@ function ChatView() {
       <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
         {["Tell me about Chen", "Volkov onboarding status", "Nakamura refinancing", "Today's priorities"].map(q => (
           <button key={q} onClick={() => setInput(q)}
-            style={{ background: "#151514", border: `1px solid ${BORDER}`, borderRadius: 14, padding: "5px 12px", fontSize: 10, color: "#AAA", cursor: "pointer", fontFamily: FONT, transition: "all 0.15s" }}
+            style={{ background: "#151514", border: `1px solid ${BORDER}`, borderRadius: 14, padding: "5px 12px", fontSize: 10, color: "#777", cursor: "pointer", fontFamily: FONT, transition: "all 0.15s" }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = `${GOLD}44`; e.currentTarget.style.color = GOLD; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = "#999"; }}>{q}</button>
+            onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = "#777"; }}>{q}</button>
         ))}
       </div>
     </div>
@@ -414,12 +414,12 @@ function ConceptTab() {
           <button key={i} onClick={() => goToStep(i)}
             style={{ background: "none", border: "none", borderBottom: activeStep === i ? `2px solid ${GOLD}` : "2px solid transparent",
               padding: "14px 18px", cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap" }}>
-            <span style={{ fontSize: 12, color: activeStep === i ? GOLD : "#666", fontWeight: 700, fontFamily: "monospace" }}>{s.label}</span>
-            <span style={{ fontSize: 13, color: activeStep === i ? "#D4D0C8" : "#999", fontWeight: 500, fontFamily: FONT }}>{s.subtitle}</span>
+            <span style={{ fontSize: 12, color: activeStep === i ? GOLD : "#444", fontWeight: 700, fontFamily: "monospace" }}>{s.label}</span>
+            <span style={{ fontSize: 13, color: activeStep === i ? "#D4D0C8" : "#555", fontWeight: 500, fontFamily: FONT }}>{s.subtitle}</span>
           </button>
         ))}
         <div style={{ flex: 1 }} />
-        <div style={{ display: "flex", alignItems: "center", fontSize: 12, color: "#666" }}>
+        <div style={{ display: "flex", alignItems: "center", fontSize: 12, color: "#444" }}>
           {activeStep + 1} of {STEPS.length}
         </div>
       </div>
@@ -434,20 +434,20 @@ function ConceptTab() {
           <h1 style={{ fontSize: 32, fontWeight: 400, fontFamily: SERIF, color: CREAM, letterSpacing: "-0.5px", margin: "0 0 20px", lineHeight: 1.2 }}>
             {step.title}
           </h1>
-          <p style={{ fontSize: 14, color: "#B5B1A9", lineHeight: 1.75, margin: "0 0 28px" }}>
+          <p style={{ fontSize: 14, color: "#9A968C", lineHeight: 1.75, margin: "0 0 28px" }}>
             {step.description}
           </p>
           <div style={{ borderLeft: `3px solid ${GOLD}44`, paddingLeft: 20, margin: "28px 0" }}>
             <p style={{ fontSize: 13, color: "#8A8678", lineHeight: 1.7, fontStyle: "italic", margin: 0 }}>
               "{step.quote}"
             </p>
-            <p style={{ fontSize: 10, color: "#AAA", marginTop: 8, fontStyle: "normal" }}>
+            <p style={{ fontSize: 10, color: "#555", marginTop: 8, fontStyle: "normal" }}>
               — Rabih Ramadi, Co-CEO, on The Customer Wins podcast
             </p>
           </div>
           <div style={{ display: "flex", gap: 10, marginTop: 36 }}>
             {activeStep > 0 && (
-              <button onClick={() => goToStep(activeStep - 1)} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "10px 20px", fontSize: 12, color: "#AAA", cursor: "pointer", fontFamily: FONT }}>← Previous</button>
+              <button onClick={() => goToStep(activeStep - 1)} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "10px 20px", fontSize: 12, color: "#888", cursor: "pointer", fontFamily: FONT }}>← Previous</button>
             )}
             {activeStep < STEPS.length - 1 && (
               <button onClick={() => goToStep(activeStep + 1)} style={{ background: GOLD, border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 12, color: "#111", cursor: "pointer", fontWeight: 600, fontFamily: FONT }}>Next Step →</button>
@@ -456,7 +456,7 @@ function ConceptTab() {
         </div>
         {/* Right: Interactive Demo */}
         <div style={{ padding: "36px 32px", background: "#121211" }}>
-          <div style={{ fontSize: 9, color: "#666", textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 600, marginBottom: 18 }}>Interactive Demo</div>
+          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 600, marginBottom: 18 }}>Interactive Demo</div>
           <div key={contentKey}><StepComponent /></div>
         </div>
       </div>
@@ -683,7 +683,7 @@ function SimulatorTab({ frictionLog, setFrictionLog }) {
     return (
       <div style={{ padding: "28px 32px" }}>
         <div style={{ fontSize: 10, color: "#666", textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 600, marginBottom: 6 }}>Select Your Client</div>
-        <div style={{ fontSize: 14, color: "#AAA", marginBottom: 24, lineHeight: 1.65 }}>Each client type presents different challenges: tech stack complexity, stakeholder dynamics, regulatory requirements, and organizational readiness.</div>
+        <div style={{ fontSize: 14, color: "#999", marginBottom: 24, lineHeight: 1.65 }}>Each client type presents different challenges: tech stack complexity, stakeholder dynamics, regulatory requirements, and organizational readiness.</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           {CLIENTS.map(c => (
             <div key={c.id} onClick={() => setSelectedClient(c.id)}
@@ -694,14 +694,14 @@ function SimulatorTab({ frictionLog, setFrictionLog }) {
                 <div><span style={{ color: c.color, fontSize: 18, marginRight: 8 }}>{c.icon}</span><span style={{ fontSize: 15, fontWeight: 500, color: CREAM }}>{c.name}</span></div>
                 <span style={{ fontSize: 9, padding: "3px 10px", borderRadius: 10, background: c.color + "22", color: c.color, fontWeight: 700, letterSpacing: "0.5px", textTransform: "uppercase" }}>{c.type}</span>
               </div>
-              <div style={{ fontSize: 13, color: "#AAA", lineHeight: 1.65, marginBottom: 14 }}>{c.description}</div>
+              <div style={{ fontSize: 13, color: "#999", lineHeight: 1.65, marginBottom: 14 }}>{c.description}</div>
               <div style={{ display: "flex", gap: 16, marginBottom: 14 }}>
-                <div><span style={{ fontSize: 9, color: "#AAA" }}>AUM </span><span style={{ fontSize: 13, color: CREAM, fontWeight: 500 }}>{c.aum}</span></div>
-                <div><span style={{ fontSize: 9, color: "#AAA" }}>ADVISORS </span><span style={{ fontSize: 13, color: CREAM, fontWeight: 500 }}>{c.advisors}</span></div>
+                <div><span style={{ fontSize: 9, color: "#555" }}>AUM </span><span style={{ fontSize: 13, color: CREAM, fontWeight: 500 }}>{c.aum}</span></div>
+                <div><span style={{ fontSize: 9, color: "#555" }}>ADVISORS </span><span style={{ fontSize: 13, color: CREAM, fontWeight: 500 }}>{c.advisors}</span></div>
               </div>
               <div style={{ fontSize: 10, color: "#666", fontWeight: 600, letterSpacing: "0.5px", marginBottom: 6 }}>STAKEHOLDERS</div>
               {c.stakeholders.map((s, i) => (
-                <div key={i} style={{ fontSize: 12, color: "#AAA", display: "flex", gap: 6, marginBottom: 4 }}>
+                <div key={i} style={{ fontSize: 12, color: "#888", display: "flex", gap: 6, marginBottom: 4 }}>
                   <span style={{ color: s.stance.includes("Champion") ? GREEN : s.stance.includes("Skeptical") || s.stance.includes("Resistant") || s.stance.includes("Blocking") ? RED : GOLD, fontSize: 9, marginTop: 3 }}>●</span>
                   <span><strong style={{ color: "#AAA" }}>{s.name}</strong> — {s.role}</span>
                 </div>
@@ -717,18 +717,18 @@ function SimulatorTab({ frictionLog, setFrictionLog }) {
     <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", height: "calc(100vh - 105px)" }}>
       <div style={{ borderRight: "1px solid #1E1E1C", padding: "20px 16px", overflowY: "auto", background: "#131312" }}>
         <button onClick={() => { setSelectedClient(null); resetPhase(); setActivePhase(0); }}
-          style={{ background: "none", border: "none", color: "#AAA", fontSize: 12, cursor: "pointer", fontFamily: FONT, marginBottom: 14, padding: 0 }}>← Change client</button>
+          style={{ background: "none", border: "none", color: "#777", fontSize: 12, cursor: "pointer", fontFamily: FONT, marginBottom: 14, padding: 0 }}>← Change client</button>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
           <span style={{ color: client.color, fontSize: 16 }}>{client.icon}</span>
           <div><div style={{ fontSize: 14, fontWeight: 500, color: CREAM }}>{client.name}</div><div style={{ fontSize: 11, color: "#666" }}>{client.type}</div></div>
         </div>
-        <div style={{ fontSize: 10, color: "#AAA", textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginBottom: 10 }}>Phases</div>
+        <div style={{ fontSize: 10, color: "#555", textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginBottom: 10 }}>Phases</div>
         {PHASES.map((p, i) => (
           <div key={i} onClick={() => { setActivePhase(i); resetPhase(); }}
             style={{ display: "flex", gap: 10, padding: "10px 12px", borderRadius: 8, background: activePhase === i ? CARD : "transparent",
               border: `1px solid ${activePhase === i ? BORDER : "transparent"}`, cursor: "pointer", marginBottom: 4, transition: "all 0.15s" }}>
-            <span style={{ fontSize: 11, color: activePhase === i ? GOLD : "#999", fontFamily: "monospace", fontWeight: 700, marginTop: 1 }}>{p.label}</span>
-            <div><div style={{ fontSize: 12.5, color: activePhase === i ? "#E8E4DC" : "#999", fontWeight: 500 }}>{p.title}</div><div style={{ fontSize: 10, color: activePhase === i ? "#AAA" : "#4A4A48", marginTop: 2 }}>{p.subtitle}</div></div>
+            <span style={{ fontSize: 11, color: activePhase === i ? GOLD : "#555", fontFamily: "monospace", fontWeight: 700, marginTop: 1 }}>{p.label}</span>
+            <div><div style={{ fontSize: 12.5, color: activePhase === i ? "#E8E4DC" : "#777", fontWeight: 500 }}>{p.title}</div><div style={{ fontSize: 10, color: activePhase === i ? "#888" : "#4A4A48", marginTop: 2 }}>{p.subtitle}</div></div>
           </div>
         ))}
         {frictionLog.length > 0 && (
@@ -743,7 +743,7 @@ function SimulatorTab({ frictionLog, setFrictionLog }) {
         <div style={{ marginBottom: 16, paddingBottom: 16, borderBottom: "1px solid #1E1E1C" }}>
           <div style={{ fontSize: 10, color: GOLD, fontWeight: 700, letterSpacing: "1.5px", marginBottom: 6 }}>PHASE {phase.label} — {phase.subtitle.toUpperCase()}</div>
           <div style={{ fontSize: 22, fontFamily: SERIF, color: CREAM, fontWeight: 400, marginBottom: 10 }}>{phase.title}</div>
-          <div style={{ fontSize: 13, color: "#B5B1A9", lineHeight: 1.65, marginBottom: 10 }}>{phase.description}</div>
+          <div style={{ fontSize: 13, color: "#9A968C", lineHeight: 1.65, marginBottom: 10 }}>{phase.description}</div>
           <div style={{ fontSize: 13, color: "#B8B4A8", lineHeight: 1.65, padding: "10px 14px", background: `${GOLD}08`, borderLeft: `3px solid ${GOLD}33`, borderRadius: "0 8px 8px 0" }}>
             <span style={{ color: GOLD, fontSize: 10, fontWeight: 700, letterSpacing: "0.5px", marginRight: 6 }}>YOUR ROLE</span> {phase.roleContext}
           </div>
@@ -751,10 +751,10 @@ function SimulatorTab({ frictionLog, setFrictionLog }) {
         {!phaseStarted ? (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
             <div style={{ fontSize: 36, opacity: 0.2 }}>{client.icon}</div>
-            <div style={{ fontSize: 16, color: "#AAA", textAlign: "center", maxWidth: 440, lineHeight: 1.6 }}>Ready to enter the room with {client.stakeholders.length} stakeholders from {client.name}?</div>
+            <div style={{ fontSize: 16, color: "#888", textAlign: "center", maxWidth: 440, lineHeight: 1.6 }}>Ready to enter the room with {client.stakeholders.length} stakeholders from {client.name}?</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", maxWidth: 460 }}>
               {client.stakeholders.map((s, i) => (
-                <span key={i} style={{ fontSize: 12, color: "#AAA", background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: "6px 14px" }}>{s.name} — {s.role}</span>
+                <span key={i} style={{ fontSize: 12, color: "#999", background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: "6px 14px" }}>{s.name} — {s.role}</span>
               ))}
             </div>
             <button onClick={startPhase} style={{ background: GOLD, color: "#111", border: "none", borderRadius: 10, padding: "12px 28px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT, marginTop: 8 }}>Begin Client Meeting →</button>
@@ -889,8 +889,8 @@ Generate 3-4 items per phase. Be specific and opinionated. Every item must trace
       {frictionLog.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 0", color: "#333" }}>
           <div style={{ fontSize: 40, marginBottom: 16, opacity: 0.2 }}>◈</div>
-          <div style={{ fontSize: 18, color: "#AAA", marginBottom: 8 }}>No implementation data yet</div>
-          <div style={{ fontSize: 14, color: "#B5B1A9", maxWidth: 460, margin: "0 auto 28px", lineHeight: 1.65 }}>
+          <div style={{ fontSize: 18, color: "#777", marginBottom: 8 }}>No implementation data yet</div>
+          <div style={{ fontSize: 14, color: "#666", maxWidth: 460, margin: "0 auto 28px", lineHeight: 1.65 }}>
             The roadmap is generated from friction data captured in the Implementation Simulator. Run a client scenario in Tab 2, or load a pre-built example to see the output.
           </div>
           <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
@@ -898,15 +898,15 @@ Generate 3-4 items per phase. Be specific and opinionated. Every item must trace
               Load Example: Meridian Wealth Partners
             </button>
           </div>
-          <div style={{ fontSize: 12, color: "#AAA", marginTop: 10 }}>4 phases of implementation friction from a Large RIA deployment</div>
+          <div style={{ fontSize: 12, color: "#555", marginTop: 10 }}>4 phases of implementation friction from a Large RIA deployment</div>
           <div style={{ marginTop: 40, textAlign: "left", maxWidth: 600, margin: "40px auto 0" }}>
-            <div style={{ fontSize: 10, color: "#666", textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 600, marginBottom: 12 }}>What you'll get</div>
+            <div style={{ fontSize: 10, color: "#444", textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 600, marginBottom: 12 }}>What you'll get</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
               {[{ l: "NOW", t: "0-3 months", d: "Critical blockers", c: "#D48A8A" }, { l: "NEXT", t: "3-6 months", d: "Competitive edge", c: GOLD }, { l: "LATER", t: "6-12 months", d: "Platform expansion", c: GREEN }].map((s, i) => (
                 <div key={i} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: "14px 16px", borderTop: `3px solid ${s.c}` }}>
                   <div style={{ fontSize: 14, color: s.c, fontWeight: 700 }}>{s.l}</div>
                   <div style={{ fontSize: 11, color: "#666", marginTop: 2 }}>{s.t}</div>
-                  <div style={{ fontSize: 11, color: "#AAA", marginTop: 4 }}>{s.d}</div>
+                  <div style={{ fontSize: 11, color: "#555", marginTop: 4 }}>{s.d}</div>
                 </div>
               ))}
             </div>
@@ -923,7 +923,7 @@ Generate 3-4 items per phase. Be specific and opinionated. Every item must trace
                 <div style={{ fontSize: 22, fontFamily: SERIF, color: CREAM }}>{col.items.length}</div>
                 <div>
                   <div style={{ fontSize: 10, color: col.color, fontWeight: 700, letterSpacing: "0.5px" }}>{col.icon} {col.label}</div>
-                  <div style={{ fontSize: 11, color: "#AAA" }}>from {frictionLog.length} interactions</div>
+                  <div style={{ fontSize: 11, color: "#555" }}>from {frictionLog.length} interactions</div>
                 </div>
               </div>
             ))}
@@ -943,7 +943,7 @@ Generate 3-4 items per phase. Be specific and opinionated. Every item must trace
               <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 12 }}>
                 {[0, 1, 2].map(i => (<div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: GOLD, animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />))}
               </div>
-              <div style={{ fontSize: 13, color: "#AAA" }}>Translating field friction into product priorities...</div>
+              <div style={{ fontSize: 13, color: "#777" }}>Translating field friction into product priorities...</div>
               <style>{`@keyframes pulse { 0%,100% { opacity:0.3; transform:scale(0.8); } 50% { opacity:1; transform:scale(1.2); } }`}</style>
             </div>
           )}
@@ -1001,7 +1001,7 @@ Generate 3-4 items per phase. Be specific and opinionated. Every item must trace
                                   background: (EFFORT_COLORS[item.effort] || "#666") + "18", padding: "2px 6px", borderRadius: 4,
                                   flexShrink: 0, fontFamily: "monospace" }}>{item.effort}</span>
                               </div>
-                              <div style={{ fontSize: 11, color: "#AAA", marginTop: 3 }}>{item.impact} impact</div>
+                              <div style={{ fontSize: 11, color: "#777", marginTop: 3 }}>{item.impact} impact</div>
                             </div>
                           );
                         })}
@@ -1025,13 +1025,13 @@ Generate 3-4 items per phase. Be specific and opinionated. Every item must trace
                         <div style={{ fontSize: 10, color: c, fontWeight: 700, letterSpacing: "1px", marginBottom: 4 }}>{phase.label} — {phase.timeframe}</div>
                         <div style={{ fontSize: 17, fontWeight: 600, color: CREAM, fontFamily: SERIF }}>{item.title}</div>
                       </div>
-                      <button onClick={() => setActiveDetail(null)} style={{ background: "none", border: "none", color: "#AAA", fontSize: 18, cursor: "pointer", padding: "0 4px" }}>×</button>
+                      <button onClick={() => setActiveDetail(null)} style={{ background: "none", border: "none", color: "#555", fontSize: 18, cursor: "pointer", padding: "0 4px" }}>×</button>
                     </div>
                     <div style={{ fontSize: 14, color: "#B8B4A8", lineHeight: 1.7, marginTop: 10 }}>{item.description}</div>
                     <div style={{ display: "flex", gap: 16, marginTop: 14 }}>
-                      <div><span style={{ fontSize: 10, color: "#666" }}>SOURCE </span><span style={{ fontSize: 12, color: "#AAA" }}>{item.source}</span></div>
+                      <div><span style={{ fontSize: 10, color: "#666" }}>SOURCE </span><span style={{ fontSize: 12, color: "#999" }}>{item.source}</span></div>
                       <div><span style={{ fontSize: 10, color: "#666" }}>EFFORT </span><span style={{ fontSize: 12, color: EFFORT_COLORS[item.effort] || "#999", fontWeight: 600 }}>{item.effort === "S" ? "Small" : item.effort === "M" ? "Medium" : "Large"}</span></div>
-                      <div><span style={{ fontSize: 10, color: "#666" }}>IMPACT </span><span style={{ fontSize: 12, color: "#AAA" }}>{item.impact}</span></div>
+                      <div><span style={{ fontSize: 10, color: "#666" }}>IMPACT </span><span style={{ fontSize: 12, color: "#999" }}>{item.impact}</span></div>
                     </div>
                   </div>
                 );
@@ -1042,7 +1042,7 @@ Generate 3-4 items per phase. Be specific and opinionated. Every item must trace
                 <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: "18px 22px" }}>
                   <div style={{ fontSize: 10, color: "#666", fontWeight: 700, letterSpacing: "1px", marginBottom: 10 }}>PRODUCT PRINCIPLES</div>
                   {roadmap.principles.map((p, i) => (
-                    <div key={i} style={{ display: "flex", gap: 8, marginBottom: 6, fontSize: 13, color: "#AAA" }}>
+                    <div key={i} style={{ display: "flex", gap: 8, marginBottom: 6, fontSize: 13, color: "#999" }}>
                       <span style={{ color: GOLD, fontSize: 10, marginTop: 3 }}>◈</span> {p}
                     </div>
                   ))}
@@ -1050,7 +1050,7 @@ Generate 3-4 items per phase. Be specific and opinionated. Every item must trace
               )}
 
               <div style={{ marginTop: 16 }}>
-                <button onClick={generateRoadmap} style={{ background: "#151514", border: `1px solid ${BORDER}`, borderRadius: 8, padding: "10px 20px", fontSize: 12, color: "#AAA", cursor: "pointer", fontFamily: FONT }}>↻ Regenerate</button>
+                <button onClick={generateRoadmap} style={{ background: "#151514", border: `1px solid ${BORDER}`, borderRadius: 8, padding: "10px 20px", fontSize: 12, color: "#999", cursor: "pointer", fontFamily: FONT }}>↻ Regenerate</button>
               </div>
             </>
           )}
@@ -1098,7 +1098,7 @@ function ColophonTab() {
     <div style={{ padding: "36px 40px", maxWidth: 800, margin: "0 auto" }}>
       <div style={{ fontSize: 11, color: GOLD, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 12 }}>Colophon</div>
       <h1 style={{ fontSize: 32, fontFamily: SERIF, color: CREAM, fontWeight: 400, letterSpacing: "-0.5px", margin: "0 0 8px", lineHeight: 1.2 }}>How This Was Built</h1>
-      <p style={{ fontSize: 14, color: "#AAA", margin: "0 0 36px", lineHeight: 1.6 }}>
+      <p style={{ fontSize: 14, color: "#777", margin: "0 0 36px", lineHeight: 1.6 }}>
         Built by Christian for the Avantos Principal of Client & Product Solutions role.
       </p>
 
@@ -1126,7 +1126,7 @@ function ColophonTab() {
       ))}
 
       <div style={{ marginTop: 36, padding: "20px 24px", background: `${GOLD}08`, border: `1px solid ${GOLD}20`, borderRadius: 12 }}>
-        <div style={{ fontSize: 13, color: "#B5B1A9", lineHeight: 1.7, fontStyle: "italic" }}>
+        <div style={{ fontSize: 13, color: "#9A968C", lineHeight: 1.7, fontStyle: "italic" }}>
           "The best way to show you can do a job is to do the job." — This workspace is my implementation of the implementation role.
         </div>
       </div>
@@ -1186,587 +1186,47 @@ const SAMPLE_FRICTION = [
 // ═══════════════════════════════════════════
 
 function WhyMeTab() {
-  const SUB_TABS = [
-    { id: "about", label: "About" },
-    { id: "cases", label: "Selected Engagements" },
-    { id: "lps", label: "LP Analysis" },
-    { id: "growth", label: "From Capital to Clients" },
-    { id: "plan", label: "First 90 Days" },
+  const matches = [
+    { req: "7-12 years tech consulting / digital transformation",
+      proof: "10 years at EY Strategy & Business Transformation. 20+ engagements for Fortune 500 across financial services, insurance, and consumer." },
+    { req: "Complex, multi-stakeholder implementations",
+      proof: "KYC/AML platform rollout across 16 markets. Transformation Management Office for a Fortune 50 insurer deploying LLM-powered risk monitoring." },
+    { req: "Cross-functional with product and engineering",
+      proof: "Pod Lead, EY Americas Innovation — helped business lines turn ideas into tools. Operate Lead for Global M&A — post-close value realization across 14 acquisitions." },
+    { req: "Fluent in technical architectures, data, integrations",
+      proof: "Built predictive models (neural networks) at Barclays/Swedbank JV. Built humaninthelead.ai end-to-end: React, Express, PostgreSQL, Claude API. This workspace is a working product." },
+    { req: "Translate technical concepts for executive audiences",
+      proof: "Co-owned ~$5M annual sales targets. Defined agentic-AI use cases for a $90B enterprise and sized $25M–$30M in cost reduction for a board-level business case." },
   ];
-  const [sub, setSub] = useState("about");
-  const [activeCase, setActiveCase] = useState("insurer");
 
-  // ─── SUB-TAB: ABOUT ───
-  const AboutSection = () => {
-    const matches = [
-      { req: "7-12 years tech consulting / digital transformation",
-        proof: "10 years at EY Strategy & Business Transformation. 20+ engagements for Fortune 500 across financial services, insurance, and consumer." },
-      { req: "Complex, multi-stakeholder implementations",
-        proof: "Transformation Management Office for a Fortune 15 insurer deploying LLM-powered risk monitoring. KYC/AML platform rollout across 16 markets for a global payments network." },
-      { req: "Cross-functional with product and engineering",
-        proof: "Pod Lead, EY Americas Innovation — helped business lines turn ideas into tools. Operate Lead for Global M&A — post-close value realization across 14 acquisitions." },
-      { req: "Fluent in technical architectures, data, integrations",
-        proof: "Built predictive models (neural networks) at Barclays/Swedbank JV. Built humaninthelead.ai end-to-end: React, Express, PostgreSQL, Claude API. This workspace is a working product." },
-      { req: "Translate technical concepts for executive audiences",
-        proof: "Co-owned ~$5M annual sales targets. Defined agentic-AI use cases for a $90B enterprise and sized $25M–$30M in cost reduction for a board-level business case." },
-    ];
-    return (
-      <div style={{ padding: "36px 40px", maxWidth: 780, margin: "0 auto" }}>
-        <div style={{ fontSize: 11, color: GOLD, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 12 }}>Background</div>
-        <h1 style={{ fontSize: 28, fontFamily: SERIF, color: CREAM, fontWeight: 400, letterSpacing: "-0.5px", margin: "0 0 8px", lineHeight: 1.2 }}>Christian Spetz</h1>
-        <p style={{ fontSize: 14, color: "#AAA", margin: "0 0 28px", lineHeight: 1.65 }}>
-          10 years in enterprise consulting. Financial services focus. Builds with AI, not just about it.
-        </p>
-        <div style={{ marginBottom: 28 }}>
-          {matches.map((m, i) => (
-            <div key={i} style={{ marginBottom: 10, padding: "16px 20px", background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10 }}>
-              <div style={{ fontSize: 12, color: "#AAA", marginBottom: 6 }}>{m.req}</div>
-              <div style={{ fontSize: 14, color: "#C8C4B8", lineHeight: 1.6 }}>{m.proof}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Featured Case Snapshot */}
-        <div style={{ padding: "20px 24px", background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, marginBottom: 16 }}>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-            {["LLM Adoption", "AI Transformation", "Risk Framework", "Direct: CTO"].map((tag, i) => (
-              <span key={i} style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.5px", textTransform: "uppercase", color: GREEN }}>{tag}{i < 3 ? " · " : ""}</span>
-            ))}
-          </div>
-          <div style={{ fontSize: 18, fontFamily: SERIF, color: CREAM, fontWeight: 500, marginBottom: 4 }}>Enterprise LLM Risk Framework — Transformation Office</div>
-          <div style={{ fontSize: 12, color: "#AAA", marginBottom: 14 }}>Transformation Office Lead — Fortune 15 Healthcare & Insurance Conglomerate · Working directly with CTO</div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#AAA", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 6 }}>The Problem</div>
-          <div style={{ fontSize: 13, color: "#B5B1A9", lineHeight: 1.65 }}>A Fortune 15 healthcare and insurance conglomerate's CTO wanted to deploy a new risk framework powered by LLM insights — but the organisation lacked the data foundation, cross-functional alignment, and change infrastructure to make it operational. The Transformation Office was established to drive actual adoption: getting teams to use the LLM, cleaning the data that fed it, and translating AI outputs into live operational risk decisions.</div>
-          <button onClick={() => setSub("cases")} style={{ background: "none", border: "none", color: GOLD, fontSize: 12, cursor: "pointer", fontFamily: FONT, marginTop: 12, padding: 0, fontWeight: 500 }}>Full case in Selected Engagements →</button>
-        </div>
-
-      </div>
-    );
-  };
-
-  // ─── SUB-TAB: LP ANALYSIS ───
-  const LPSection = () => {
-    return (
-      <div style={{ padding: "36px 40px", maxWidth: 820, margin: "0 auto" }}>
-        <div style={{ fontSize: 11, color: GOLD, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 12 }}>Strategic LP Mapping</div>
-        <h1 style={{ fontSize: 28, fontFamily: SERIF, color: CREAM, fontWeight: 400, letterSpacing: "-0.5px", margin: "0 0 8px" }}>LP Analysis</h1>
-        <p style={{ fontSize: 15, color: "#AAA", margin: "0 0 32px", lineHeight: 1.65 }}>
-          Four strategic LPs who are also the first customers. Each has a different onboarding problem, a different buyer, and a different GTM motion.
-        </p>
-
-        {/* Segment 1: Wealth Management */}
-        <div style={{ marginBottom: 28 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: GREEN }} />
-            <span style={{ fontSize: 16, fontFamily: SERIF, fontWeight: 600, color: CREAM }}>Wealth Management</span>
-          </div>
-          <p style={{ fontSize: 13, color: "#AAA", marginBottom: 14, lineHeight: 1.5, paddingLeft: 16 }}>
-            Advisors manage the relationship. Custodians (Schwab, Pershing, Fidelity) hold the assets. Every new client = two onboardings with compliance checks at each step.
-          </p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, paddingLeft: 16 }}>
-            {[
-              { name: "Mercer Advisors", badge: "Highest Readiness", badgeColor: GREEN,
-                headline: "Acquired companies with different onboarding processes",
-                problemBullets: ["Each firm they buy uses a different custodian, different data formats, different onboarding process", "Post-acquisition re-papering and compliance attestation mapping break every time", "Recurring integration tax on every deal"],
-                solvesBullets: ["One onboarding layer that normalizes across custodial relationships", "Turns M&A integration from a 6-month drag into a repeatable playbook"],
-                expands: "Focus Financial, CI Financial, Hightower" },
-              { name: "Vanguard", badge: "Needs Discovery", badgeColor: GOLD,
-                headline: "Small onboarding friction compounds at 5M+ clients",
-                problemBullets: ["Personal Advisor Services scaling a hybrid model — human advisors supported by digital tools", "At 5M+ clients, even small per-client onboarding friction compounds into massive cost", "Mutual company with a cost-minimization culture — won't buy enterprise software without a strong efficiency case"],
-                solvesBullets: ["Workflow automation that reduces per-client onboarding cost at scale", "Entry point depends on business unit — PAS, institutional intermediary, or direct retail"],
-                expands: "Fidelity Wealth, Schwab Advisor Services, Edward Jones" },
-            ].map((lp, i) => (
-              <div key={i} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: "16px 18px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: CREAM }}>{lp.name}</div>
-                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.5px", textTransform: "uppercase", padding: "3px 7px", borderRadius: 4, background: `${lp.badgeColor}12`, color: lp.badgeColor, border: `1px solid ${lp.badgeColor}30` }}>{lp.badge}</span>
-                </div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#AAA", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 4 }}>Problem</div>
-                <div style={{ fontSize: 14, color: CREAM, fontWeight: 500, marginBottom: 6 }}>{lp.headline}</div>
-                <ul style={{ margin: "0 0 10px", paddingLeft: 18, listStyleType: "disc" }}>
-                  {lp.problemBullets.map((b, j) => <li key={j} style={{ fontSize: 12, color: "#E8E4DC", lineHeight: 1.55, marginBottom: 3 }}>{b}</li>)}
-                </ul>
-                <div style={{ fontSize: 12, fontWeight: 700, color: lp.badgeColor, letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 4 }}>What Avantos solves</div>
-                <ul style={{ margin: "0 0 10px", paddingLeft: 18, listStyleType: "disc" }}>
-                  {lp.solvesBullets.map((b, j) => <li key={j} style={{ fontSize: 12, color: "#E8E4DC", lineHeight: 1.55, marginBottom: 3 }}>{b}</li>)}
-                </ul>
-                <div style={{ fontSize: 11, color: "#999", borderTop: `1px solid ${BORDER}`, paddingTop: 8, marginTop: 4 }}>
-                  <span style={{ color: BLUE }}>→</span> Same pain at: <span style={{ color: "#D4D0C8" }}>{lp.expands}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Segment 2: Insurance & Platform Infrastructure */}
-        <div style={{ marginBottom: 28 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: PURPLE }} />
-            <span style={{ fontSize: 16, fontFamily: SERIF, fontWeight: 600, color: CREAM }}>Insurance & Platform Infrastructure</span>
-          </div>
-          <p style={{ fontSize: 13, color: "#AAA", marginBottom: 14, lineHeight: 1.5, paddingLeft: 16 }}>
-            Guardian holds risk directly across 50 state regulatory environments. SEI provides the tech layer ~8,000 advisors run on. Different models, but both need Avantos to automate compliance-heavy onboarding at scale.
-          </p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, paddingLeft: 16 }}>
-            <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: "16px 18px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: CREAM }}>Guardian Life</div>
-                <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.5px", textTransform: "uppercase", padding: "3px 7px", borderRadius: 4, background: `${PURPLE}12`, color: PURPLE, border: `1px solid ${PURPLE}30` }}>Insurance Vertical</span>
-              </div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#AAA", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 4 }}>Problem</div>
-              <div style={{ fontSize: 14, color: CREAM, fontWeight: 500, marginBottom: 6 }}>50 state regulatory frameworks, one onboarding process</div>
-              <ul style={{ margin: "0 0 10px", paddingLeft: 18, listStyleType: "disc" }}>
-                <li style={{ fontSize: 12, color: "#E8E4DC", lineHeight: 1.55, marginBottom: 3 }}>Suitability checks require manual handoffs between agents, underwriting, and policy admin</li>
-                <li style={{ fontSize: 12, color: "#E8E4DC", lineHeight: 1.55, marginBottom: 3 }}>E&O exposure grows every time a compliance attestation is missed or a license isn't verified</li>
-              </ul>
-              <div style={{ fontSize: 12, fontWeight: 700, color: PURPLE, letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 4 }}>What Avantos solves</div>
-              <ul style={{ margin: "0 0 10px", paddingLeft: 18, listStyleType: "disc" }}>
-                <li style={{ fontSize: 12, color: "#E8E4DC", lineHeight: 1.55, marginBottom: 3 }}>Maps state-level suitability requirements dynamically</li>
-                <li style={{ fontSize: 12, color: "#E8E4DC", lineHeight: 1.55, marginBottom: 3 }}>Automates license verification and documented attestation trails</li>
-                <li style={{ fontSize: 12, color: "#E8E4DC", lineHeight: 1.55, marginBottom: 3 }}>Reduces E&O exposure structurally, not manually</li>
-              </ul>
-              <div style={{ fontSize: 11, color: "#999", borderTop: `1px solid ${BORDER}`, paddingTop: 8, marginTop: 4 }}>
-                <span style={{ color: BLUE }}>→</span> Same pain at: <span style={{ color: "#D4D0C8" }}>MassMutual, MetLife, Prudential</span>
-              </div>
-            </div>
-            <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: "16px 18px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: CREAM }}>SEI</div>
-                <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.5px", textTransform: "uppercase", padding: "3px 7px", borderRadius: 4, background: `${BLUE}12`, color: BLUE, border: `1px solid ${BLUE}30` }}>Platform Play</span>
-              </div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#AAA", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 4 }}>Problem</div>
-              <div style={{ fontSize: 14, color: CREAM, fontWeight: 500, marginBottom: 6 }}>8,000 advisors still onboarding manually</div>
-              <ul style={{ margin: "0 0 10px", paddingLeft: 18, listStyleType: "disc" }}>
-                <li style={{ fontSize: 12, color: "#E8E4DC", lineHeight: 1.55, marginBottom: 3 }}>Needs modern tooling to retain advisors and attract new ones</li>
-                <li style={{ fontSize: 12, color: "#E8E4DC", lineHeight: 1.55, marginBottom: 3 }}>Platform deal = maximum reach, minimum direct client relationship</li>
-              </ul>
-              <div style={{ fontSize: 12, fontWeight: 700, color: BLUE, letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 4 }}>What Avantos solves</div>
-              <ul style={{ margin: "0 0 10px", paddingLeft: 18, listStyleType: "disc" }}>
-                <li style={{ fontSize: 12, color: "#E8E4DC", lineHeight: 1.55, marginBottom: 3 }}>Embedded integration = onboarding as a platform-native feature</li>
-                <li style={{ fontSize: 12, color: "#E8E4DC", lineHeight: 1.55, marginBottom: 3 }}>Avantos becomes infrastructure, not a point solution</li>
-                <li style={{ fontSize: 12, color: "#E8E4DC", lineHeight: 1.55, marginBottom: 3 }}>Partnership structure matters more than speed — pricing, data access, client ownership</li>
-              </ul>
-              <div style={{ fontSize: 11, color: "#999", borderTop: `1px solid ${BORDER}`, paddingTop: 8, marginTop: 4 }}>
-                <span style={{ color: BLUE }}>→</span> Same pain at: <span style={{ color: "#D4D0C8" }}>Envestnet, Orion, AssetMark, Pershing X</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ height: 1, background: BORDER, margin: "28px 0" }} />
-
-        {/* What This Tells Us */}
-        <div style={{ fontSize: 12, color: GOLD, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 8 }}>What the LP base tells us</div>
-        <p style={{ fontSize: 13, color: "#AAA", marginBottom: 14, lineHeight: 1.5 }}>Four investors who are also customers is a signal. Their profiles reveal what the market is buying and where Avantos fits.</p>
-        <ul style={{ margin: 0, paddingLeft: 18, listStyleType: "disc" }}>
-          <li style={{ fontSize: 13, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 8, listStyle: "none" }}><span style={{ color: GOLD, marginRight: 8 }}>✦</span><span style={{ color: CREAM, fontWeight: 500 }}>Compliance is the wedge, not AI.</span> Every LP's pain starts with regulatory complexity — state-level rules, custodial re-papering, suitability attestation. AI is the enabler, compliance is the buyer.</li>
-          <li style={{ fontSize: 13, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 8, listStyle: "none" }}><span style={{ color: GOLD, marginRight: 8 }}>✦</span><span style={{ color: CREAM, fontWeight: 500 }}>Onboarding is the entry point, not the product.</span> Once Avantos owns the onboarding workflow, the knowledge graph captures enough context to expand into servicing, monitoring, and cross-product growth.</li>
-          <li style={{ fontSize: 13, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 8, listStyle: "none" }}><span style={{ color: GOLD, marginRight: 8 }}>✦</span><span style={{ color: CREAM, fontWeight: 500 }}>Three GTM motions, not one.</span> Direct enterprise sales (Mercer, Vanguard), vertical expansion (Guardian → insurance carriers), and platform embedding (SEI → TAMPs). The Principal needs to run all three.</li>
-          <li style={{ fontSize: 13, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 8, listStyle: "none" }}><span style={{ color: GOLD, marginRight: 8 }}>✦</span><span style={{ color: CREAM, fontWeight: 500 }}>The first four implementations write the playbook.</span> At Series A, every deployment has to produce two things: a live client and a repeatable methodology the next hire can execute.</li>
-          <li style={{ fontSize: 13, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 0, listStyle: "none" }}><span style={{ color: GOLD, marginRight: 8 }}>✦</span><span style={{ color: CREAM, fontWeight: 500 }}>Investor-customers have higher expectations.</span> These aren't cold prospects. They have equity in the outcome. Slower to churn, but faster to escalate. The relationship management is different.</li>
-        </ul>
-      </div>
-    );
-  };
-
-  // ─── SUB-TAB: FROM CAPITAL TO CLIENTS ───
-  const GrowthSection = () => {
-    const flowNodes = [
-      { title: "Onboarding", sub: "Proven wedge. Compliance-heavy, high-friction." },
-      { title: "Relationship Intelligence", sub: "Knowledge graph captures interaction patterns." },
-      { title: "Ongoing Servicing", sub: "AI agents trigger compliant execution." },
-      { title: "Cross-Product Growth", sub: "Lower minimum thresholds. Serve more clients." },
-    ];
-    return (
-      <div style={{ padding: "36px 40px", maxWidth: 820, margin: "0 auto" }}>
-        {/* Header */}
-        <div style={{ fontSize: 11, color: GOLD, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 12 }}>Growth Framework</div>
-        <h1 style={{ fontSize: 28, fontFamily: SERIF, color: CREAM, fontWeight: 400, letterSpacing: "-0.5px", margin: "0 0 8px" }}>From Capital to Clients</h1>
-        <p style={{ fontSize: 15, color: "#AAA", margin: "0 0 12px", lineHeight: 1.65 }}>
-          $35M raised. Four strategic LPs who are also your first customers. The hard part isn't building the platform — it's getting it into production at the firms that matter, fast.
-        </p>
-        <p style={{ fontSize: 15, color: "#B5B1A9", margin: "0 0 32px", lineHeight: 1.7 }}>
-          Avantos just closed a Series A with something most startups don't have: <span style={{ color: CREAM, fontWeight: 500 }}>investor-customers.</span> Vanguard, SEI, Guardian Life, and Mercer didn't invest passively — they invested because they have the exact operational pain the platform solves. Each one represents a live path from capital to production deployment. The Principal's job is to activate that path.
-        </p>
-
-        {/* Wedge & Expand */}
-        <div style={{ fontSize: 12, color: GOLD, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 12 }}>Wedge & Expand</div>
-        <div style={{ display: "flex", gap: 0, marginBottom: 16 }}>
-          {flowNodes.map((n, i) => (
-            <div key={i} style={{ flex: 1, background: CARD, border: `1px solid ${BORDER}`, padding: "14px 12px", textAlign: "center", position: "relative",
-              borderRadius: i === 0 ? "8px 0 0 8px" : i === 3 ? "0 8px 8px 0" : 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: CREAM, marginBottom: 4 }}>{n.title}</div>
-              <div style={{ fontSize: 11, color: "#AAA", lineHeight: 1.4 }}>{n.sub}</div>
-              {i < 3 && <span style={{ position: "absolute", right: -6, top: "50%", transform: "translateY(-50%)", color: BLUE, fontSize: 12, zIndex: 2, fontWeight: 700 }}>▸</span>}
-            </div>
-          ))}
-        </div>
-        <ul style={{ margin: "0 0 24px", paddingLeft: 18, listStyleType: "disc" }}>
-          <li style={{ fontSize: 14, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 6 }}>Each phase deepens the knowledge graph — more data, smarter agents, stickier platform</li>
-          <li style={{ fontSize: 14, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 6 }}>Multi-vertical flexibility (wealth, insurance, banking) without rebuilding is the moat</li>
-          <li style={{ fontSize: 14, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 0 }}><span style={{ color: CREAM, fontWeight: 500 }}>That flexibility is harder to replicate than it looks from the outside</span></li>
-        </ul>
-
-        {/* Competitive Bar */}
-        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "14px 18px", marginBottom: 24, display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: 16, color: GOLD }}>⚡</span>
-          <span style={{ fontSize: 14, color: "#D4D0C8", lineHeight: 1.55 }}><span style={{ color: CREAM, fontWeight: 600 }}>Positioning:</span> Docupace, InvestCloud, and Salesforce FS Cloud automate forms or workflows in isolation. None have the context layer that makes cross-system execution possible.</span>
-        </div>
-
-        {/* Playbook */}
-        <div style={{ fontSize: 12, color: GOLD, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 8 }}>Building the Playbook</div>
-        <ul style={{ margin: "0 0 28px", paddingLeft: 18, listStyleType: "disc" }}>
-          <li style={{ fontSize: 14, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 6 }}>Every implementation produces two outputs: a live client deployment AND a repeatable methodology</li>
-          <li style={{ fontSize: 14, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 6 }}>The engagement framework is what turns a single Principal into a scalable GTM motion</li>
-          <li style={{ fontSize: 14, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 0 }}>If the second hire can't run the playbook without the first hire in the room, the playbook doesn't work</li>
-        </ul>
-
-        <div style={{ height: 1, background: BORDER, margin: "28px 0" }} />
-
-        {/* Knowledge Graph Callout */}
-        <div style={{ background: `${BLUE}06`, borderLeft: `3px solid ${BLUE}`, borderRadius: "0 8px 8px 0", padding: "18px 22px", marginBottom: 28 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: BLUE, marginBottom: 8 }}>On the Knowledge Graph</div>
-          <ul style={{ margin: 0, paddingLeft: 18, listStyleType: "disc" }}>
-            <li style={{ fontSize: 14, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 6 }}>The system gets more valuable with every implementation — but data modeling decisions in early deployments constrain what's possible later</li>
-            <li style={{ fontSize: 14, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 6 }}>Getting the ontology right for the first four LP implementations is a product decision as much as a client success decision</li>
-            <li style={{ fontSize: 14, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 0 }}>The Principal needs to flag when a client-specific customization could compromise extensibility — not to make the engineering call, but to make sure the tradeoff is visible</li>
-          </ul>
-        </div>
-
-        {/* Background */}
-        <div style={{ borderLeft: "3px solid #555", borderRadius: "0 8px 8px 0", padding: "18px 22px", marginBottom: 28, background: `#ffffff04` }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#AAA", marginBottom: 8 }}>Background</div>
-          <ul style={{ margin: 0, paddingLeft: 18, listStyleType: "disc" }}>
-            <li style={{ fontSize: 14, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 6 }}>10 years in financial services strategy and transformation at EY</li>
-            <li style={{ fontSize: 14, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 6 }}>Multi-market integration programs and enterprise AI adoption</li>
-            <li style={{ fontSize: 14, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 6 }}>Started as a predictive modeller at a Barclays JV — analytical foundation first, consulting layer on top</li>
-            <li style={{ fontSize: 14, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 6 }}>Fortune 500, C-suite-sponsored, compliance-heavy — same environment Avantos sells into</li>
-            <li style={{ fontSize: 14, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 0 }}>I build with AI now, not just advise on it: production React apps, AI audit tooling, Claude Code</li>
-          </ul>
-        </div>
-
-        {/* Gap */}
-        <div style={{ background: `${GOLD}04`, borderLeft: `3px solid ${GOLD}40`, borderRadius: "0 8px 8px 0", padding: "18px 22px", marginBottom: 28 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: GOLD, marginBottom: 8 }}>What I Haven't Done</div>
-          <ul style={{ margin: 0, paddingLeft: 18, listStyleType: "disc" }}>
-            <li style={{ fontSize: 14, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 6 }}>Built and run a client success function from zero at a startup</li>
-            <li style={{ fontSize: 14, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 6 }}>My experience is enterprise consulting — large firms, structured engagements, established methodologies</li>
-            <li style={{ fontSize: 14, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 6 }}>The translation to a 30-person company where the process doesn't exist yet is real</li>
-            <li style={{ fontSize: 14, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 0 }}>What I bring: operating in ambiguity with senior stakeholders while building the structure underneath</li>
-          </ul>
-        </div>
-
-        {/* Why Avantos */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 12, color: GOLD, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 8 }}>Why Avantos</div>
-          <ul style={{ margin: "0 0 12px", paddingLeft: 18, listStyleType: "disc" }}>
-            <li style={{ fontSize: 14, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 6 }}>Knowledge graph architecture is the right bet — context layer first, agents on top</li>
-            <li style={{ fontSize: 14, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 6 }}>Agents can trigger compliant execution across systems, not just summarize</li>
-            <li style={{ fontSize: 14, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 6 }}>Market window is open and the LP base is commercial</li>
-            <li style={{ fontSize: 14, color: "#D4D0C8", lineHeight: 1.65, marginBottom: 0 }}>The first client-facing hires will shape how the GTM function operates</li>
-          </ul>
-          <p style={{ fontSize: 16, color: CREAM, fontWeight: 500 }}>I want to build that function.</p>
-        </div>
-      </div>
-    );
-  };
-
-  // ─── SUB-TAB: FIRST 90 DAYS ───
-  const PlanSection = () => {
-    const phases = [
-      { days: "Days 1–30", title: "Immerse", subtitle: "Learn the platform by using it, not reading about it.", color: BLUE,
-        items: [
-          "Rebuild a sample onboarding workflow end-to-end. Goal: walk a client stakeholder through a live onboarding use case and credibly explain how the platform handles their compliance and integration requirements — by day 30.",
-          "Shadow every active client and LP conversation. Understand the current deployment — what worked, what's manual, what broke.",
-          "Map each LP's org structure, decision-makers, compliance environment, and tech stack.",
-          "Map where my financial services relationships intersect with Avantos's target accounts.",
-        ],
-        deliverable: "LP engagement readiness brief with account-level hypotheses for each strategic partner." },
-      { days: "Days 31–60", title: "Activate", subtitle: "Get in front of clients.", color: GOLD,
-        items: [
-          "Run first two LP discovery workshops — ideally with Rabih in the room for relationship continuity. I own the prep, the scoping framework, and the follow-up deliverable.",
-          "Define repeatable scoping methodology: compliance mapping → integration assessment → change management plan → timeline and resource model.",
-          "Launch the friction log: every implementation blocker, product gap, or integration miss captured systematically and routed to product with a business case. This is the feedback loop between field and roadmap.",
-        ],
-        deliverable: "First implementation scoping document delivered to a client — phases, dependencies, and success criteria." },
-      { days: "Days 61–90", title: "Deliver", subtitle: "Prove the model works.", color: GREEN,
-        items: [
-          "Implementation proposal in client review with defined scope and timeline.",
-          "Internal playbook documented: engagement methodology that a second hire can follow without starting from zero.",
-          "Product feedback synthesis: 3–5 prioritized feature or integration requests from client conversations, each tied to revenue impact.",
-          "Pipeline development: 2–3 qualified prospects beyond the LP base, sourced from Series A inbound interest and my own financial services network.",
-        ],
-        deliverable: "Internal playbook + product feedback synthesis + qualified pipeline beyond LP base." },
-    ];
-    return (
-      <div style={{ padding: "36px 40px", maxWidth: 820, margin: "0 auto" }}>
-        <div style={{ fontSize: 11, color: GOLD, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 12 }}>Execution Plan</div>
-        <h1 style={{ fontSize: 28, fontFamily: SERIF, color: CREAM, fontWeight: 400, letterSpacing: "-0.5px", margin: "0 0 6px" }}>First 90 Days</h1>
-        <p style={{ fontSize: 14, color: "#AAA", margin: "0 0 32px" }}>Immerse. Activate. Deliver.</p>
-
-        <div style={{ position: "relative" }}>
-          {phases.map((p, pi) => (
-            <div key={pi} style={{ position: "relative", paddingLeft: 32, paddingBottom: pi < 2 ? 32 : 0, marginBottom: pi < 2 ? 8 : 0 }}>
-              {/* Dot */}
-              <div style={{ position: "absolute", left: 0, top: 6, width: 13, height: 13, borderRadius: "50%", background: p.color, border: `2px solid ${BG}`, boxShadow: `0 0 0 3px ${p.color}33` }} />
-              {/* Line */}
-              {pi < 2 && <div style={{ position: "absolute", left: 6, top: 22, bottom: 0, width: 1, background: `linear-gradient(to bottom, ${p.color}, ${BORDER})` }} />}
-              {/* Header */}
-              <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 3 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.5px", textTransform: "uppercase", color: p.color }}>{p.days}</span>
-                <span style={{ fontSize: 22, fontFamily: SERIF, fontWeight: 600, color: CREAM }}>{p.title}</span>
-              </div>
-              <p style={{ fontSize: 14, color: "#AAA", marginBottom: 14, fontStyle: "italic" }}>{p.subtitle}</p>
-              {/* Items */}
-              <div style={{ marginBottom: 14 }}>
-                {p.items.map((item, ii) => (
-                  <div key={ii} style={{ fontSize: 14, color: "#B5B1A9", lineHeight: 1.6, padding: "5px 0 5px 16px", position: "relative" }}>
-                    <span style={{ position: "absolute", left: 0, top: 12, width: 5, height: 5, borderRadius: "50%", background: "#666" }} />
-                    {item}
-                  </div>
-                ))}
-              </div>
-              {/* Deliverable */}
-              <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "12px 16px", display: "flex", alignItems: "flex-start", gap: 8 }}>
-                <span style={{ color: p.color, fontWeight: 700, fontSize: 15, marginTop: 1, flexShrink: 0 }}>→</span>
-                <span style={{ fontSize: 14, color: "#B5B1A9", lineHeight: 1.55 }}><span style={{ color: CREAM, fontWeight: 600 }}>Deliverable:</span> {p.deliverable}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Final Punchline */}
-        <div style={{ background: `linear-gradient(135deg, ${GREEN}08, ${BLUE}08)`, border: `1px solid ${GREEN}30`, borderRadius: 10, padding: "22px 24px", marginTop: 24 }}>
-          <p style={{ fontSize: 16, color: CREAM, lineHeight: 1.6, fontWeight: 500 }}>
-            If two LP relationships convert into active scoping engagements within 90 days, that's real revenue — and a repeatable model for the next four.
-          </p>
-        </div>
-      </div>
-    );
-  };
-
-  // ─── SUB-TAB: SELECTED ENGAGEMENTS ───
-  const CasesSection = () => {
-    const cases = {
-      gpn: {
-        color: BLUE,
-        tag: "KYC Remediation · Business Requirements · Vendor Selection · 16 Markets",
-        title: "Global KYC Remediation Program",
-        role: "Business Requirements & Vendor Lead — Global Payments Network (Fortune 50)",
-        problem: "A global payments network faced regulatory exposure across 16 markets due to incomplete KYC records for card members. The firm needed to define what a global remediation capability should look like, find a vendor capable of executing it, and stand up operations — across markets with different regulatory environments and customer profiles, including populations who could not self-serve digitally.",
-        metrics: [
-          { value: "16", label: "markets in scope across EMEA and beyond" },
-          { value: "RFP", label: "end-to-end vendor selection led via EY process" },
-          { value: "F50", label: "Fortune 50 — one of the world's largest card networks" },
-        ],
-        phases: [
-          { title: "Requirements & Channel Design", text: "Defined business requirements jointly with the client's operations and compliance teams. Designed a non-digital remediation channel for customers unable to self-serve — a critical gap for several markets." },
-          { title: "Vendor Selection", text: "Ran end-to-end RFP via EY. Evaluated vendors against requirements across all 16 markets with technical input from the client's teams. Selected vendor and completed contracting." },
-          { title: "Implementation Initiated", text: "Started implementation with selected vendor. Programme foundation established and running before transitioning to the long-term delivery team for sustained execution." },
-        ],
-        contributions: [
-          "Defined business requirements for the global remediation capability working directly with the client's operations and compliance teams",
-          "Designed the non-digital remediation channel — addressing high-risk KYC populations who could not complete digital self-service across certain markets",
-          "Led the RFP process end-to-end: criteria design, vendor assessment across 16-market scope, and selection recommendation",
-          "Coordinated technical input from the client alongside business requirements to ensure vendor capabilities matched both dimensions",
-        ],
-        stakeholders: [
-          { title: "Operations & Compliance", sub: "Business requirements, market sequencing, regulatory constraints" },
-          { title: "Technology", sub: "Technical requirements, integration needs for vendor evaluation" },
-          { title: "Legal & Risk", sub: "Vendor approval, data handling, regulatory sign-off" },
-          { title: "Selected Vendor", sub: "Implementation design, contracting, operational setup" },
-        ],
-        tags: ["KYC requirements design", "RFP & vendor selection", "Non-digital channel design", "Multi-market programme design", "Regulatory compliance"],
-        avantos: "Defining what a regulated workflow capability needs to look like — before any technology is selected — is the hardest part of an enterprise implementation. I did this across 16 markets, translating regulatory requirements into vendor criteria and operational design. At Avantos, when a new wealth manager scopes their first module, someone needs to sit with their compliance and ops teams, define exactly what the onboarding capability must do, and structure the implementation to survive their procurement process.",
-      },
-      insurer: {
-        color: GREEN,
-        tag: "LLM Adoption · AI Transformation · Risk Framework · Direct: CTO",
-        title: "Enterprise LLM Risk Framework — Transformation Office",
-        role: "Transformation Office Lead — Fortune 15 Healthcare & Insurance Conglomerate · Working directly with CTO",
-        problem: "A Fortune 15 healthcare and insurance conglomerate's CTO wanted to deploy a new risk framework powered by LLM insights — but the organisation lacked the data foundation, cross-functional alignment, and change infrastructure to make it operational. The Transformation Office was established to drive actual adoption: getting teams to use the LLM, cleaning the data that fed it, and translating AI outputs into live operational risk decisions.",
-        metrics: [
-          { value: "CTO", label: "direct working relationship — day-to-day with technology leadership" },
-          { value: "TMO", label: "drove enterprise-wide LLM adoption across the organisation" },
-          { value: "F15", label: "Fortune 15 — one of the largest insurance operations in the US" },
-        ],
-        phases: [
-          { title: "Foundation & Data", text: "Established the Transformation Office. Began data cleaning work to give the LLM reliable inputs. Mapped which teams needed to adopt the framework and in what sequence." },
-          { title: "Driving Adoption", text: "Worked directly with the CTO and cross-functional teams to drive real usage of the LLM-powered risk framework. Resolved data quality issues, addressed resistance, coordinated across Technology, Risk, and Operations." },
-          { title: "Framework Operational", text: "New risk framework live with LLM insights feeding operational decisions. Data foundation cleaned and governed. Transformation Office handed to ongoing programme ownership." },
-        ],
-        contributions: [
-          "Led the Transformation Office driving enterprise adoption of the LLM-powered risk framework — working directly from the CTO's office",
-          "Translated the AI capability into a practical implementation plan with clear ownership, sequencing, and milestones",
-          "Drove data cleaning — ensuring the LLM had structured, reliable inputs before adoption could scale across the organisation",
-          "Managed cross-functional coordination across Technology, Risk, Procurement, and Operations to align on the new framework",
-          "Navigated adoption resistance as teams transitioned from manual to AI-assisted risk processes",
-        ],
-        stakeholders: [
-          { title: "CTO", sub: "Primary sponsor — technical direction and adoption decisions" },
-          { title: "Enterprise Technology & Architecture", sub: "LLM infrastructure, integration, data pipeline" },
-          { title: "Risk & Compliance Leadership", sub: "Framework design, risk threshold decisions" },
-          { title: "Operations Teams", sub: "Day-to-day adoption, workflow integration, feedback loops" },
-        ],
-        tags: ["LLM implementation", "AI adoption programme", "Data cleaning & governance", "Transformation office", "Change management", "Cross-functional coordination"],
-        avantos: "The biggest implementation risk at Avantos isn't the technology — it's getting advisors and ops teams to actually use the agents. I ran LLM adoption inside a Fortune 15 institution from the CTO's office: data cleaning, change resistance, cross-functional coordination. Insurance leadership needs to see governance and auditability before they trust AI with risk decisions. That's the same conversation Guardian Life will have.",
-      },
-      custody: {
-        color: PURPLE,
-        tag: "C-Suite Diagnostic · Strategic Assessment · Operations & Technology · Manual Workflow Reduction",
-        title: "Enterprise Operations Diagnostic",
-        role: "Strategic Advisor — Global Custody & Asset Services Institution (Top 5 Global)",
-        problem: "A top-5 global custody and asset services institution needed an honest, ground-truth picture of its operating environment: what was actually working, what was broken, where manual workflows were creating risk and cost, and what resources were needed to streamline. The answer could not come from management reporting — it had to come from the people running the business. That meant going directly to C-suite and senior leadership across every function.",
-        metrics: [
-          { value: "C-Suite", label: "interviewed directly across Ops, Tech, Finance, Data, Risk, HR" },
-          { value: "6", label: "functions assessed for operational gaps and manual workflow exposure" },
-          { value: "Top 5", label: "one of the five largest global custody institutions in the world" },
-        ],
-        phases: [
-          { title: "Diagnostic Design", text: "Designed the interview framework and stakeholder map. Identified which C-suite and senior leaders held the real picture on operational performance — not just the official version." },
-          { title: "C-Suite Interviews", text: "Conducted structured interviews across Operations, Technology, Finance, Data, Risk, and HR leadership. Surfaced where manual workflows created risk, where accountability was unclear, and what resources were actually needed." },
-          { title: "Strategic Synthesis", text: "Synthesised findings into clear recommendations: what to prioritise, who needed to own it, and what the gaps between stated ambition and operational reality actually were." },
-        ],
-        contributions: [
-          "Interviewed C-suite and senior leadership across six functions to build a ground-truth picture of the operating environment — not the version that appears in management decks",
-          "Surfaced where manual workflows were creating operational risk and cost — identifying the highest-priority areas for streamlining",
-          "Mapped decision authority and resource ownership — who controlled what and where accountability gaps existed at the senior level",
-          "Synthesised findings into actionable strategic recommendations on what to address, in what order, and with what ownership",
-        ],
-        stakeholders: [
-          { title: "Chief Operations & Technology Officer", sub: "Overall operating model, transformation priorities" },
-          { title: "COO, Operations & Technology", sub: "Execution gaps, resource constraints, accountability" },
-          { title: "Finance & Data Leadership", sub: "Unit economics, visibility gaps, measurement" },
-          { title: "Operations Leadership", sub: "Manual workflow pain points, automation readiness" },
-        ],
-        tags: ["C-suite diagnostic interviews", "Operating model assessment", "Manual workflow mapping", "Resource & accountability analysis", "Strategic synthesis"],
-        avantos: "Before Avantos can deploy at a new institutional client, someone needs to map how that institution actually operates — not the org chart version, but ground truth: where manual processes live, who owns what, where accountability breaks down. I ran that diagnostic at C-suite level at one of the world's largest custodians. Same muscle applies at SEI, Vanguard, or any new enterprise account.",
-      },
-    };
-    const caseTabs = [
-      { id: "insurer", label: "Fortune 15 Insurer", sub: "LLM Adoption · AI Transformation · CTO", activeClass: GREEN },
-      { id: "gpn", label: "Global Payments Network", sub: "KYC · Vendor Selection · 16 Markets", activeClass: BLUE },
-      { id: "custody", label: "Global Custody Institution", sub: "C-Suite Diagnostic · Ops & Technology", activeClass: PURPLE },
-    ];
-    const c = cases[activeCase];
-    return (
-      <div style={{ padding: "36px 40px", maxWidth: 900, margin: "0 auto" }}>
-        <div style={{ fontSize: 11, color: GOLD, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 12 }}>Selected Engagements</div>
-        <h1 style={{ fontSize: 28, fontFamily: SERIF, color: CREAM, fontWeight: 400, letterSpacing: "-0.5px", margin: "0 0 6px" }}>Work That Is Directly Relevant</h1>
-        <p style={{ fontSize: 14, color: "#AAA", margin: "0 0 24px" }}>Three engagements. Fortune 500 financial services. C-suite relationships. Regulated environments.</p>
-
-        {/* Case sub-tabs */}
-        <div style={{ display: "flex", marginBottom: 28, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: "hidden" }}>
-          {caseTabs.map((ct, i) => (
-            <button key={ct.id} onClick={() => setActiveCase(ct.id)}
-              style={{ flex: 1, padding: "14px 10px", background: activeCase === ct.id ? `${ct.activeClass}08` : CARD, border: "none",
-                borderRight: i < 2 ? `1px solid ${BORDER}` : "none", borderBottom: activeCase === ct.id ? `2px solid ${ct.activeClass}` : "2px solid transparent",
-                color: activeCase === ct.id ? ct.activeClass : "#999", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT, textAlign: "center", lineHeight: 1.4, transition: "all 0.2s" }}>
-              {ct.label}
-              <span style={{ display: "block", fontSize: 11, fontWeight: 400, opacity: 0.6, marginTop: 3 }}>{ct.sub}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Case Content */}
-        {/* Header */}
-        <div style={{ borderRadius: "10px 10px 0 0", padding: "22px 28px", border: `1px solid ${BORDER}`, borderBottom: "none", background: `${c.color}04`, borderTop: `3px solid ${c.color}` }}>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: c.color, marginBottom: 8 }}>{c.tag}</div>
-          <div style={{ fontSize: 20, fontFamily: SERIF, fontWeight: 600, color: CREAM, marginBottom: 4 }}>{c.title}</div>
-          <div style={{ fontSize: 13, color: "#AAA" }}>{c.role}</div>
-        </div>
-        {/* Body */}
-        <div style={{ background: "#151514", border: `1px solid ${BORDER}`, borderTop: "none", borderRadius: "0 0 12px 12px" }}>
-          {/* Problem */}
-          <div style={{ padding: "22px 28px", borderBottom: `1px solid #1C1C1A` }}>
-            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#666", marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${BORDER}` }}>The Problem</div>
-            <p style={{ fontSize: 15, color: "#B5B1A9", lineHeight: 1.8 }}>{c.problem}</p>
-          </div>
-          {/* Scale */}
-          <div style={{ padding: "22px 28px", borderBottom: `1px solid #1C1C1A` }}>
-            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#666", marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${BORDER}` }}>Scale</div>
-            <div style={{ display: "flex", gap: 10 }}>
-              {c.metrics.map((m, i) => (
-                <div key={i} style={{ flex: 1, background: BG, border: `1px solid ${BORDER}`, borderRadius: 9, padding: "14px 16px" }}>
-                  <div style={{ fontSize: 24, fontFamily: SERIF, fontWeight: 700, color: c.color, marginBottom: 4, lineHeight: 1 }}>{m.value}</div>
-                  <div style={{ fontSize: 12, color: "#AAA", lineHeight: 1.4 }}>{m.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-          {/* Timeline */}
-          <div style={{ padding: "22px 28px", borderBottom: `1px solid #1C1C1A` }}>
-            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#666", marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${BORDER}` }}>How the Engagement Unfolded</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-              {c.phases.map((ph, i) => (
-                <div key={i} style={{ background: BG, border: `1px solid ${BORDER}`, borderRadius: 9, padding: "16px" }}>
-                  <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: c.color, marginBottom: 6 }}>Phase {i + 1}</div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: CREAM, marginBottom: 6 }}>{ph.title}</div>
-                  <div style={{ fontSize: 13, color: "#AAA", lineHeight: 1.6 }}>{ph.text}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-          {/* Contributions */}
-          <div style={{ padding: "22px 28px", borderBottom: `1px solid #1C1C1A` }}>
-            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#666", marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${BORDER}` }}>My Contribution</div>
-            {c.contributions.map((ct, i) => (
-              <div key={i} style={{ display: "flex", gap: 12, fontSize: 14, color: "#B5B1A9", lineHeight: 1.7, padding: "5px 0" }}>
-                <span style={{ flexShrink: 0, marginTop: 9, width: 5, height: 5, borderRadius: "50%", background: c.color }} />
-                <span>{ct}</span>
-              </div>
-            ))}
-          </div>
-          {/* Stakeholders + Tags */}
-          <div style={{ padding: "22px 28px", borderBottom: `1px solid #1C1C1A` }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#666", marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${BORDER}` }}>Who I Worked With</div>
-                {c.stakeholders.map((s, i) => (
-                  <div key={i} style={{ background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "10px 14px", marginBottom: 6 }}>
-                    <div style={{ fontSize: 14, color: "#C8C4B8", fontWeight: 600, marginBottom: 2 }}>{s.title}</div>
-                    <div style={{ fontSize: 12, color: "#AAA", lineHeight: 1.4 }}>{s.sub}</div>
-                  </div>
-                ))}
-              </div>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#666", marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${BORDER}` }}>Capabilities Applied</div>
-                <div style={{ marginTop: 4 }}>
-                  {c.tags.map((t, i) => (
-                    <span key={i} style={{ display: "inline-block", background: BG, border: `1px solid ${BORDER}`, borderRadius: 5, padding: "5px 11px", fontSize: 12, color: "#5A5A58", margin: "3px 3px 3px 0" }}>{t}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-          {/* Avantos Bar */}
-          <div style={{ background: `${GOLD}05`, borderTop: `2px solid ${GOLD}22`, padding: "22px 28px", borderRadius: "0 0 12px 12px" }}>
-            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: GOLD, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${GOLD}18` }}>Why This Is Relevant for Avantos</div>
-            <p style={{ fontSize: 15, color: "#C8B87A", lineHeight: 1.8 }}>{c.avantos}</p>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // ─── RENDER ───
   return (
-    <div>
-      {/* Sub-tab navigation */}
-      <div style={{ display: "flex", borderBottom: "1px solid #1E1E1C", background: "#141413", padding: "0 32px", overflowX: "auto" }}>
-        {SUB_TABS.map(st => (
-          <button key={st.id} onClick={() => setSub(st.id)}
-            style={{ background: "none", border: "none", borderBottom: sub === st.id ? `2px solid ${GOLD}` : "2px solid transparent",
-              padding: "14px 18px", cursor: "pointer", transition: "all 0.2s", whiteSpace: "nowrap" }}>
-            <span style={{ fontSize: 13, color: sub === st.id ? "#D4D0C8" : "#999", fontWeight: 500, fontFamily: FONT }}>{st.label}</span>
-          </button>
+    <div style={{ padding: "36px 40px", maxWidth: 780, margin: "0 auto" }}>
+      <div style={{ fontSize: 11, color: GOLD, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 12 }}>
+        Background
+      </div>
+      <h1 style={{ fontSize: 28, fontFamily: SERIF, color: CREAM, fontWeight: 400, letterSpacing: "-0.5px", margin: "0 0 8px", lineHeight: 1.2 }}>
+        Christian Spetz
+      </h1>
+      <p style={{ fontSize: 14, color: "#888", margin: "0 0 28px", lineHeight: 1.65 }}>
+        10 years in enterprise consulting. Financial services focus. Builds with AI, not just about it.
+      </p>
+
+      {/* JD Match */}
+      <div style={{ marginBottom: 28 }}>
+        {matches.map((m, i) => (
+          <div key={i} style={{ marginBottom: 10, padding: "16px 20px", background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10 }}>
+            <div style={{ fontSize: 12, color: "#777", marginBottom: 6 }}>{m.req}</div>
+            <div style={{ fontSize: 14, color: "#C8C4B8", lineHeight: 1.6 }}>{m.proof}</div>
+          </div>
         ))}
       </div>
-      {sub === "about" && <AboutSection />}
-      {sub === "lps" && <LPSection />}
-      {sub === "growth" && <GrowthSection />}
-      {sub === "plan" && <PlanSection />}
-      {sub === "cases" && <CasesSection />}
+
+      {/* The ask */}
+      <div style={{ padding: "20px 24px", background: `${GOLD}08`, border: `1px solid ${GOLD}20`, borderRadius: 10 }}>
+        <div style={{ fontSize: 14, color: "#C8C4B8", lineHeight: 1.7 }}>
+          I'd welcome 30 minutes to present how I'd approach this role — and to hear directly from you where Avantos is headed next.
+        </div>
+      </div>
     </div>
   );
 }
@@ -1797,8 +1257,8 @@ export default function ArclineWorkspace() {
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet" />
       <div style={{ textAlign: "center" }}>
         <div style={{ fontSize: 42, fontFamily: SERIF, color: CREAM, fontWeight: 400, letterSpacing: "-0.5px", marginBottom: 8 }}>◈ Arcline</div>
-        <div style={{ fontSize: 12, color: "#AAA", letterSpacing: "3px", textTransform: "uppercase", marginBottom: 48 }}>Principal Workspace</div>
-        <div style={{ fontSize: 15, color: "#AAA", lineHeight: 1.7, maxWidth: 440, margin: "0 auto 40px" }}>
+        <div style={{ fontSize: 12, color: "#555", letterSpacing: "3px", textTransform: "uppercase", marginBottom: 48 }}>Principal Workspace</div>
+        <div style={{ fontSize: 15, color: "#777", lineHeight: 1.7, maxWidth: 440, margin: "0 auto 40px" }}>
           A product concept, implementation simulator, and roadmap generator for Avantos AI — built by Christian Spetz.
         </div>
         <button onClick={() => setEntered(true)}
@@ -1819,7 +1279,7 @@ export default function ArclineWorkspace() {
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ fontSize: 20, fontWeight: 600, fontFamily: SERIF, color: CREAM }}>◈ Arcline</div>
           <div style={{ height: 14, width: 1, background: "#2A2A28" }} />
-          <span style={{ fontSize: 9, color: "#AAA", fontWeight: 600, letterSpacing: "2px", textTransform: "uppercase" }}>Principal Workspace</span>
+          <span style={{ fontSize: 9, color: "#555", fontWeight: 600, letterSpacing: "2px", textTransform: "uppercase" }}>Principal Workspace</span>
         </div>
         {frictionLog.length > 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1837,7 +1297,7 @@ export default function ArclineWorkspace() {
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             style={{ background: "none", border: "none", borderBottom: activeTab === tab.id ? `2px solid ${GOLD}` : "2px solid transparent",
               padding: "14px 22px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, transition: "all 0.15s" }}>
-            <span style={{ fontSize: 13, fontWeight: 700, fontFamily: "monospace", color: activeTab === tab.id ? GOLD : "#999",
+            <span style={{ fontSize: 13, fontWeight: 700, fontFamily: "monospace", color: activeTab === tab.id ? GOLD : "#555",
               background: activeTab === tab.id ? `${GOLD}15` : "transparent", padding: "2px 7px", borderRadius: 4 }}>{tab.num}</span>
             <span style={{ fontSize: 15, color: activeTab === tab.id ? "#E8E4DC" : "#666", fontWeight: 500 }}>{tab.label}</span>
             {tab.id === "roadmap" && frictionLog.length > 0 && (
