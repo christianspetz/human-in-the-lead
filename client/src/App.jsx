@@ -11,6 +11,7 @@ import SimulatorAnalysis from './components/SimulatorAnalysis';
 import SimulatorResults from './components/SimulatorResults';
 import RoleReimaginer from './components/RoleReimaginer';
 import ArclineGate from './components/ArclineGate';
+import ApolloEngine from './components/ApolloEngine';
 
 const SCREENS = {
   LANDING: 'landing',
@@ -25,6 +26,7 @@ const SCREENS = {
   SIMULATOR_RESULTS: 'simulator_results',
   ROLE_REIMAGINER: 'role_reimaginer',
   ARCLINE: 'arcline',
+  APOLLO: 'apollo',
 };
 
 // Map URL paths to screens
@@ -33,6 +35,7 @@ const PATH_TO_SCREEN = {
   '/diagnostic': SCREENS.DIAGNOSTIC,
   '/simulator': SCREENS.SIMULATOR_SETUP,
   '/arcline': SCREENS.ARCLINE,
+  '/apollo': SCREENS.APOLLO,
 };
 
 // Map screens to URL paths
@@ -203,7 +206,9 @@ export default function App() {
 
       {screen === SCREENS.ARCLINE && <ArclineGate />}
 
-      {screen !== SCREENS.ARCLINE && <footer className="app-footer">
+      {screen === SCREENS.APOLLO && <ApolloEngine />}
+
+      {screen !== SCREENS.ARCLINE && screen !== SCREENS.APOLLO && <footer className="app-footer">
         <p style={{ fontSize: '0.7rem', color: 'var(--slate)', marginBottom: '0.75rem', maxWidth: '500px', margin: '0 auto 0.75rem', lineHeight: '1.5' }}>
           This is a personal project built on my own time. All views are my own and do not represent the views or positions of my employer. Based on publicly available frameworks and best practices.
         </p>

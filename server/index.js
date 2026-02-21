@@ -10,6 +10,7 @@ const statsRouter = require('./routes/stats');
 const simulateRouter = require('./routes/simulate');
 const reimagineRouter = require('./routes/reimagine');
 const arclineRoutes = require('./routes/arcline');
+const apolloSimulateRouter = require('./routes/apolloSimulate');
 const app = express();
 const PORT = process.env.PORT || 3000;
 // Middleware
@@ -30,6 +31,7 @@ app.use('/api', statsRouter);
 app.use('/api', simulateRouter);
 app.use('/api', reimagineRouter);
 app.use('/api/arcline', arclineRoutes);
+app.use('/api', apolloSimulateRouter);
 // Serve React build in production
 const clientBuildPath = path.join(__dirname, '..', 'client', 'dist');
 app.use(express.static(clientBuildPath));
@@ -62,7 +64,9 @@ async function autoMigrate() {
     client.release();
   }
 }
-autoMigrate().then(() => {
+autoMigrate().catch((err) => {
+  console.error('Database connection failed (non-fatal):', err.message);
+}).finally(() => {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
   });
