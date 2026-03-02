@@ -13,6 +13,7 @@ import RoleReimaginer from './components/RoleReimaginer';
 import ArclineGate from './components/ArclineGate';
 import ApolloEngine from './components/ApolloEngine';
 import ZeroHumanCompany from './components/ZeroHumanCompany';
+import Prism from './Prism';
 
 const SCREENS = {
   LANDING: 'landing',
@@ -29,6 +30,7 @@ const SCREENS = {
   ARCLINE: 'arcline',
   APOLLO: 'apollo',
   ZERO_HUMAN: 'zero_human',
+  PRISM: 'prism',
 };
 
 // Map URL paths to screens
@@ -39,12 +41,14 @@ const PATH_TO_SCREEN = {
   '/arcline': SCREENS.ARCLINE,
   '/apollo': SCREENS.APOLLO,
   '/zero-human-company': SCREENS.ZERO_HUMAN,
+  '/prism': SCREENS.PRISM,
 };
 
 // Map screens to URL paths
 const SCREEN_TO_PATH = {
   [SCREENS.ROLE_REIMAGINER]: '/reimagine',
   [SCREENS.ZERO_HUMAN]: '/zero-human-company',
+  [SCREENS.PRISM]: '/prism',
   [SCREENS.LANDING]: '/',
 };
 
@@ -195,11 +199,16 @@ export default function App() {
     setScreen(SCREENS.ZERO_HUMAN);
   }, []);
 
+  // ——— Prism handler ————————————————————————————
+  const handlePrismStart = useCallback(() => {
+    setScreen(SCREENS.PRISM);
+  }, []);
+
   return (
     <div className="app-container">
       <div className="bg-glow" /><div className="bg-glow-2" />
 
-      {screen === SCREENS.LANDING && <Landing onStart={handleStart} onStartSimulator={handleSimulatorStart} onStartRoleReimaginer={handleRoleReimaginerStart} onStartZeroHuman={handleZeroHumanStart} />}
+      {screen === SCREENS.LANDING && <Landing onStart={handleStart} onStartSimulator={handleSimulatorStart} onStartRoleReimaginer={handleRoleReimaginerStart} onStartZeroHuman={handleZeroHumanStart} onStartPrism={handlePrismStart} />}
       {screen === SCREENS.DIAGNOSTIC && <Diagnostic onComplete={handleDiagnosticComplete} onBack={() => setScreen(SCREENS.LANDING)} />}
       {screen === SCREENS.ANALYSIS && <Analysis />}
       {screen === SCREENS.RESULTS && <Results results={results} answers={answers} userName={userData.name} error={error} onRestart={handleRestart} />}
@@ -219,7 +228,9 @@ export default function App() {
 
       {screen === SCREENS.ZERO_HUMAN && <ZeroHumanCompany onBack={() => setScreen(SCREENS.LANDING)} />}
 
-      {screen !== SCREENS.ARCLINE && screen !== SCREENS.APOLLO && screen !== SCREENS.ZERO_HUMAN && <footer className="app-footer">
+      {screen === SCREENS.PRISM && <Prism />}
+
+      {screen !== SCREENS.ARCLINE && screen !== SCREENS.APOLLO && screen !== SCREENS.ZERO_HUMAN && screen !== SCREENS.PRISM && <footer className="app-footer">
         <p style={{ fontSize: '0.7rem', color: 'var(--slate)', marginBottom: '0.75rem', maxWidth: '500px', margin: '0 auto 0.75rem', lineHeight: '1.5' }}>
           This is a personal project built on my own time. All views are my own and do not represent the views or positions of my employer. Based on publicly available frameworks and best practices.
         </p>

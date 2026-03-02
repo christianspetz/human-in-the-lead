@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function Landing({ onStart, onStartSimulator, onStartRoleReimaginer, onStartZeroHuman }) {
+export default function Landing({ onStart, onStartSimulator, onStartRoleReimaginer, onStartZeroHuman, onStartPrism }) {
   const [showCapture, setShowCapture] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -132,6 +132,35 @@ export default function Landing({ onStart, onStartSimulator, onStartRoleReimagin
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </button>
           </div>
+          {/* Prism Card */}
+          <div className="landing-tool-card" onClick={onStartPrism}>
+            <div className="landing-tool-icon">
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                <polygon points="24,6 42,36 6,36" stroke="#D4A853" strokeWidth="2" fill="none" opacity="0.4"/>
+                <polygon points="24,14 34,32 14,32" stroke="#D4A853" strokeWidth="1.5" fill="none" opacity="0.6"/>
+                <circle cx="24" cy="26" r="3" fill="#D4A853" opacity="0.8"/>
+                <line x1="24" y1="6" x2="24" y2="14" stroke="#D4A853" strokeWidth="1.5" opacity="0.3"/>
+                <line x1="42" y1="36" x2="34" y2="32" stroke="#D4A853" strokeWidth="1.5" opacity="0.3"/>
+                <line x1="6" y1="36" x2="14" y2="32" stroke="#D4A853" strokeWidth="1.5" opacity="0.3"/>
+              </svg>
+            </div>
+            <h3>Prism</h3>
+            <p className="landing-tool-desc">
+              Map AI initiatives to financial impact. Identify, score, and model value creation opportunities across your entire process landscape.
+            </p>
+            <div className="dimension-list" style={{ marginBottom: '1rem', marginTop: '0.75rem' }}>
+              <span className="dimension-tag">Processes</span>
+              <span className="dimension-tag">EBITDA</span>
+              <span className="dimension-tag">Scenarios</span>
+              <span className="dimension-tag">ROI</span>
+            </div>
+            <span className="landing-tool-time">~15 minutes</span>
+            <button className="btn-prism" style={{ width: '100%', marginTop: '0.75rem' }}>
+              Launch Prism ◈
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+
           {/* Zero Human Company Card */}
           <div className="landing-tool-card landing-tool-card-wide" onClick={onStartZeroHuman}>
             <div className="landing-tool-icon">
