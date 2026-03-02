@@ -12,6 +12,7 @@ import SimulatorResults from './components/SimulatorResults';
 import RoleReimaginer from './components/RoleReimaginer';
 import ArclineGate from './components/ArclineGate';
 import ApolloEngine from './components/ApolloEngine';
+import ZeroHumanCompany from './components/ZeroHumanCompany';
 
 const SCREENS = {
   LANDING: 'landing',
@@ -27,6 +28,7 @@ const SCREENS = {
   ROLE_REIMAGINER: 'role_reimaginer',
   ARCLINE: 'arcline',
   APOLLO: 'apollo',
+  ZERO_HUMAN: 'zero_human',
 };
 
 // Map URL paths to screens
@@ -36,11 +38,13 @@ const PATH_TO_SCREEN = {
   '/simulator': SCREENS.SIMULATOR_SETUP,
   '/arcline': SCREENS.ARCLINE,
   '/apollo': SCREENS.APOLLO,
+  '/zero-human-company': SCREENS.ZERO_HUMAN,
 };
 
 // Map screens to URL paths
 const SCREEN_TO_PATH = {
   [SCREENS.ROLE_REIMAGINER]: '/reimagine',
+  [SCREENS.ZERO_HUMAN]: '/zero-human-company',
   [SCREENS.LANDING]: '/',
 };
 
@@ -186,11 +190,16 @@ export default function App() {
     setScreen(SCREENS.ROLE_REIMAGINER);
   }, []);
 
+  // ——— Zero Human Company handler ———————————————
+  const handleZeroHumanStart = useCallback(() => {
+    setScreen(SCREENS.ZERO_HUMAN);
+  }, []);
+
   return (
     <div className="app-container">
       <div className="bg-glow" /><div className="bg-glow-2" />
 
-      {screen === SCREENS.LANDING && <Landing onStart={handleStart} onStartSimulator={handleSimulatorStart} onStartRoleReimaginer={handleRoleReimaginerStart} />}
+      {screen === SCREENS.LANDING && <Landing onStart={handleStart} onStartSimulator={handleSimulatorStart} onStartRoleReimaginer={handleRoleReimaginerStart} onStartZeroHuman={handleZeroHumanStart} />}
       {screen === SCREENS.DIAGNOSTIC && <Diagnostic onComplete={handleDiagnosticComplete} onBack={() => setScreen(SCREENS.LANDING)} />}
       {screen === SCREENS.ANALYSIS && <Analysis />}
       {screen === SCREENS.RESULTS && <Results results={results} answers={answers} userName={userData.name} error={error} onRestart={handleRestart} />}
@@ -208,7 +217,9 @@ export default function App() {
 
       {screen === SCREENS.APOLLO && <ApolloEngine />}
 
-      {screen !== SCREENS.ARCLINE && screen !== SCREENS.APOLLO && <footer className="app-footer">
+      {screen === SCREENS.ZERO_HUMAN && <ZeroHumanCompany onBack={() => setScreen(SCREENS.LANDING)} />}
+
+      {screen !== SCREENS.ARCLINE && screen !== SCREENS.APOLLO && screen !== SCREENS.ZERO_HUMAN && <footer className="app-footer">
         <p style={{ fontSize: '0.7rem', color: 'var(--slate)', marginBottom: '0.75rem', maxWidth: '500px', margin: '0 auto 0.75rem', lineHeight: '1.5' }}>
           This is a personal project built on my own time. All views are my own and do not represent the views or positions of my employer. Based on publicly available frameworks and best practices.
         </p>

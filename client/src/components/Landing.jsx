@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function Landing({ onStart, onStartSimulator, onStartRoleReimaginer }) {
+export default function Landing({ onStart, onStartSimulator, onStartRoleReimaginer, onStartZeroHuman }) {
   const [showCapture, setShowCapture] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -129,6 +129,34 @@ export default function Landing({ onStart, onStartSimulator, onStartRoleReimagin
             <span className="landing-tool-time">~2 minutes</span>
             <button className="btn-reimaginer" style={{ width: '100%', marginTop: '0.75rem' }}>
               Reimagine My Role
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+          {/* Zero Human Company Card */}
+          <div className="landing-tool-card landing-tool-card-wide" onClick={onStartZeroHuman}>
+            <div className="landing-tool-icon">
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                <rect x="10" y="14" width="28" height="22" rx="3" stroke="#F97316" strokeWidth="2" opacity="0.4"/>
+                <path d="M18 14V10a6 6 0 0112 0v4" stroke="#F97316" strokeWidth="2" strokeLinecap="round" opacity="0.6"/>
+                <circle cx="24" cy="25" r="4" stroke="#F97316" strokeWidth="1.5" opacity="0.8"/>
+                <path d="M24 29v3" stroke="#F97316" strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/>
+                <path d="M20 25h-4M32 25h-4" stroke="#F97316" strokeWidth="1" strokeLinecap="round" opacity="0.3" strokeDasharray="2 2"/>
+              </svg>
+            </div>
+            <h3>Can You Build a Company With Zero Humans?</h3>
+            <p className="landing-tool-desc">
+              An interactive exploration of autonomous companies — what's possible, what's legal, and where humans still matter.
+            </p>
+            <div className="dimension-list" style={{ marginBottom: '1rem', marginTop: '0.75rem' }}>
+              <span className="dimension-tag">Entity</span>
+              <span className="dimension-tag">Legal</span>
+              <span className="dimension-tag">Autonomy</span>
+              <span className="dimension-tag">Barriers</span>
+              <span className="dimension-tag">Functions</span>
+            </div>
+            <span className="landing-tool-time">~5 minutes</span>
+            <button className="btn-zero-human" style={{ width: '100%', marginTop: '0.75rem' }}>
+              Explore the Blueprint
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </button>
           </div>
