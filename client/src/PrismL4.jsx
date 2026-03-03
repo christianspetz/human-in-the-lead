@@ -1003,11 +1003,14 @@ export default function PrismL4({ user, onLogout }) {
       const benchmarks = (proc.kpis || []).map((kpi, ki) => {
         const current = procValues[proc.id]?.[`kpi_current_${ki}`] ?? kpi.current;
         const bench = procBenchmarks[proc.id]?.[`bench_${ki}`] ?? kpi.benchmark;
+        const q = getQuartile(current, bench, kpi);
+        const qBadge = q ? `<span style="font-size:10px;padding:1px 6px;border-radius:3px;background:${q.color}20;color:${q.color};font-weight:700">${q.icon} ${q.label}</span>` : "";
         return `<tr>
           <td style="padding:4px 8px;font-size:12px">${kpi.name}</td>
           <td style="padding:4px 8px;font-size:12px;text-align:center">${current ?? "—"} ${kpi.unit}</td>
           <td style="padding:4px 8px;font-size:12px;text-align:center;color:#7CB9A8">${bench ?? "—"} ${kpi.unit}</td>
           <td style="padding:4px 8px;font-size:12px;text-align:center">${kpi.src}</td>
+          <td style="padding:4px 8px;font-size:12px;text-align:center">${qBadge}</td>
         </tr>`;
       }).join("");
       const sapHtml = (proc.sap || []).map(s =>
@@ -1015,12 +1018,31 @@ export default function PrismL4({ user, onLogout }) {
       ).join("");
       const agentHtml = agentResults[proc.id] ? `<div style="margin:8px 0;padding:10px;background:#fdf8ef;border:1px solid #D4A85322;border-radius:8px;font-size:12px;white-space:pre-wrap"><strong style="color:#D4A853">AI Agent Scenario</strong><br/>${agentResults[proc.id]}</div>` : "";
       const impact = valResult.impacts.find(i => i.id === proc.id);
+      // Build baseline analysis HTML
+      const pid = proc.id;
+      const effParts = [];
+      if (baselineData[pid + "_a_ftes"]) effParts.push("FTEs: " + baselineData[pid + "_a_ftes"]);
+      if (baselineData[pid + "_a_rework"]) effParts.push("Rework: " + baselineData[pid + "_a_rework"] + "%");
+      if (baselineData[pid + "_a_cycleTime"]) effParts.push("Cycle: " + baselineData[pid + "_a_cycleTime"] + " " + (baselineData[pid + "_a_cycleTimeUnit"] || "days"));
+      if (baselineData[pid + "_a_automation"]) effParts.push("Auto: " + baselineData[pid + "_a_automation"] + "%");
+      if (baselineData[pid + "_a_errorRate"]) effParts.push("Errors: " + baselineData[pid + "_a_errorRate"] + "%");
+      if (baselineData[pid + "_a_bottleneck"]) effParts.push("Bottleneck: " + baselineData[pid + "_a_bottleneck"]);
+      const leakParts = [];
+      if (baselineData[pid + "_b_granularity"]) leakParts.push("Granularity: " + baselineData[pid + "_b_granularity"]);
+      if (baselineData[pid + "_b_dataQuality"]) leakParts.push("Quality: " + baselineData[pid + "_b_dataQuality"]);
+      if (baselineData[pid + "_b_ssot"]) leakParts.push("SSOT: " + baselineData[pid + "_b_ssot"]);
+      if (baselineData[pid + "_b_leakage"]) leakParts.push("Leakage: " + baselineData[pid + "_b_leakage"]);
+      const baselineHtml = (effParts.length > 0 || leakParts.length > 0) ? '<div style="margin:8px 0;display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+        (effParts.length > 0 ? '<div style="padding:8px;background:#f0faf6;border-left:3px solid #7CB9A8;border-radius:6px;font-size:11px"><strong style="color:#7CB9A8">Process Efficiency</strong><br/>' + effParts.join(" · ") + '</div>' : "") +
+        (leakParts.length > 0 ? '<div style="padding:8px;background:#fdf8ef;border-left:3px solid #D4A853;border-radius:6px;font-size:11px"><strong style="color:#D4A853">Data-Driven Leakage</strong><br/>' + leakParts.join(" · ") + '</div>' : "") +
+        '</div>' : "";
       return `<div style="margin:20px 0;padding:16px;border:1px solid #ddd;border-radius:10px;border-left:4px solid ${proc.l1Color}">
         <h3 style="margin:0 0 4px;font-size:16px">${proc.l4} — ${proc.label}</h3>
         <div style="font-size:12px;color:#888;margin-bottom:8px">${proc.e2e}${impact?.value > 0 ? ` · Value Impact: $${impact.value.toFixed(1)}M` : ""}</div>
+        ${baselineHtml}
         ${answers ? `<table style="width:100%;border-collapse:collapse;margin:8px 0"><tr style="background:#f5f5f5"><th style="text-align:left;padding:4px 8px;font-size:11px">Question</th><th style="text-align:left;padding:4px 8px;font-size:11px">Response</th></tr>${answers}</table>` : ""}
         ${miningHtml}
-        ${benchmarks ? `<table style="width:100%;border-collapse:collapse;margin:8px 0"><tr style="background:#f5f5f5"><th style="text-align:left;padding:4px 8px;font-size:11px">KPI</th><th style="text-align:center;padding:4px 8px;font-size:11px">Current</th><th style="text-align:center;padding:4px 8px;font-size:11px">Benchmark</th><th style="text-align:center;padding:4px 8px;font-size:11px">Source</th></tr>${benchmarks}</table>` : ""}
+        ${benchmarks ? `<table style="width:100%;border-collapse:collapse;margin:8px 0"><tr style="background:#f5f5f5"><th style="text-align:left;padding:4px 8px;font-size:11px">KPI</th><th style="text-align:center;padding:4px 8px;font-size:11px">Current</th><th style="text-align:center;padding:4px 8px;font-size:11px">Benchmark</th><th style="text-align:center;padding:4px 8px;font-size:11px">Source</th><th style="text-align:center;padding:4px 8px;font-size:11px">Quartile</th></tr>${benchmarks}</table>` : ""}
         ${sapHtml}
         ${agentHtml}
       </div>`;
@@ -1044,7 +1066,7 @@ export default function PrismL4({ user, onLogout }) {
       <div style="font-size:12px;color:#888;letter-spacing:3px;text-transform:uppercase">humaninthelead.ai</div>
       <h1>Phase 0 Report</h1>
       <div style="font-size:18px;color:#D4A853;font-weight:500">${baseline.company}</div>
-      <div style="font-size:13px;color:#888;margin-top:4px">${baseline.industry} · Generated ${now} · PrismL4</div>
+      <div style="font-size:13px;color:#888;margin-top:4px">${baseline.industry}${selectedFunction ? ` · ${FUNCTIONS.find(f => f.id === selectedFunction)?.name || ""} Function` : ""} · Generated ${now} · PrismL4</div>
     </div>
 
     <h2>1. Executive Summary</h2>
@@ -1158,10 +1180,34 @@ export default function PrismL4({ user, onLogout }) {
             source: kpi.src,
             method: kpi.method,
           })),
+          jobs: proc.jobs || [],
+          occurrence: proc.kpis?.[0]?.occurrence || null,
+          capability: proc.kpis?.[0]?.capability || null,
           sap: proc.sap || [],
           valLevers: proc.valLevers || [],
           questionnaire: answers,
           mining,
+          baselineData: {
+            efficiency: {
+              ftes: baselineData[`${proc.id}_a_ftes`] || null,
+              rework: baselineData[`${proc.id}_a_rework`] || null,
+              cycleTime: baselineData[`${proc.id}_a_cycleTime`] || null,
+              cycleTimeUnit: baselineData[`${proc.id}_a_cycleTimeUnit`] || null,
+              automation: baselineData[`${proc.id}_a_automation`] || null,
+              errorRate: baselineData[`${proc.id}_a_errorRate`] || null,
+              bottleneck: baselineData[`${proc.id}_a_bottleneck`] || null,
+              volume: baselineData[`${proc.id}_a_volume`] || null,
+              volumePeriod: baselineData[`${proc.id}_a_volumePeriod`] || null,
+            },
+            leakage: {
+              granularity: baselineData[`${proc.id}_b_granularity`] || null,
+              reportFreq: baselineData[`${proc.id}_b_reportFreq`] || null,
+              dataQuality: baselineData[`${proc.id}_b_dataQuality`] || null,
+              manualPct: baselineData[`${proc.id}_b_manualPct`] || null,
+              ssot: baselineData[`${proc.id}_b_ssot`] || null,
+              leakage: baselineData[`${proc.id}_b_leakage`] || null,
+            },
+          },
           catalystBenchmarks: catalystResults[proc.id] || null,
           aiAgent: agentResults[proc.id] || null,
         };
@@ -2022,24 +2068,36 @@ export default function PrismL4({ user, onLogout }) {
                     <button onClick={() => setFocusProc(null)} style={{ background: "none", border: "none", color: t.mut, cursor: "pointer", fontSize: 16 }}>×</button>
                   </div>
 
-                  {/* ─── Panel A: Process Efficiency Gap ─── */}
-                  <div style={{ padding: 12, background: BLUE + "08", border: `1px solid ${BLUE}22`, borderRadius: 10, marginBottom: 12 }}>
-                    <div style={{ fontSize: 11, color: BLUE, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 10 }}>A — Process Efficiency Gap</div>
+                  {/* ─── Panel A: Process Efficiency (green border) ─── */}
+                  <div style={{ padding: 12, background: GREEN + "08", border: `1px solid ${GREEN}22`, borderLeft: `3px solid ${GREEN}`, borderRadius: 10, marginBottom: 12 }}>
+                    <div style={{ fontSize: 11, color: GREEN, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 10 }}>A — Process Efficiency</div>
                     {[
-                      { key: "ftes", q: "How many FTEs are dedicated to this process?", type: "number", placeholder: "e.g. 12" },
-                      { key: "rework", q: "Estimated % of rework in this process", type: "number", placeholder: "e.g. 15", unit: "%" },
-                      { key: "cycleTime", q: "Current cycle time (days)", type: "number", placeholder: "e.g. 5", unit: "days" },
-                      { key: "automation", q: "% of process that is automated", type: "number", placeholder: "e.g. 30", unit: "%" },
-                      { key: "errorRate", q: "Error rate (%)", type: "number", placeholder: "e.g. 8", unit: "%" },
-                      { key: "bottleneck", q: "Describe the primary bottleneck", type: "text" },
-                      { key: "volume", q: "Monthly transaction volume", type: "number", placeholder: "e.g. 5000" },
+                      { key: "ftes", q: "FTEs on this process", type: "number", placeholder: "e.g. 12" },
+                      { key: "rework", q: "Rework/corrections %", type: "number", placeholder: "e.g. 15", unit: "%" },
+                      { key: "cycleTime", q: "Average cycle time", type: "numberWithUnit", placeholder: "e.g. 5", unitKey: "cycleTimeUnit", unitOpts: ["days", "hours"] },
+                      { key: "automation", q: "Automation level %", type: "number", placeholder: "e.g. 30", unit: "%" },
+                      { key: "errorRate", q: "Error/exception rate %", type: "number", placeholder: "e.g. 8", unit: "%" },
+                      { key: "bottleneck", q: "Primary bottleneck", type: "select", opts: ["Manual data entry", "Approvals", "System integration", "Reconciliation", "Other"] },
+                      { key: "volume", q: "Volume per period", type: "numberWithUnit", placeholder: "e.g. 5000", unitKey: "volumePeriod", unitOpts: ["daily", "weekly", "monthly"] },
                     ].map(item => (
                       <div key={item.key} style={{ marginBottom: 8 }}>
                         <div style={{ fontSize: 11, color: t.tx2, marginBottom: 3 }}>{item.q}</div>
-                        {item.type === "text" ? (
-                          <textarea value={baselineData[`${focusProc}_a_${item.key}`] || ""} onChange={e => setBaselineData(p => ({ ...p, [`${focusProc}_a_${item.key}`]: e.target.value }))}
-                            placeholder="Describe..." rows={2}
-                            style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, resize: "vertical", boxSizing: "border-box" }} />
+                        {item.type === "select" ? (
+                          <select value={baselineData[`${focusProc}_a_${item.key}`] || ""} onChange={e => setBaselineData(p => ({ ...p, [`${focusProc}_a_${item.key}`]: e.target.value }))}
+                            style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, boxSizing: "border-box" }}>
+                            <option value="">Select...</option>
+                            {item.opts.map(o => <option key={o} value={o}>{o}</option>)}
+                          </select>
+                        ) : item.type === "numberWithUnit" ? (
+                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                            <input type="number" value={baselineData[`${focusProc}_a_${item.key}`] || ""} onChange={e => setBaselineData(p => ({ ...p, [`${focusProc}_a_${item.key}`]: e.target.value }))}
+                              placeholder={item.placeholder}
+                              style={{ flex: 1, background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, boxSizing: "border-box" }} />
+                            <select value={baselineData[`${focusProc}_a_${item.unitKey}`] || item.unitOpts[0]} onChange={e => setBaselineData(p => ({ ...p, [`${focusProc}_a_${item.unitKey}`]: e.target.value }))}
+                              style={{ background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 8px", color: t.tx, fontFamily: FONT, fontSize: 11 }}>
+                              {item.unitOpts.map(o => <option key={o} value={o}>{o}</option>)}
+                            </select>
+                          </div>
                         ) : (
                           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                             <input type="number" value={baselineData[`${focusProc}_a_${item.key}`] || ""} onChange={e => setBaselineData(p => ({ ...p, [`${focusProc}_a_${item.key}`]: e.target.value }))}
@@ -2052,16 +2110,16 @@ export default function PrismL4({ user, onLogout }) {
                     ))}
                   </div>
 
-                  {/* ─── Panel B: Data-Driven Leakage ─── */}
-                  <div style={{ padding: 12, background: PURPLE + "08", border: `1px solid ${PURPLE}22`, borderRadius: 10, marginBottom: 12 }}>
-                    <div style={{ fontSize: 11, color: PURPLE, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 10 }}>B — Data-Driven Leakage</div>
+                  {/* ─── Panel B: Data-Driven Leakage (gold border) ─── */}
+                  <div style={{ padding: 12, background: GOLD + "08", border: `1px solid ${GOLD}22`, borderLeft: `3px solid ${GOLD}`, borderRadius: 10, marginBottom: 12 }}>
+                    <div style={{ fontSize: 11, color: GOLD, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 10 }}>B — Data-Driven Leakage</div>
                     {[
-                      { key: "granularity", q: "Data granularity level", type: "select", opts: ["Transaction-level", "Summary-level", "Limited / Aggregate only"] },
+                      { key: "granularity", q: "Data granularity sufficient?", type: "select", opts: ["Yes", "Partially", "No"] },
                       { key: "reportFreq", q: "Reporting frequency", type: "select", opts: ["Real-time", "Daily", "Weekly", "Monthly", "Quarterly"] },
-                      { key: "dataQuality", q: "Rate data quality (1 = poor, 5 = excellent)", type: "number", placeholder: "1-5" },
-                      { key: "manualPct", q: "% of decisions that are manual", type: "number", placeholder: "e.g. 60", unit: "%" },
-                      { key: "ssot", q: "Single source of truth exists?", type: "select", opts: ["Yes — fully integrated", "Partial — some systems integrated", "No — siloed data"] },
-                      { key: "leakage", q: "Estimated annual leakage ($K)", type: "number", placeholder: "e.g. 250" },
+                      { key: "dataQuality", q: "Data quality issues", type: "select", opts: ["None", "Minor", "Significant", "Critical"] },
+                      { key: "manualPct", q: "Manual data gathering %", type: "number", placeholder: "e.g. 60", unit: "%" },
+                      { key: "ssot", q: "Single source of truth?", type: "select", opts: ["Yes", "Partially", "No"] },
+                      { key: "leakage", q: "Estimated leakage", type: "select", opts: ["None", "<1%", "1-3%", "3-5%", ">5%"] },
                     ].map(item => (
                       <div key={item.key} style={{ marginBottom: 8 }}>
                         <div style={{ fontSize: 11, color: t.tx2, marginBottom: 3 }}>{item.q}</div>
@@ -2082,6 +2140,19 @@ export default function PrismL4({ user, onLogout }) {
                       </div>
                     ))}
                   </div>
+
+                  {/* ─── MiningLinker: shows when both mining + efficiency data exist ─── */}
+                  {uploadedMining[focusProc] && baselineData[`${focusProc}_a_ftes`] && (
+                    <Suspense fallback={null}>
+                      <MiningLinker
+                        procId={focusProc}
+                        proc={PROC_MAP[focusProc]}
+                        miningData={uploadedMining[focusProc]}
+                        baselineData={baselineData}
+                        theme={t}
+                      />
+                    </Suspense>
+                  )}
 
                   {/* ─── Additional Notes (collapsed Q_TEMPLATES) ─── */}
                   <details style={{ marginBottom: 12 }}>
@@ -2289,7 +2360,7 @@ export default function PrismL4({ user, onLogout }) {
                         ];
                         const activeBench = selectedSource === "custom" ? (bmarks[`bench_custom_${ki}`] ?? null) : sources.find(s => s.key === selectedSource)?.value ?? kpi.benchmark;
                         const gap = currentVal != null && activeBench != null ? Math.abs(currentVal - activeBench) : null;
-                        const quartile = getQuartile(currentVal, activeBench);
+                        const quartile = getQuartile(currentVal, activeBench, kpi);
 
                         return (
                           <div key={ki} style={{ padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
@@ -2300,7 +2371,7 @@ export default function PrismL4({ user, onLogout }) {
                               </div>
                               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                 {gap != null && <span style={{ fontSize: 14, fontFamily: "monospace", color: gap > 0 ? RED : GREEN, fontWeight: 700 }}>Gap: {gap.toFixed(1)}</span>}
-                                {quartile && <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: quartile.color + "20", color: quartile.color, fontWeight: 700 }}>{quartile.label}</span>}
+                                {quartile && <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: quartile.color + "20", color: quartile.color, fontWeight: 700 }}>{quartile.icon} {quartile.label}</span>}
                               </div>
                             </div>
                             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
@@ -2318,13 +2389,17 @@ export default function PrismL4({ user, onLogout }) {
                                   <tr key={src.key} style={{ background: selectedSource === src.key ? (src.key === "primary" ? GREEN : GOLD) + "08" : "transparent" }}>
                                     <td style={{ padding: "4px 6px", borderBottom: `1px solid ${t.bdr}20`, width: 30 }}>
                                       <input type="radio" name={`src_${proc.id}_${ki}`} checked={selectedSource === src.key}
-                                        onChange={() => setBmark(`src_${ki}`, src.key)}
+                                        onChange={() => {
+                                          setBmark(`src_${ki}`, src.key);
+                                          const val = src.key === "custom" ? (bmarks[`bench_custom_${ki}`] ?? null) : src.value;
+                                          if (val != null) setBmark(`bench_${ki}`, val);
+                                        }}
                                         style={{ accentColor: GREEN, cursor: "pointer" }} />
                                     </td>
                                     <td style={{ padding: "4px 6px", borderBottom: `1px solid ${t.bdr}20`, color: selectedSource === src.key ? t.tx : t.tx2, fontWeight: selectedSource === src.key ? 600 : 400 }}>{src.label}</td>
                                     <td style={{ padding: "4px 6px", borderBottom: `1px solid ${t.bdr}20`, textAlign: "right", fontFamily: "monospace" }}>
                                       {src.key === "custom" ? (
-                                        <input type="number" value={bmarks[`bench_custom_${ki}`] ?? ""} onChange={e => setBmark(`bench_custom_${ki}`, parseFloat(e.target.value) || null)}
+                                        <input type="number" value={bmarks[`bench_custom_${ki}`] ?? ""} onChange={e => { const v = parseFloat(e.target.value) || null; setBmark(`bench_custom_${ki}`, v); if (selectedSource === "custom") setBmark(`bench_${ki}`, v); }}
                                           placeholder="—" style={{ width: 60, background: t.card, border: `1px solid ${GOLD}33`, borderRadius: 4, padding: "2px 4px", color: GOLD, fontFamily: "monospace", fontSize: 12, textAlign: "center" }} />
                                       ) : (
                                         <span style={{ color: selectedSource === src.key ? GREEN : t.mut }}>{src.value ?? "—"}</span>
@@ -2685,7 +2760,7 @@ export default function PrismL4({ user, onLogout }) {
                   (proc?.kpis || []).forEach((kpi, ki) => {
                     const current = vals[`kpi_current_${ki}`] ?? kpi.current;
                     const bench = bmarks[`bench_${ki}`] ?? kpi.benchmark;
-                    const q = getQuartile(current, bench);
+                    const q = getQuartile(current, bench, kpi);
                     if (q) { scoreSum += q.score; scoreCount++; }
                   });
                   const avgScore = scoreCount > 0 ? scoreSum / scoreCount : null;
