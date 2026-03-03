@@ -84,22 +84,22 @@ const APQC = [
           {
             l3: "8.2.1 Process Customer Credit", l3id: "8.2.1",
             procs: [
-              { id: "o2c-001", l4: "8.2.1.1", label: "Evaluate customer creditworthiness", kpis: [
-                { name: "Credit evaluation cycle time", unit: "days", current: null, benchmark: 2.0, src: "APQC", method: "Avg days from credit request to decision" },
-                { name: "Auto-approval rate", unit: "%", current: null, benchmark: 70, src: "Hackett", method: "% orders auto-approved without manual review" },
-                { name: "Bad debt write-off rate", unit: "%", current: null, benchmark: 0.25, src: "APQC", method: "Bad debt expense / net revenue × 100" },
+              { id: "o2c-001", l4: "8.2.1.1", label: "Evaluate customer creditworthiness", jobs: ["Run credit scoring models","Pull external credit reports","Assess customer financial statements","Recommend credit decision"], kpis: [
+                { name: "Credit evaluation cycle time", unit: "days", current: null, benchmark: 2.0, src: "APQC", method: "Avg days from credit request to decision", occurrence: "recurring", capability: "Intelligent Credit Management" },
+                { name: "Auto-approval rate", unit: "%", current: null, benchmark: 70, src: "Hackett", method: "% orders auto-approved without manual review", occurrence: "recurring", capability: "Intelligent Credit Management" },
+                { name: "Bad debt write-off rate", unit: "%", current: null, benchmark: 0.25, src: "APQC", method: "Bad debt expense / net revenue × 100", occurrence: "recurring", capability: "Intelligent Credit Management" },
               ], sap: [{ module: "FI-AR", desc: "Credit management & scoring in SAP S/4HANA", scenario: "Automated credit scoring with ML-based risk assessment replaces manual review. Real-time credit exposure monitoring." }],
                 valLevers: [{ lever: "Reduce credit evaluation cycle time", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }],
                 },
-              { id: "o2c-002", l4: "8.2.1.2", label: "Establish & manage customer credit limits", kpis: [
-                { name: "Credit limit review frequency", unit: "days", current: null, benchmark: 90, src: "APQC", method: "Avg days between credit limit reviews" },
-                { name: "Credit limit utilization", unit: "%", current: null, benchmark: 65, src: "Hackett", method: "Avg credit used / credit limit × 100" },
+              { id: "o2c-002", l4: "8.2.1.2", label: "Establish & manage customer credit limits", jobs: ["Set initial credit limit","Review credit limits periodically","Adjust limits based on payment behavior"], kpis: [
+                { name: "Credit limit review frequency", unit: "days", current: null, benchmark: 90, src: "APQC", method: "Avg days between credit limit reviews", occurrence: "recurring", capability: "Intelligent Credit Management" },
+                { name: "Credit limit utilization", unit: "%", current: null, benchmark: 65, src: "Hackett", method: "Avg credit used / credit limit × 100", occurrence: "recurring", capability: "Intelligent Credit Management" },
               ], sap: [{ module: "FI-AR", desc: "Dynamic credit limit management", scenario: "AI-driven dynamic credit limits adjust based on payment behavior, financial health signals, and market conditions." }],
                 valLevers: [{ lever: "Automate credit limit adjustments", vtype: "Tangible", vclass: "Standardization", fintype: "SGA", stmt: "Income Statement" }],
                 },
-              { id: "o2c-003", l4: "8.2.1.3", label: "Monitor & resolve customer credit issues", kpis: [
-                { name: "Blocked order resolution time", unit: "hours", current: null, benchmark: 4, src: "APQC", method: "Avg hours to resolve credit block" },
-                { name: "% orders blocked for credit", unit: "%", current: null, benchmark: 5, src: "Hackett", method: "Credit-blocked orders / total orders × 100" },
+              { id: "o2c-003", l4: "8.2.1.3", label: "Monitor & resolve customer credit issues", jobs: ["Review credit-blocked orders","Evaluate override requests","Escalate high-risk accounts","Release or reject blocked orders"], kpis: [
+                { name: "Blocked order resolution time", unit: "hours", current: null, benchmark: 4, src: "APQC", method: "Avg hours to resolve credit block", occurrence: "recurring", capability: "Intelligent Credit Management" },
+                { name: "% orders blocked for credit", unit: "%", current: null, benchmark: 5, src: "Hackett", method: "Credit-blocked orders / total orders × 100", occurrence: "recurring", capability: "Intelligent Credit Management" },
               ], sap: [{ module: "FI-AR", desc: "Credit block management & workflow", scenario: "Intelligent credit block resolution with automated escalation, risk-tiered approval workflows, and customer self-service portal." }],
                 valLevers: [{ lever: "Reduce blocked order resolution time", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "Revenue", stmt: "Income Statement" }],
                 },
@@ -108,24 +108,24 @@ const APQC = [
           {
             l3: "8.2.2 Process Customer Billing", l3id: "8.2.2",
             procs: [
-              { id: "o2c-004", l4: "8.2.2.1", label: "Generate customer billing data", kpis: [
-                { name: "Invoice accuracy rate", unit: "%", current: null, benchmark: 98.5, src: "APQC", method: "Correct invoices / total invoices × 100" },
-                { name: "Billing cycle time", unit: "days", current: null, benchmark: 1.5, src: "Hackett", method: "Avg days from delivery to invoice" },
-                { name: "Cost per invoice generated", unit: "$", current: null, benchmark: 3.50, src: "APQC", method: "Total billing cost / invoices generated" },
+              { id: "o2c-004", l4: "8.2.2.1", label: "Generate customer billing data", jobs: ["Generate invoice from sales order","Apply pricing and tax rules","Validate billing data accuracy","Archive billing document"], kpis: [
+                { name: "Invoice accuracy rate", unit: "%", current: null, benchmark: 98.5, src: "APQC", method: "Correct invoices / total invoices × 100", occurrence: "recurring", capability: "Touchless Invoicing" },
+                { name: "Billing cycle time", unit: "days", current: null, benchmark: 1.5, src: "Hackett", method: "Avg days from delivery to invoice", occurrence: "recurring", capability: "Touchless Invoicing" },
+                { name: "Cost per invoice generated", unit: "$", current: null, benchmark: 3.50, src: "APQC", method: "Total billing cost / invoices generated", occurrence: "recurring", capability: "Touchless Invoicing" },
               ], sap: [{ module: "SD-BIL", desc: "Billing document creation & output", scenario: "Automated billing triggered by goods issue/delivery confirmation. Self-billing for strategic customers." }],
                 valLevers: [{ lever: "Reduce cost per invoice", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" },
                   { lever: "Improve invoice accuracy", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
                 },
-              { id: "o2c-005", l4: "8.2.2.2", label: "Transmit billing data to customers", kpis: [
-                { name: "E-invoicing adoption rate", unit: "%", current: null, benchmark: 75, src: "Hackett", method: "Electronic invoices / total invoices × 100" },
-                { name: "Invoice delivery success rate", unit: "%", current: null, benchmark: 99, src: "APQC", method: "Successfully delivered / total sent × 100" },
+              { id: "o2c-005", l4: "8.2.2.2", label: "Transmit billing data to customers", jobs: ["Format invoice per customer preference","Transmit via EDI/email/portal","Confirm delivery receipt"], kpis: [
+                { name: "E-invoicing adoption rate", unit: "%", current: null, benchmark: 75, src: "Hackett", method: "Electronic invoices / total invoices × 100", occurrence: "recurring", capability: "Touchless Invoicing" },
+                { name: "Invoice delivery success rate", unit: "%", current: null, benchmark: 99, src: "APQC", method: "Successfully delivered / total sent × 100", occurrence: "recurring", capability: "Touchless Invoicing" },
               ], sap: [{ module: "SD-BIL", desc: "Electronic invoice output & EDI", scenario: "Multi-channel electronic invoicing with automatic format conversion (EDI, XML, PDF) per customer preference." }],
                 valLevers: [{ lever: "Increase e-invoicing adoption", vtype: "Tangible", vclass: "Standardization", fintype: "SGA", stmt: "Income Statement" }],
                 },
-              { id: "o2c-006", l4: "8.2.2.3", label: "Manage billing disputes & inquiries", kpis: [
-                { name: "Dispute resolution cycle time", unit: "days", current: null, benchmark: 15, src: "APQC", method: "Avg days from dispute opened to resolved" },
-                { name: "Dispute rate", unit: "%", current: null, benchmark: 2.0, src: "Hackett", method: "Disputed invoices / total invoices × 100" },
-                { name: "Cost per dispute resolved", unit: "$", current: null, benchmark: 35, src: "APQC", method: "Total dispute cost / disputes resolved" },
+              { id: "o2c-006", l4: "8.2.2.3", label: "Manage billing disputes & inquiries", jobs: ["Log and classify dispute","Investigate root cause","Coordinate with internal teams","Resolve and close dispute"], kpis: [
+                { name: "Dispute resolution cycle time", unit: "days", current: null, benchmark: 15, src: "APQC", method: "Avg days from dispute opened to resolved", occurrence: "recurring", capability: "Smart Dispute Resolution" },
+                { name: "Dispute rate", unit: "%", current: null, benchmark: 2.0, src: "Hackett", method: "Disputed invoices / total invoices × 100", occurrence: "recurring", capability: "Smart Dispute Resolution" },
+                { name: "Cost per dispute resolved", unit: "$", current: null, benchmark: 35, src: "APQC", method: "Total dispute cost / disputes resolved", occurrence: "recurring", capability: "Smart Dispute Resolution" },
               ], sap: [{ module: "FI-AR", desc: "Dispute management & FSCM", scenario: "AI-powered dispute classification and root cause analysis. Automated routing to responsible teams with suggested resolutions." }],
                 valLevers: [{ lever: "Reduce dispute rate & cycle time", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" },
                   { lever: "Reduce revenue leakage from disputes", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
@@ -135,34 +135,34 @@ const APQC = [
           {
             l3: "8.2.3 Process Accounts Receivable", l3id: "8.2.3",
             procs: [
-              { id: "o2c-007", l4: "8.2.3.1", label: "Record customer payments & apply to invoices", kpis: [
-                { name: "Cash application automation rate", unit: "%", current: null, benchmark: 85, src: "APQC", method: "Auto-matched payments / total payments × 100" },
-                { name: "Cash application cycle time", unit: "hours", current: null, benchmark: 4, src: "Hackett", method: "Avg hours from payment receipt to application" },
-                { name: "Unapplied cash as % of revenue", unit: "%", current: null, benchmark: 0.5, src: "APQC", method: "Unapplied cash balance / quarterly revenue × 100" },
+              { id: "o2c-007", l4: "8.2.3.1", label: "Record customer payments & apply to invoices", jobs: ["Import bank remittance data","Match payments to open invoices","Handle partial payments and deductions","Clear applied items"], kpis: [
+                { name: "Cash application automation rate", unit: "%", current: null, benchmark: 85, src: "APQC", method: "Auto-matched payments / total payments × 100", occurrence: "recurring", capability: "Predictive Cash Application" },
+                { name: "Cash application cycle time", unit: "hours", current: null, benchmark: 4, src: "Hackett", method: "Avg hours from payment receipt to application", occurrence: "recurring", capability: "Predictive Cash Application" },
+                { name: "Unapplied cash as % of revenue", unit: "%", current: null, benchmark: 0.5, src: "APQC", method: "Unapplied cash balance / quarterly revenue × 100", occurrence: "recurring", capability: "Predictive Cash Application" },
               ], sap: [{ module: "FI-AR", desc: "Incoming payment processing & matching", scenario: "ML-powered cash application matches incoming payments to open invoices with 95%+ accuracy. Handles partial payments, deductions, and cross-company remittances." }],
                 valLevers: [{ lever: "Increase auto-match rate", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" },
                   { lever: "Reduce unapplied cash", vtype: "Tangible", vclass: "Working Capital", fintype: "SGA", stmt: "Balance Sheet" }],
                 },
-              { id: "o2c-008", l4: "8.2.3.2", label: "Manage & process collections", kpis: [
-                { name: "Days Sales Outstanding (DSO)", unit: "days", current: null, benchmark: 34, src: "APQC", method: "AR balance / (annual revenue / 365)" },
-                { name: "Collections effectiveness index", unit: "%", current: null, benchmark: 82, src: "Hackett", method: "(Beginning AR + credit sales - ending AR) / (beginning AR + credit sales) × 100" },
-                { name: "Cost per collection contact", unit: "$", current: null, benchmark: 8, src: "APQC", method: "Total collections cost / collection contacts made" },
-                { name: "% AR > 90 days past due", unit: "%", current: null, benchmark: 5, src: "Hackett", method: "AR over 90 days / total AR × 100" },
+              { id: "o2c-008", l4: "8.2.3.2", label: "Manage & process collections", jobs: ["Generate aging reports","Execute dunning runs","Escalate overdue accounts","Negotiate payment plans"], kpis: [
+                { name: "Days Sales Outstanding (DSO)", unit: "days", current: null, benchmark: 34, src: "APQC", method: "AR balance / (annual revenue / 365)", occurrence: "recurring", capability: "Intelligent Collections" },
+                { name: "Collections effectiveness index", unit: "%", current: null, benchmark: 82, src: "Hackett", method: "(Beginning AR + credit sales - ending AR) / (beginning AR + credit sales) × 100", occurrence: "recurring", capability: "Intelligent Collections" },
+                { name: "Cost per collection contact", unit: "$", current: null, benchmark: 8, src: "APQC", method: "Total collections cost / collection contacts made", occurrence: "recurring", capability: "Intelligent Collections" },
+                { name: "% AR > 90 days past due", unit: "%", current: null, benchmark: 5, src: "Hackett", method: "AR over 90 days / total AR × 100", occurrence: "recurring", capability: "Intelligent Collections" },
               ], sap: [{ module: "FI-AR", desc: "Collections management & dunning", scenario: "AI prioritization engine ranks overdue accounts by likelihood-to-pay, dollar impact, and customer value. Auto-generates personalized dunning communications." }],
                 valLevers: [{ lever: "Reduce DSO", vtype: "Tangible", vclass: "Working Capital", fintype: "SGA", stmt: "Balance Sheet" },
                   { lever: "Improve collections effectiveness", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }],
                 },
-              { id: "o2c-009", l4: "8.2.3.3", label: "Manage & process deductions", kpis: [
-                { name: "Deduction resolution cycle time", unit: "days", current: null, benchmark: 20, src: "APQC", method: "Avg days from deduction identified to resolved" },
-                { name: "Invalid deduction recovery rate", unit: "%", current: null, benchmark: 60, src: "Hackett", method: "Recovered invalid deductions / total invalid deductions × 100" },
-                { name: "Deduction backlog value", unit: "$M", current: null, benchmark: null, src: "Internal", method: "Total outstanding deduction value" },
+              { id: "o2c-009", l4: "8.2.3.3", label: "Manage & process deductions", jobs: ["Classify deduction type","Validate against trade agreements","Research invalid deductions","Process write-off or recovery"], kpis: [
+                { name: "Deduction resolution cycle time", unit: "days", current: null, benchmark: 20, src: "APQC", method: "Avg days from deduction identified to resolved", occurrence: "recurring", capability: "Smart Dispute Resolution" },
+                { name: "Invalid deduction recovery rate", unit: "%", current: null, benchmark: 60, src: "Hackett", method: "Recovered invalid deductions / total invalid deductions × 100", occurrence: "recurring", capability: "Smart Dispute Resolution" },
+                { name: "Deduction backlog value", unit: "$M", current: null, benchmark: null, src: "Internal", method: "Total outstanding deduction value", occurrence: "recurring", capability: "Smart Dispute Resolution" },
               ], sap: [{ module: "FI-AR", desc: "Deduction & claims management", scenario: "Automated deduction classification using ML. Pattern recognition identifies root causes across trade promotions, logistics claims, and pricing errors." }],
                 valLevers: [{ lever: "Improve invalid deduction recovery", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" },
                   { lever: "Reduce deduction backlog", vtype: "Tangible", vclass: "Working Capital", fintype: "Revenue", stmt: "Balance Sheet" }],
                 },
-              { id: "o2c-010", l4: "8.2.3.4", label: "Manage AR aging & write-offs", kpis: [
-                { name: "Write-off as % of revenue", unit: "%", current: null, benchmark: 0.15, src: "APQC", method: "Annual write-offs / annual revenue × 100" },
-                { name: "Aging bucket accuracy", unit: "%", current: null, benchmark: 98, src: "Hackett", method: "Correctly aged items / total items × 100" },
+              { id: "o2c-010", l4: "8.2.3.4", label: "Manage AR aging & write-offs", jobs: ["Review aging buckets","Identify write-off candidates","Process bad debt provisions","Execute approved write-offs"], kpis: [
+                { name: "Write-off as % of revenue", unit: "%", current: null, benchmark: 0.15, src: "APQC", method: "Annual write-offs / annual revenue × 100", occurrence: "recurring", capability: "Intelligent Collections" },
+                { name: "Aging bucket accuracy", unit: "%", current: null, benchmark: 98, src: "Hackett", method: "Correctly aged items / total items × 100", occurrence: "recurring", capability: "Intelligent Collections" },
               ], sap: [{ module: "FI-AR", desc: "AR aging analysis & provisioning", scenario: "Predictive models estimate expected credit losses per IFRS 9. Automated provisioning and write-off workflows." }],
                 valLevers: [{ lever: "Reduce bad debt write-offs", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "SGA", stmt: "Income Statement" }],
                 },
@@ -171,9 +171,9 @@ const APQC = [
           {
             l3: "8.2.4 Manage & Process Customer Refunds", l3id: "8.2.4",
             procs: [
-              { id: "o2c-011", l4: "8.2.4.1", label: "Process customer refunds & credits", kpis: [
-                { name: "Refund processing cycle time", unit: "days", current: null, benchmark: 3, src: "APQC", method: "Avg days from refund request to payment" },
-                { name: "Refund accuracy rate", unit: "%", current: null, benchmark: 99, src: "Hackett", method: "Correct refunds / total refunds × 100" },
+              { id: "o2c-011", l4: "8.2.4.1", label: "Process customer refunds & credits", jobs: ["Validate refund request","Create credit memo","Route for approval","Execute refund payment"], kpis: [
+                { name: "Refund processing cycle time", unit: "days", current: null, benchmark: 3, src: "APQC", method: "Avg days from refund request to payment", occurrence: "recurring", capability: "Touchless Invoicing" },
+                { name: "Refund accuracy rate", unit: "%", current: null, benchmark: 99, src: "Hackett", method: "Correct refunds / total refunds × 100", occurrence: "recurring", capability: "Touchless Invoicing" },
               ], sap: [{ module: "FI-AR", desc: "Credit memo & refund processing", scenario: "Automated refund workflow with approval routing based on amount thresholds and reason codes." }],
                 valLevers: [{ lever: "Reduce refund processing time", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }],
                 },
@@ -187,29 +187,29 @@ const APQC = [
           {
             l3: "8.3.1 Process Sales Orders", l3id: "8.3.1",
             procs: [
-              { id: "o2c-012", l4: "8.3.1.1", label: "Receive & validate sales orders", kpis: [
-                { name: "Order entry cycle time", unit: "minutes", current: null, benchmark: 5, src: "APQC", method: "Avg minutes from order receipt to system entry" },
-                { name: "Touchless order rate", unit: "%", current: null, benchmark: 65, src: "Hackett", method: "Orders requiring zero manual intervention / total orders × 100" },
-                { name: "Order accuracy rate", unit: "%", current: null, benchmark: 99.2, src: "APQC", method: "Error-free orders / total orders × 100" },
+              { id: "o2c-012", l4: "8.3.1.1", label: "Receive & validate sales orders", jobs: ["Capture order from channel","Validate pricing and terms","Check customer credit status","Confirm order to customer"], kpis: [
+                { name: "Order entry cycle time", unit: "minutes", current: null, benchmark: 5, src: "APQC", method: "Avg minutes from order receipt to system entry", occurrence: "recurring", capability: "Intelligent Order Management" },
+                { name: "Touchless order rate", unit: "%", current: null, benchmark: 65, src: "Hackett", method: "Orders requiring zero manual intervention / total orders × 100", occurrence: "recurring", capability: "Intelligent Order Management" },
+                { name: "Order accuracy rate", unit: "%", current: null, benchmark: 99.2, src: "APQC", method: "Error-free orders / total orders × 100", occurrence: "recurring", capability: "Intelligent Order Management" },
               ], sap: [{ module: "SD-SLS", desc: "Sales order creation & validation", scenario: "Intelligent order capture from multiple channels (EDI, portal, email) with automated validation against pricing, availability, and credit rules." }],
                 valLevers: [{ lever: "Increase touchless order rate", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" },
                   { lever: "Reduce order errors", vtype: "Tangible", vclass: "Standardization", fintype: "COGS", stmt: "Income Statement" }],
                 },
-              { id: "o2c-013", l4: "8.3.1.2", label: "Check product availability & allocate inventory", kpis: [
-                { name: "Available-to-promise accuracy", unit: "%", current: null, benchmark: 95, src: "APQC", method: "Correct ATP responses / total ATP checks × 100" },
-                { name: "Order fill rate", unit: "%", current: null, benchmark: 97, src: "Hackett", method: "Orders shipped complete / total orders × 100" },
+              { id: "o2c-013", l4: "8.3.1.2", label: "Check product availability & allocate inventory", jobs: ["Run available-to-promise check","Allocate inventory to order","Manage backorder queue","Communicate availability to customer"], kpis: [
+                { name: "Available-to-promise accuracy", unit: "%", current: null, benchmark: 95, src: "APQC", method: "Correct ATP responses / total ATP checks × 100", occurrence: "recurring", capability: "Intelligent Order Management" },
+                { name: "Order fill rate", unit: "%", current: null, benchmark: 97, src: "Hackett", method: "Orders shipped complete / total orders × 100", occurrence: "recurring", capability: "Intelligent Order Management" },
               ], sap: [{ module: "SD-SLS / MM-IM", desc: "ATP check & inventory allocation", scenario: "Real-time global ATP with intelligent allocation based on customer priority, margin, and supply constraints." }],
                 valLevers: [{ lever: "Improve order fill rate", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
                 },
-              { id: "o2c-014", l4: "8.3.1.3", label: "Determine pricing & apply discounts", kpis: [
-                { name: "Pricing accuracy rate", unit: "%", current: null, benchmark: 99, src: "APQC", method: "Correctly priced orders / total orders × 100" },
-                { name: "Manual pricing overrides", unit: "%", current: null, benchmark: 3, src: "Hackett", method: "Orders with manual price changes / total orders × 100" },
+              { id: "o2c-014", l4: "8.3.1.3", label: "Determine pricing & apply discounts", jobs: ["Apply pricing condition records","Calculate volume and contract discounts","Validate against margin guardrails"], kpis: [
+                { name: "Pricing accuracy rate", unit: "%", current: null, benchmark: 99, src: "APQC", method: "Correctly priced orders / total orders × 100", occurrence: "recurring", capability: "Dynamic Pricing Intelligence" },
+                { name: "Manual pricing overrides", unit: "%", current: null, benchmark: 3, src: "Hackett", method: "Orders with manual price changes / total orders × 100", occurrence: "recurring", capability: "Dynamic Pricing Intelligence" },
               ], sap: [{ module: "SD-BF", desc: "Pricing conditions & discount management", scenario: "AI-powered pricing engine with dynamic discounting, customer-specific agreements, and automated rebate calculations." }],
                 valLevers: [{ lever: "Reduce pricing errors & leakage", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
                 },
-              { id: "o2c-015", l4: "8.3.1.4", label: "Process order changes & cancellations", kpis: [
-                { name: "Order change processing time", unit: "hours", current: null, benchmark: 2, src: "APQC", method: "Avg hours to process order modification" },
-                { name: "Cancellation rate", unit: "%", current: null, benchmark: 3, src: "Hackett", method: "Cancelled orders / total orders × 100" },
+              { id: "o2c-015", l4: "8.3.1.4", label: "Process order changes & cancellations", jobs: ["Receive change/cancel request","Assess impact on fulfillment","Update order in system","Notify downstream processes"], kpis: [
+                { name: "Order change processing time", unit: "hours", current: null, benchmark: 2, src: "APQC", method: "Avg hours to process order modification", occurrence: "recurring", capability: "Intelligent Order Management" },
+                { name: "Cancellation rate", unit: "%", current: null, benchmark: 3, src: "Hackett", method: "Cancelled orders / total orders × 100", occurrence: "recurring", capability: "Intelligent Order Management" },
               ], sap: [{ module: "SD-SLS", desc: "Order change management", scenario: "Self-service order modification portal with automated impact assessment on delivery, pricing, and production schedule." }],
                 valLevers: [{ lever: "Reduce order cancellation rate", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
                 },
@@ -218,25 +218,25 @@ const APQC = [
           {
             l3: "8.3.2 Manage Order Fulfillment", l3id: "8.3.2",
             procs: [
-              { id: "o2c-016", l4: "8.3.2.1", label: "Pick, pack & ship customer orders", kpis: [
-                { name: "Perfect order rate", unit: "%", current: null, benchmark: 92, src: "APQC", method: "Orders delivered on time, in full, damage-free, correctly documented / total orders × 100" },
-                { name: "Order-to-ship cycle time", unit: "hours", current: null, benchmark: 24, src: "Hackett", method: "Avg hours from order confirmation to shipment" },
-                { name: "Warehouse cost per order", unit: "$", current: null, benchmark: 4.50, src: "APQC", method: "Total warehouse cost / orders shipped" },
+              { id: "o2c-016", l4: "8.3.2.1", label: "Pick, pack & ship customer orders", jobs: ["Generate pick list","Execute warehouse picking","Pack and label shipment","Create shipping documents"], kpis: [
+                { name: "Perfect order rate", unit: "%", current: null, benchmark: 92, src: "APQC", method: "Orders delivered on time, in full, damage-free, correctly documented / total orders × 100", occurrence: "recurring", capability: "Smart Fulfillment" },
+                { name: "Order-to-ship cycle time", unit: "hours", current: null, benchmark: 24, src: "Hackett", method: "Avg hours from order confirmation to shipment", occurrence: "recurring", capability: "Smart Fulfillment" },
+                { name: "Warehouse cost per order", unit: "$", current: null, benchmark: 4.50, src: "APQC", method: "Total warehouse cost / orders shipped", occurrence: "recurring", capability: "Smart Fulfillment" },
               ], sap: [{ module: "EWM / SD-SHP", desc: "Warehouse execution & shipping", scenario: "AI-optimized wave planning, pick-path optimization, and automated packing with real-time labor allocation." }],
                 valLevers: [{ lever: "Improve perfect order rate", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" },
                   { lever: "Reduce warehouse cost per order", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "COGS", stmt: "Income Statement" }],
                 },
-              { id: "o2c-017", l4: "8.3.2.2", label: "Manage delivery scheduling & logistics", kpis: [
-                { name: "On-time delivery rate", unit: "%", current: null, benchmark: 95, src: "APQC", method: "Orders delivered on or before promised date / total orders × 100" },
-                { name: "Freight cost as % of revenue", unit: "%", current: null, benchmark: 4.5, src: "Hackett", method: "Total freight cost / net revenue × 100" },
+              { id: "o2c-017", l4: "8.3.2.2", label: "Manage delivery scheduling & logistics", jobs: ["Plan delivery routes","Schedule carrier pickup","Track shipment in transit","Confirm proof of delivery"], kpis: [
+                { name: "On-time delivery rate", unit: "%", current: null, benchmark: 95, src: "APQC", method: "Orders delivered on or before promised date / total orders × 100", occurrence: "recurring", capability: "Smart Fulfillment" },
+                { name: "Freight cost as % of revenue", unit: "%", current: null, benchmark: 4.5, src: "Hackett", method: "Total freight cost / net revenue × 100", occurrence: "recurring", capability: "Smart Fulfillment" },
               ], sap: [{ module: "TM / SD-SHP", desc: "Transportation management & delivery", scenario: "Dynamic route optimization with real-time traffic, capacity, and cost balancing. Predictive ETA for customer visibility." }],
                 valLevers: [{ lever: "Reduce freight cost", vtype: "Tangible", vclass: "Cost Avoidance", fintype: "COGS", stmt: "Income Statement" },
                   { lever: "Improve on-time delivery", vtype: "Intangible", vclass: "Customer Satisfaction", fintype: "Revenue", stmt: "Income Statement" }],
                 },
-              { id: "o2c-018", l4: "8.3.2.3", label: "Process returns & reverse logistics", kpis: [
-                { name: "Return processing cycle time", unit: "days", current: null, benchmark: 5, src: "APQC", method: "Avg days from return initiation to credit/replacement" },
-                { name: "Return rate", unit: "%", current: null, benchmark: 8, src: "Hackett", method: "Returned orders / total orders × 100" },
-                { name: "Return cost per unit", unit: "$", current: null, benchmark: 12, src: "APQC", method: "Total returns cost / units returned" },
+              { id: "o2c-018", l4: "8.3.2.3", label: "Process returns & reverse logistics", jobs: ["Authorize return request","Receive and inspect returned goods","Update inventory records","Issue credit or replacement"], kpis: [
+                { name: "Return processing cycle time", unit: "days", current: null, benchmark: 5, src: "APQC", method: "Avg days from return initiation to credit/replacement", occurrence: "recurring", capability: "Smart Fulfillment" },
+                { name: "Return rate", unit: "%", current: null, benchmark: 8, src: "Hackett", method: "Returned orders / total orders × 100", occurrence: "recurring", capability: "Smart Fulfillment" },
+                { name: "Return cost per unit", unit: "$", current: null, benchmark: 12, src: "APQC", method: "Total returns cost / units returned", occurrence: "recurring", capability: "Smart Fulfillment" },
               ], sap: [{ module: "SD-SLS / EWM", desc: "Returns & reverse logistics", scenario: "Automated return authorization with AI-powered reason code analysis. Predictive return forecasting for inventory planning." }],
                 valLevers: [{ lever: "Reduce return processing cost", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "COGS", stmt: "Income Statement" },
                   { lever: "Reduce return rate", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
@@ -246,9 +246,9 @@ const APQC = [
           {
             l3: "8.3.3 Manage Revenue Recognition", l3id: "8.3.3",
             procs: [
-              { id: "o2c-019", l4: "8.3.3.1", label: "Recognize revenue per accounting standards", kpis: [
-                { name: "Revenue recognition automation rate", unit: "%", current: null, benchmark: 80, src: "Hackett", method: "Auto-recognized revenue / total revenue × 100" },
-                { name: "Revenue adjustments post-close", unit: "count", current: null, benchmark: 5, src: "APQC", method: "Revenue adjustments made after period close" },
+              { id: "o2c-019", l4: "8.3.3.1", label: "Recognize revenue per accounting standards", jobs: ["Identify performance obligations","Determine transaction price","Allocate price to obligations","Recognize revenue upon satisfaction"], kpis: [
+                { name: "Revenue recognition automation rate", unit: "%", current: null, benchmark: 80, src: "Hackett", method: "Auto-recognized revenue / total revenue × 100", occurrence: "recurring", capability: "Automated Revenue Recognition" },
+                { name: "Revenue adjustments post-close", unit: "count", current: null, benchmark: 5, src: "APQC", method: "Revenue adjustments made after period close", occurrence: "recurring", capability: "Automated Revenue Recognition" },
               ], sap: [{ module: "FI-AR / RAR", desc: "Revenue accounting & recognition", scenario: "Automated revenue recognition engine applies ASC 606 / IFRS 15 rules to contracts. Multi-element arrangement handling." }],
                 valLevers: [{ lever: "Automate revenue recognition", vtype: "Tangible", vclass: "Standardization", fintype: "SGA", stmt: "Income Statement" }],
                 },
@@ -262,16 +262,16 @@ const APQC = [
           {
             l3: "8.4.1 Customer Contract Management", l3id: "8.4.1",
             procs: [
-              { id: "o2c-020", l4: "8.4.1.1", label: "Create & manage customer contracts", kpis: [
-                { name: "Contract creation cycle time", unit: "days", current: null, benchmark: 5, src: "APQC", method: "Avg days from request to executed contract" },
-                { name: "Contract compliance rate", unit: "%", current: null, benchmark: 92, src: "Hackett", method: "Contracts within compliance / total active contracts × 100" },
+              { id: "o2c-020", l4: "8.4.1.1", label: "Create & manage customer contracts", jobs: ["Draft contract from templates","Negotiate terms and conditions","Route for legal and commercial approval","Execute and store contract"], kpis: [
+                { name: "Contract creation cycle time", unit: "days", current: null, benchmark: 5, src: "APQC", method: "Avg days from request to executed contract", occurrence: "recurring", capability: "Contract Intelligence" },
+                { name: "Contract compliance rate", unit: "%", current: null, benchmark: 92, src: "Hackett", method: "Contracts within compliance / total active contracts × 100", occurrence: "recurring", capability: "Contract Intelligence" },
               ], sap: [{ module: "SD-CAS", desc: "Contract & agreement management", scenario: "NLP-powered contract creation from templates with automated compliance checks. Smart clause library with risk scoring." }],
                 valLevers: [{ lever: "Reduce contract cycle time", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }],
                 },
-              { id: "o2c-021", l4: "8.4.1.2", label: "Manage rebates & trade promotions", kpis: [
-                { name: "Rebate accrual accuracy", unit: "%", current: null, benchmark: 95, src: "APQC", method: "Actual rebate vs accrued / total rebates × 100" },
-                { name: "Trade promotion ROI", unit: "%", current: null, benchmark: 115, src: "Hackett", method: "Incremental profit from promotion / promotion cost × 100" },
-                { name: "Rebate settlement cycle time", unit: "days", current: null, benchmark: 15, src: "APQC", method: "Avg days from period end to rebate settlement" },
+              { id: "o2c-021", l4: "8.4.1.2", label: "Manage rebates & trade promotions", jobs: ["Configure rebate agreements","Track qualifying transactions","Calculate accruals and settlements","Analyze promotion effectiveness"], kpis: [
+                { name: "Rebate accrual accuracy", unit: "%", current: null, benchmark: 95, src: "APQC", method: "Actual rebate vs accrued / total rebates × 100", occurrence: "recurring", capability: "Trade Promotion Optimization" },
+                { name: "Trade promotion ROI", unit: "%", current: null, benchmark: 115, src: "Hackett", method: "Incremental profit from promotion / promotion cost × 100", occurrence: "recurring", capability: "Trade Promotion Optimization" },
+                { name: "Rebate settlement cycle time", unit: "days", current: null, benchmark: 15, src: "APQC", method: "Avg days from period end to rebate settlement", occurrence: "recurring", capability: "Trade Promotion Optimization" },
               ], sap: [{ module: "SD-CAS / FICO", desc: "Rebate & settlement processing", scenario: "Automated rebate calculation, accrual, and settlement. AI-driven promotion effectiveness analysis with predictive ROI scoring." }],
                 valLevers: [{ lever: "Improve rebate accuracy", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" },
                   { lever: "Optimize trade promotion spend", vtype: "Tangible", vclass: "Cost Avoidance", fintype: "SGA", stmt: "Income Statement" }],
@@ -281,15 +281,15 @@ const APQC = [
           {
             l3: "8.4.2 Pricing & Margin Management", l3id: "8.4.2",
             procs: [
-              { id: "o2c-022", l4: "8.4.2.1", label: "Manage pricing master data & conditions", kpis: [
-                { name: "Pricing master data accuracy", unit: "%", current: null, benchmark: 99, src: "APQC", method: "Correct pricing records / total pricing records × 100" },
-                { name: "Price list update cycle time", unit: "hours", current: null, benchmark: 4, src: "Hackett", method: "Avg hours to propagate price changes across systems" },
+              { id: "o2c-022", l4: "8.4.2.1", label: "Manage pricing master data & conditions", jobs: ["Maintain price lists and condition records","Propagate price changes across systems","Validate against margin thresholds"], kpis: [
+                { name: "Pricing master data accuracy", unit: "%", current: null, benchmark: 99, src: "APQC", method: "Correct pricing records / total pricing records × 100", occurrence: "recurring", capability: "Dynamic Pricing Intelligence" },
+                { name: "Price list update cycle time", unit: "hours", current: null, benchmark: 4, src: "Hackett", method: "Avg hours to propagate price changes across systems", occurrence: "recurring", capability: "Dynamic Pricing Intelligence" },
               ], sap: [{ module: "SD-BF", desc: "Pricing condition maintenance", scenario: "Centralized pricing hub with automated condition record management. AI validates pricing changes against margin guardrails before activation." }],
                 valLevers: [{ lever: "Eliminate pricing data errors", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
                 },
-              { id: "o2c-023", l4: "8.4.2.2", label: "Analyze & optimize margin performance", kpis: [
-                { name: "Gross margin by customer", unit: "%", current: null, benchmark: null, src: "Internal", method: "Customer gross profit / customer revenue × 100" },
-                { name: "Price realization rate", unit: "%", current: null, benchmark: 97, src: "Hackett", method: "Net realized price / list price × 100" },
+              { id: "o2c-023", l4: "8.4.2.2", label: "Analyze & optimize margin performance", jobs: ["Run margin waterfall analysis","Identify leakage by customer and product","Model pricing scenarios","Recommend pricing actions"], kpis: [
+                { name: "Gross margin by customer", unit: "%", current: null, benchmark: null, src: "Internal", method: "Customer gross profit / customer revenue × 100", occurrence: "recurring", capability: "Dynamic Pricing Intelligence" },
+                { name: "Price realization rate", unit: "%", current: null, benchmark: 97, src: "Hackett", method: "Net realized price / list price × 100", occurrence: "recurring", capability: "Dynamic Pricing Intelligence" },
               ], sap: [{ module: "CO-PA", desc: "Profitability analysis", scenario: "Real-time margin analytics by customer, product, channel with waterfall decomposition. AI identifies margin leakage patterns." }],
                 valLevers: [{ lever: "Improve price realization", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
                 },
@@ -303,15 +303,15 @@ const APQC = [
           {
             l3: "8.5.1 Cash Forecasting & Management", l3id: "8.5.1",
             procs: [
-              { id: "o2c-024", l4: "8.5.1.1", label: "Forecast cash receipts from customers", kpis: [
-                { name: "Cash forecast accuracy (30-day)", unit: "%", current: null, benchmark: 90, src: "APQC", method: "1 - |Actual - Forecast| / Actual × 100" },
-                { name: "Cash forecast cycle time", unit: "hours", current: null, benchmark: 2, src: "Hackett", method: "Avg hours to produce weekly cash forecast" },
+              { id: "o2c-024", l4: "8.5.1.1", label: "Forecast cash receipts from customers", jobs: ["Gather AR and payment history data","Run cash receipt forecast models","Produce rolling 13-week forecast","Distribute forecast to treasury"], kpis: [
+                { name: "Cash forecast accuracy (30-day)", unit: "%", current: null, benchmark: 90, src: "APQC", method: "1 - |Actual - Forecast| / Actual × 100", occurrence: "recurring", capability: "Predictive Cash Management" },
+                { name: "Cash forecast cycle time", unit: "hours", current: null, benchmark: 2, src: "Hackett", method: "Avg hours to produce weekly cash forecast", occurrence: "recurring", capability: "Predictive Cash Management" },
               ], sap: [{ module: "TRM", desc: "Cash management & forecasting", scenario: "ML-based cash receipt forecasting using payment history, customer behavior, and macro signals. Daily rolling 13-week forecast." }],
                 valLevers: [{ lever: "Improve cash forecast accuracy", vtype: "Tangible", vclass: "Working Capital", fintype: "SGA", stmt: "Balance Sheet" }],
                 },
-              { id: "o2c-025", l4: "8.5.1.2", label: "Manage bank account reconciliation", kpis: [
-                { name: "Bank reconciliation automation rate", unit: "%", current: null, benchmark: 90, src: "APQC", method: "Auto-reconciled items / total items × 100" },
-                { name: "Reconciliation cycle time", unit: "hours", current: null, benchmark: 2, src: "Hackett", method: "Avg hours to complete daily bank reconciliation" },
+              { id: "o2c-025", l4: "8.5.1.2", label: "Manage bank account reconciliation", jobs: ["Import bank statements","Match transactions to GL entries","Investigate unreconciled items","Post reconciliation adjustments"], kpis: [
+                { name: "Bank reconciliation automation rate", unit: "%", current: null, benchmark: 90, src: "APQC", method: "Auto-reconciled items / total items × 100", occurrence: "recurring", capability: "Predictive Cash Management" },
+                { name: "Reconciliation cycle time", unit: "hours", current: null, benchmark: 2, src: "Hackett", method: "Avg hours to complete daily bank reconciliation", occurrence: "recurring", capability: "Predictive Cash Management" },
               ], sap: [{ module: "FI-BL", desc: "Bank statement processing & reconciliation", scenario: "Automated bank statement import and intelligent matching. ML handles complex multi-payment reconciliations." }],
                 valLevers: [{ lever: "Automate bank reconciliation", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }],
                 },
@@ -325,15 +325,15 @@ const APQC = [
           {
             l3: "8.6.1 O2C Analytics & Reporting", l3id: "8.6.1",
             procs: [
-              { id: "o2c-026", l4: "8.6.1.1", label: "Monitor O2C KPIs & generate reports", kpis: [
-                { name: "Report generation cycle time", unit: "hours", current: null, benchmark: 1, src: "APQC", method: "Avg hours to produce standard O2C report" },
-                { name: "KPI exception detection time", unit: "hours", current: null, benchmark: 4, src: "Hackett", method: "Avg hours from KPI breach to alert" },
+              { id: "o2c-026", l4: "8.6.1.1", label: "Monitor O2C KPIs & generate reports", jobs: ["Collect KPI data from source systems","Generate standard O2C dashboards","Highlight exceptions and anomalies","Distribute reports to stakeholders"], kpis: [
+                { name: "Report generation cycle time", unit: "hours", current: null, benchmark: 1, src: "APQC", method: "Avg hours to produce standard O2C report", occurrence: "recurring", capability: "O2C Process Intelligence" },
+                { name: "KPI exception detection time", unit: "hours", current: null, benchmark: 4, src: "Hackett", method: "Avg hours from KPI breach to alert", occurrence: "recurring", capability: "O2C Process Intelligence" },
               ], sap: [{ module: "BW/4HANA / SAC", desc: "O2C analytics & dashboarding", scenario: "Real-time O2C control tower with anomaly detection, automated root cause analysis, and predictive alerts." }],
                 valLevers: [{ lever: "Reduce reporting effort", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }],
                 },
-              { id: "o2c-027", l4: "8.6.1.2", label: "Perform O2C process mining & optimization", kpis: [
-                { name: "Process conformance rate", unit: "%", current: null, benchmark: 85, src: "Signavio", method: "Process instances following standard path / total instances × 100" },
-                { name: "Rework rate", unit: "%", current: null, benchmark: 5, src: "APQC", method: "Process instances requiring rework / total instances × 100" },
+              { id: "o2c-027", l4: "8.6.1.2", label: "Perform O2C process mining & optimization", jobs: ["Extract process event logs","Run process mining analysis","Identify bottlenecks and deviations","Recommend process improvements"], kpis: [
+                { name: "Process conformance rate", unit: "%", current: null, benchmark: 85, src: "Signavio", method: "Process instances following standard path / total instances × 100", occurrence: "recurring", capability: "O2C Process Intelligence" },
+                { name: "Rework rate", unit: "%", current: null, benchmark: 5, src: "APQC", method: "Process instances requiring rework / total instances × 100", occurrence: "recurring", capability: "O2C Process Intelligence" },
               ], sap: [{ module: "Signavio", desc: "Process mining & intelligence", scenario: "Continuous process mining identifies bottlenecks, deviations, and automation opportunities. Digital twin simulates improvement scenarios." }],
                 valLevers: [{ lever: "Reduce process rework rate", vtype: "Tangible", vclass: "Standardization", fintype: "SGA", stmt: "Income Statement" }],
                 },
@@ -352,36 +352,36 @@ const APQC = [
         l2: "9.1 General Accounting", l2id: "9.1",
         subs: [
           { l3: "9.1.1 Journal Entry Processing", l3id: "9.1.1", procs: [
-            { id: "r2r-001", l4: "9.1.1.1", label: "Process manual & recurring journal entries", kpis: [
-              { name: "Journal entry automation rate", unit: "%", current: null, benchmark: 75, src: "APQC" },
-              { name: "JE error rate", unit: "%", current: null, benchmark: 0.5, src: "Hackett" },
+            { id: "r2r-001", l4: "9.1.1.1", label: "Process manual & recurring journal entries", jobs: ["Prepare journal entry with supporting docs","Validate account coding and amounts","Post entry to general ledger","Archive journal entry backup"], kpis: [
+              { name: "Journal entry automation rate", unit: "%", current: null, benchmark: 75, src: "APQC", occurrence: "recurring", capability: "Automated Journal Processing" },
+              { name: "JE error rate", unit: "%", current: null, benchmark: 0.5, src: "Hackett", occurrence: "recurring", capability: "Automated Journal Processing" },
             ], sap: [{ module: "FI-GL", desc: "General ledger postings" }], valLevers: [{ lever: "Automate journal entries", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
-            { id: "r2r-002", l4: "9.1.1.2", label: "Manage intercompany transactions & eliminations", kpis: [
-              { name: "Intercompany matching rate", unit: "%", current: null, benchmark: 95, src: "APQC" },
+            { id: "r2r-002", l4: "9.1.1.2", label: "Manage intercompany transactions & eliminations", jobs: ["Record intercompany transactions","Match intercompany balances","Generate elimination entries","Resolve intercompany discrepancies"], kpis: [
+              { name: "Intercompany matching rate", unit: "%", current: null, benchmark: 95, src: "APQC", occurrence: "recurring", capability: "Automated Journal Processing" },
             ], sap: [{ module: "FI-GL / Group Reporting", desc: "Intercompany reconciliation" }], valLevers: [{ lever: "Automate IC eliminations", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
           ]},
           { l3: "9.1.2 Account Reconciliation", l3id: "9.1.2", procs: [
-            { id: "r2r-003", l4: "9.1.2.1", label: "Perform account reconciliations", kpis: [
-              { name: "Reconciliation automation rate", unit: "%", current: null, benchmark: 70, src: "APQC" },
-              { name: "Reconciling items aging (days)", unit: "days", current: null, benchmark: 5, src: "Hackett" },
+            { id: "r2r-003", l4: "9.1.2.1", label: "Perform account reconciliations", jobs: ["Extract subledger and GL balances","Identify reconciling items","Investigate and resolve differences","Certify account balances"], kpis: [
+              { name: "Reconciliation automation rate", unit: "%", current: null, benchmark: 70, src: "APQC", occurrence: "recurring", capability: "Continuous Account Reconciliation" },
+              { name: "Reconciling items aging (days)", unit: "days", current: null, benchmark: 5, src: "Hackett", occurrence: "recurring", capability: "Continuous Account Reconciliation" },
             ], sap: [{ module: "FI-GL / ACDOCA", desc: "Account reconciliation & matching" }], valLevers: [{ lever: "Automate reconciliations", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
           ]},
           { l3: "9.1.3 Period-End Close", l3id: "9.1.3", procs: [
-            { id: "r2r-004", l4: "9.1.3.1", label: "Execute period-end close activities", kpis: [
-              { name: "Days to close", unit: "days", current: null, benchmark: 4.8, src: "APQC" },
-              { name: "Close task automation rate", unit: "%", current: null, benchmark: 60, src: "Hackett" },
+            { id: "r2r-004", l4: "9.1.3.1", label: "Execute period-end close activities", jobs: ["Run close task checklist","Execute cut-off procedures","Post closing adjustments","Verify trial balance"], kpis: [
+              { name: "Days to close", unit: "days", current: null, benchmark: 4.8, src: "APQC", occurrence: "recurring", capability: "Advanced Financial Close" },
+              { name: "Close task automation rate", unit: "%", current: null, benchmark: 60, src: "Hackett", occurrence: "recurring", capability: "Advanced Financial Close" },
             ], sap: [{ module: "FI-GL / S/4 Close Cockpit", desc: "Financial close management" }], valLevers: [{ lever: "Accelerate close cycle", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
-            { id: "r2r-005", l4: "9.1.3.2", label: "Manage accruals & provisions", kpis: [
-              { name: "Accrual reversal rate", unit: "%", current: null, benchmark: 5, src: "APQC" },
+            { id: "r2r-005", l4: "9.1.3.2", label: "Manage accruals & provisions", jobs: ["Estimate accrual amounts","Post accrual journal entries","Reverse prior period accruals","Reconcile accrual balances"], kpis: [
+              { name: "Accrual reversal rate", unit: "%", current: null, benchmark: 5, src: "APQC", occurrence: "recurring", capability: "Advanced Financial Close" },
             ], sap: [{ module: "FI-GL", desc: "Accrual engine" }], valLevers: [{ lever: "Improve accrual accuracy", vtype: "Tangible", vclass: "Standardization", fintype: "SGA", stmt: "Income Statement" }] },
           ]},
           { l3: "9.1.4 Financial Reporting & Consolidation", l3id: "9.1.4", procs: [
-            { id: "r2r-006", l4: "9.1.4.1", label: "Prepare consolidated financial statements", kpis: [
-              { name: "Consolidation cycle time", unit: "days", current: null, benchmark: 3, src: "APQC" },
-              { name: "Manual adjustments in consolidation", unit: "count", current: null, benchmark: 10, src: "Hackett" },
+            { id: "r2r-006", l4: "9.1.4.1", label: "Prepare consolidated financial statements", jobs: ["Collect subsidiary trial balances","Apply consolidation rules","Process currency translation","Generate consolidated reports"], kpis: [
+              { name: "Consolidation cycle time", unit: "days", current: null, benchmark: 3, src: "APQC", occurrence: "recurring", capability: "Intelligent Consolidation & Reporting" },
+              { name: "Manual adjustments in consolidation", unit: "count", current: null, benchmark: 10, src: "Hackett", occurrence: "recurring", capability: "Intelligent Consolidation & Reporting" },
             ], sap: [{ module: "Group Reporting / BPC", desc: "Group consolidation" }], valLevers: [{ lever: "Automate consolidation", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
-            { id: "r2r-007", l4: "9.1.4.2", label: "Perform management & statutory reporting", kpis: [
-              { name: "Report generation time", unit: "hours", current: null, benchmark: 4, src: "APQC" },
+            { id: "r2r-007", l4: "9.1.4.2", label: "Perform management & statutory reporting", jobs: ["Prepare management reporting packages","Generate statutory financial statements","Perform variance analysis commentary","Submit regulatory filings"], kpis: [
+              { name: "Report generation time", unit: "hours", current: null, benchmark: 4, src: "APQC", occurrence: "recurring", capability: "Intelligent Consolidation & Reporting" },
             ], sap: [{ module: "SAC / BW4", desc: "Management reporting" }], valLevers: [{ lever: "Automate reporting", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
           ]},
         ]
@@ -390,8 +390,8 @@ const APQC = [
         l2: "9.2 Fixed Assets", l2id: "9.2",
         subs: [
           { l3: "9.2.1 Asset Accounting", l3id: "9.2.1", procs: [
-            { id: "r2r-008", l4: "9.2.1.1", label: "Manage fixed asset lifecycle", kpis: [
-              { name: "Asset capitalization accuracy", unit: "%", current: null, benchmark: 98, src: "APQC" },
+            { id: "r2r-008", l4: "9.2.1.1", label: "Manage fixed asset lifecycle", jobs: ["Capitalize new assets","Run depreciation calculations","Process asset transfers and retirements","Reconcile asset register to GL"], kpis: [
+              { name: "Asset capitalization accuracy", unit: "%", current: null, benchmark: 98, src: "APQC", occurrence: "recurring", capability: "Smart Asset Management" },
             ], sap: [{ module: "FI-AA", desc: "Asset accounting" }], valLevers: [{ lever: "Automate asset capitalization", vtype: "Tangible", vclass: "Standardization", fintype: "SGA", stmt: "Income Statement" }] },
           ]},
         ]
@@ -400,8 +400,8 @@ const APQC = [
         l2: "9.3 Cost Management", l2id: "9.3",
         subs: [
           { l3: "9.3.1 Cost Allocation & Analysis", l3id: "9.3.1", procs: [
-            { id: "r2r-009", l4: "9.3.1.1", label: "Perform cost allocation & product costing", kpis: [
-              { name: "Cost allocation cycle time", unit: "days", current: null, benchmark: 2, src: "APQC" },
+            { id: "r2r-009", l4: "9.3.1.1", label: "Perform cost allocation & product costing", jobs: ["Define cost allocation rules","Execute allocation runs","Calculate standard product costs","Analyze cost variances"], kpis: [
+              { name: "Cost allocation cycle time", unit: "days", current: null, benchmark: 2, src: "APQC", occurrence: "recurring", capability: "Automated Cost Management" },
             ], sap: [{ module: "CO-PC / CO-PA", desc: "Product costing & profitability" }], valLevers: [{ lever: "Automate cost allocation", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
           ]},
         ]
@@ -410,8 +410,8 @@ const APQC = [
         l2: "9.4 Tax Management", l2id: "9.4",
         subs: [
           { l3: "9.4.1 Tax Compliance", l3id: "9.4.1", procs: [
-            { id: "r2r-010", l4: "9.4.1.1", label: "Calculate & file tax returns", kpis: [
-              { name: "Tax filing accuracy", unit: "%", current: null, benchmark: 99.5, src: "APQC" },
+            { id: "r2r-010", l4: "9.4.1.1", label: "Calculate & file tax returns", jobs: ["Gather tax-relevant transactions","Calculate tax provisions","Prepare and review tax returns","Submit filings to authorities"], kpis: [
+              { name: "Tax filing accuracy", unit: "%", current: null, benchmark: 99.5, src: "APQC", occurrence: "recurring", capability: "Intelligent Tax Engine" },
             ], sap: [{ module: "FI-TX / ACR", desc: "Tax determination & reporting" }], valLevers: [{ lever: "Automate tax calculations", vtype: "Tangible", vclass: "Standardization", fintype: "SGA", stmt: "Income Statement" }] },
           ]},
         ]
@@ -427,19 +427,19 @@ const APQC = [
         l2: "10.1 Requisition & Procurement", l2id: "10.1",
         subs: [
           { l3: "10.1.1 Purchase Requisition Processing", l3id: "10.1.1", procs: [
-            { id: "p2p-001", l4: "10.1.1.1", label: "Create & approve purchase requisitions", kpis: [
-              { name: "Requisition-to-PO cycle time", unit: "days", current: null, benchmark: 2, src: "APQC" },
-              { name: "Auto-approval rate", unit: "%", current: null, benchmark: 50, src: "Hackett" },
+            { id: "p2p-001", l4: "10.1.1.1", label: "Create & approve purchase requisitions", jobs: ["Create purchase requisition","Validate budget availability","Route for approval","Convert approved requisition to PO"], kpis: [
+              { name: "Requisition-to-PO cycle time", unit: "days", current: null, benchmark: 2, src: "APQC", occurrence: "recurring", capability: "Smart Requisitioning" },
+              { name: "Auto-approval rate", unit: "%", current: null, benchmark: 50, src: "Hackett", occurrence: "recurring", capability: "Smart Requisitioning" },
             ], sap: [{ module: "MM-PUR", desc: "Purchase requisition management" }], valLevers: [{ lever: "Automate requisition approvals", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
           ]},
           { l3: "10.1.2 Purchase Order Management", l3id: "10.1.2", procs: [
-            { id: "p2p-002", l4: "10.1.2.1", label: "Create & manage purchase orders", kpis: [
-              { name: "PO accuracy rate", unit: "%", current: null, benchmark: 98, src: "APQC" },
-              { name: "Cost per PO", unit: "$", current: null, benchmark: 25, src: "Hackett" },
+            { id: "p2p-002", l4: "10.1.2.1", label: "Create & manage purchase orders", jobs: ["Create purchase order from requisition","Confirm order with supplier","Track PO delivery status","Manage PO changes and amendments"], kpis: [
+              { name: "PO accuracy rate", unit: "%", current: null, benchmark: 98, src: "APQC", occurrence: "recurring", capability: "Intelligent Procurement" },
+              { name: "Cost per PO", unit: "$", current: null, benchmark: 25, src: "Hackett", occurrence: "recurring", capability: "Intelligent Procurement" },
             ], sap: [{ module: "MM-PUR", desc: "Purchase order processing" }], valLevers: [{ lever: "Reduce cost per PO", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
-            { id: "p2p-003", l4: "10.1.2.2", label: "Manage goods receipt & 3-way matching", kpis: [
-              { name: "3-way match rate", unit: "%", current: null, benchmark: 85, src: "APQC" },
-              { name: "GR processing time", unit: "hours", current: null, benchmark: 4, src: "Hackett" },
+            { id: "p2p-003", l4: "10.1.2.2", label: "Manage goods receipt & 3-way matching", jobs: ["Record goods receipt","Perform 3-way match","Investigate matching exceptions","Post matched entries"], kpis: [
+              { name: "3-way match rate", unit: "%", current: null, benchmark: 85, src: "APQC", occurrence: "recurring", capability: "Intelligent Procurement" },
+              { name: "GR processing time", unit: "hours", current: null, benchmark: 4, src: "Hackett", occurrence: "recurring", capability: "Intelligent Procurement" },
             ], sap: [{ module: "MM-IM / MM-IV", desc: "Goods receipt & invoice verification" }], valLevers: [{ lever: "Increase auto-matching rate", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
           ]},
         ]
@@ -448,20 +448,20 @@ const APQC = [
         l2: "10.2 Accounts Payable", l2id: "10.2",
         subs: [
           { l3: "10.2.1 Invoice Processing", l3id: "10.2.1", procs: [
-            { id: "p2p-004", l4: "10.2.1.1", label: "Receive & process supplier invoices", kpis: [
-              { name: "Touchless invoice rate", unit: "%", current: null, benchmark: 75, src: "APQC" },
-              { name: "Cost per invoice processed", unit: "$", current: null, benchmark: 5.00, src: "Hackett" },
-              { name: "Invoice exception rate", unit: "%", current: null, benchmark: 15, src: "APQC" },
+            { id: "p2p-004", l4: "10.2.1.1", label: "Receive & process supplier invoices", jobs: ["Capture invoice via OCR or EDI","Validate against purchase order","Route exceptions for resolution","Post approved invoice"], kpis: [
+              { name: "Touchless invoice rate", unit: "%", current: null, benchmark: 75, src: "APQC", occurrence: "recurring", capability: "Touchless Invoice Processing" },
+              { name: "Cost per invoice processed", unit: "$", current: null, benchmark: 5.00, src: "Hackett", occurrence: "recurring", capability: "Touchless Invoice Processing" },
+              { name: "Invoice exception rate", unit: "%", current: null, benchmark: 15, src: "APQC", occurrence: "recurring", capability: "Touchless Invoice Processing" },
             ], sap: [{ module: "MM-IV / FI-AP", desc: "Invoice processing & verification" }], valLevers: [{ lever: "Increase touchless processing rate", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
           ]},
           { l3: "10.2.2 Payment Processing", l3id: "10.2.2", procs: [
-            { id: "p2p-005", l4: "10.2.2.1", label: "Schedule & execute supplier payments", kpis: [
-              { name: "On-time payment rate", unit: "%", current: null, benchmark: 95, src: "APQC" },
-              { name: "Early payment discount capture", unit: "%", current: null, benchmark: 70, src: "Hackett" },
-              { name: "Days payable outstanding (DPO)", unit: "days", current: null, benchmark: 45, src: "APQC" },
+            { id: "p2p-005", l4: "10.2.2.1", label: "Schedule & execute supplier payments", jobs: ["Run payment proposal","Optimize payment timing for discounts","Execute payment run","Reconcile payment to bank"], kpis: [
+              { name: "On-time payment rate", unit: "%", current: null, benchmark: 95, src: "APQC", occurrence: "recurring", capability: "Optimized Payment Execution" },
+              { name: "Early payment discount capture", unit: "%", current: null, benchmark: 70, src: "Hackett", occurrence: "recurring", capability: "Optimized Payment Execution" },
+              { name: "Days payable outstanding (DPO)", unit: "days", current: null, benchmark: 45, src: "APQC", occurrence: "recurring", capability: "Optimized Payment Execution" },
             ], sap: [{ module: "FI-AP", desc: "Payment processing & bank comms" }], valLevers: [{ lever: "Optimize payment timing", vtype: "Tangible", vclass: "Working Capital", fintype: "COGS", stmt: "Balance Sheet" }] },
-            { id: "p2p-006", l4: "10.2.2.2", label: "Manage supplier financing & dynamic discounting", kpis: [
-              { name: "Supply chain financing adoption", unit: "%", current: null, benchmark: 30, src: "Hackett" },
+            { id: "p2p-006", l4: "10.2.2.2", label: "Manage supplier financing & dynamic discounting", jobs: ["Identify early payment candidates","Offer dynamic discount to suppliers","Process early payment transactions"], kpis: [
+              { name: "Supply chain financing adoption", unit: "%", current: null, benchmark: 30, src: "Hackett", occurrence: "recurring", capability: "Optimized Payment Execution" },
             ], sap: [{ module: "FSCM", desc: "Supply chain finance" }], valLevers: [{ lever: "Implement dynamic discounting", vtype: "Tangible", vclass: "Cost Avoidance", fintype: "COGS", stmt: "Income Statement" }] },
           ]},
         ]
@@ -470,20 +470,122 @@ const APQC = [
         l2: "10.3 Supplier Management", l2id: "10.3",
         subs: [
           { l3: "10.3.1 Supplier Evaluation & Risk", l3id: "10.3.1", procs: [
-            { id: "p2p-007", l4: "10.3.1.1", label: "Evaluate & manage supplier performance", kpis: [
-              { name: "Supplier scorecard coverage", unit: "%", current: null, benchmark: 80, src: "APQC" },
-              { name: "Strategic supplier spend coverage", unit: "%", current: null, benchmark: 75, src: "Hackett" },
+            { id: "p2p-007", l4: "10.3.1.1", label: "Evaluate & manage supplier performance", jobs: ["Collect supplier performance data","Calculate supplier scorecards","Conduct supplier business reviews","Manage corrective action plans"], kpis: [
+              { name: "Supplier scorecard coverage", unit: "%", current: null, benchmark: 80, src: "APQC", occurrence: "recurring", capability: "Supplier Intelligence" },
+              { name: "Strategic supplier spend coverage", unit: "%", current: null, benchmark: 75, src: "Hackett", occurrence: "recurring", capability: "Supplier Intelligence" },
             ], sap: [{ module: "SLC / Ariba", desc: "Supplier lifecycle management" }], valLevers: [{ lever: "Improve supplier management coverage", vtype: "Intangible", vclass: "Risk Mitigation", fintype: "COGS", stmt: "Income Statement" }] },
           ]},
           { l3: "10.3.2 Contract Management", l3id: "10.3.2", procs: [
-            { id: "p2p-008", l4: "10.3.2.1", label: "Manage supplier contracts & compliance", kpis: [
-              { name: "Contract utilization rate", unit: "%", current: null, benchmark: 80, src: "APQC" },
+            { id: "p2p-008", l4: "10.3.2.1", label: "Manage supplier contracts & compliance", jobs: ["Draft and negotiate supplier contracts","Monitor contract compliance","Track contract milestones and renewals","Audit maverick spend"], kpis: [
+              { name: "Contract utilization rate", unit: "%", current: null, benchmark: 80, src: "APQC", occurrence: "recurring", capability: "Contract Lifecycle Management" },
             ], sap: [{ module: "Ariba / CLM", desc: "Contract lifecycle management" }], valLevers: [{ lever: "Increase contract compliance", vtype: "Tangible", vclass: "Cost Avoidance", fintype: "COGS", stmt: "Income Statement" }] },
           ]},
         ]
       },
     ]
   },
+];
+
+
+const KPI_MASTER_LIST = [
+  // ─── Working Capital ───
+  { id: "kpi-dso", name: "Days Sales Outstanding", unit: "days", category: "Working Capital", defaultBenchmark: 34, src: "APQC" },
+  { id: "kpi-dpo", name: "Days Payable Outstanding", unit: "days", category: "Working Capital", defaultBenchmark: 45, src: "APQC" },
+  { id: "kpi-ccc", name: "Cash Conversion Cycle", unit: "days", category: "Working Capital", defaultBenchmark: 35, src: "APQC" },
+  { id: "kpi-unapplied-cash", name: "Unapplied cash as % of revenue", unit: "%", category: "Working Capital", defaultBenchmark: 0.5, src: "APQC" },
+  { id: "kpi-credit-util", name: "Credit limit utilization", unit: "%", category: "Working Capital", defaultBenchmark: 65, src: "Hackett" },
+  { id: "kpi-deduction-backlog", name: "Deduction backlog value", unit: "$M", category: "Working Capital", defaultBenchmark: null, src: "Internal" },
+  { id: "kpi-cash-forecast", name: "Cash forecast accuracy (30-day)", unit: "%", category: "Working Capital", defaultBenchmark: 90, src: "APQC" },
+  { id: "kpi-wc-ratio", name: "Working capital ratio", unit: "x", category: "Working Capital", defaultBenchmark: 1.5, src: "APQC" },
+  // ─── Process Quality ───
+  { id: "kpi-invoice-accuracy", name: "Invoice accuracy rate", unit: "%", category: "Process Quality", defaultBenchmark: 98.5, src: "APQC" },
+  { id: "kpi-order-accuracy", name: "Order accuracy rate", unit: "%", category: "Process Quality", defaultBenchmark: 99.2, src: "APQC" },
+  { id: "kpi-pricing-accuracy", name: "Pricing accuracy rate", unit: "%", category: "Process Quality", defaultBenchmark: 99, src: "APQC" },
+  { id: "kpi-po-accuracy", name: "PO accuracy rate", unit: "%", category: "Process Quality", defaultBenchmark: 98, src: "APQC" },
+  { id: "kpi-refund-accuracy", name: "Refund accuracy rate", unit: "%", category: "Process Quality", defaultBenchmark: 99, src: "Hackett" },
+  { id: "kpi-je-error", name: "JE error rate", unit: "%", category: "Process Quality", defaultBenchmark: 0.5, src: "Hackett" },
+  { id: "kpi-aging-accuracy", name: "Aging bucket accuracy", unit: "%", category: "Process Quality", defaultBenchmark: 98, src: "Hackett" },
+  { id: "kpi-tax-accuracy", name: "Tax filing accuracy", unit: "%", category: "Process Quality", defaultBenchmark: 99.5, src: "APQC" },
+  { id: "kpi-asset-cap-accuracy", name: "Asset capitalization accuracy", unit: "%", category: "Process Quality", defaultBenchmark: 98, src: "APQC" },
+  { id: "kpi-perfect-order", name: "Perfect order rate", unit: "%", category: "Process Quality", defaultBenchmark: 92, src: "APQC" },
+  { id: "kpi-pricing-master", name: "Pricing master data accuracy", unit: "%", category: "Process Quality", defaultBenchmark: 99, src: "APQC" },
+  { id: "kpi-rebate-accuracy", name: "Rebate accrual accuracy", unit: "%", category: "Process Quality", defaultBenchmark: 95, src: "APQC" },
+  { id: "kpi-3way-match", name: "3-way match rate", unit: "%", category: "Process Quality", defaultBenchmark: 85, src: "APQC" },
+  // ─── Automation ───
+  { id: "kpi-touchless-orders", name: "Touchless order rate", unit: "%", category: "Automation", defaultBenchmark: 65, src: "SAP VLM" },
+  { id: "kpi-touchless-invoices", name: "Touchless invoice rate", unit: "%", category: "Automation", defaultBenchmark: 75, src: "APQC" },
+  { id: "kpi-cash-app-auto", name: "Cash application automation rate", unit: "%", category: "Automation", defaultBenchmark: 85, src: "APQC" },
+  { id: "kpi-je-auto", name: "Journal entry automation rate", unit: "%", category: "Automation", defaultBenchmark: 75, src: "APQC" },
+  { id: "kpi-recon-auto", name: "Reconciliation automation rate", unit: "%", category: "Automation", defaultBenchmark: 70, src: "APQC" },
+  { id: "kpi-close-auto", name: "Close task automation rate", unit: "%", category: "Automation", defaultBenchmark: 60, src: "Hackett" },
+  { id: "kpi-bank-recon-auto", name: "Bank reconciliation automation rate", unit: "%", category: "Automation", defaultBenchmark: 90, src: "APQC" },
+  { id: "kpi-rev-rec-auto", name: "Revenue recognition automation rate", unit: "%", category: "Automation", defaultBenchmark: 80, src: "Hackett" },
+  { id: "kpi-einvoice", name: "E-invoicing adoption rate", unit: "%", category: "Automation", defaultBenchmark: 75, src: "Hackett" },
+  { id: "kpi-auto-approval-credit", name: "Credit auto-approval rate", unit: "%", category: "Automation", defaultBenchmark: 70, src: "Hackett" },
+  { id: "kpi-auto-approval-req", name: "Requisition auto-approval rate", unit: "%", category: "Automation", defaultBenchmark: 50, src: "Hackett" },
+  { id: "kpi-sc-finance", name: "Supply chain financing adoption", unit: "%", category: "Automation", defaultBenchmark: 30, src: "Hackett" },
+  { id: "kpi-ic-match", name: "Intercompany matching rate", unit: "%", category: "Automation", defaultBenchmark: 95, src: "APQC" },
+  // ─── Cycle Time ───
+  { id: "kpi-days-close", name: "Days to close", unit: "days", category: "Cycle Time", defaultBenchmark: 4.8, src: "APQC" },
+  { id: "kpi-billing-cycle", name: "Billing cycle time", unit: "days", category: "Cycle Time", defaultBenchmark: 1.5, src: "Hackett" },
+  { id: "kpi-dispute-cycle", name: "Dispute resolution cycle time", unit: "days", category: "Cycle Time", defaultBenchmark: 15, src: "APQC" },
+  { id: "kpi-order-entry", name: "Order entry cycle time", unit: "minutes", category: "Cycle Time", defaultBenchmark: 5, src: "APQC" },
+  { id: "kpi-order-ship", name: "Order-to-ship cycle time", unit: "hours", category: "Cycle Time", defaultBenchmark: 24, src: "Hackett" },
+  { id: "kpi-credit-eval", name: "Credit evaluation cycle time", unit: "days", category: "Cycle Time", defaultBenchmark: 2, src: "APQC" },
+  { id: "kpi-refund-cycle", name: "Refund processing cycle time", unit: "days", category: "Cycle Time", defaultBenchmark: 3, src: "APQC" },
+  { id: "kpi-return-cycle", name: "Return processing cycle time", unit: "days", category: "Cycle Time", defaultBenchmark: 5, src: "APQC" },
+  { id: "kpi-contract-cycle", name: "Contract creation cycle time", unit: "days", category: "Cycle Time", defaultBenchmark: 5, src: "APQC" },
+  { id: "kpi-req-po-cycle", name: "Requisition-to-PO cycle time", unit: "days", category: "Cycle Time", defaultBenchmark: 2, src: "APQC" },
+  { id: "kpi-consol-cycle", name: "Consolidation cycle time", unit: "days", category: "Cycle Time", defaultBenchmark: 3, src: "APQC" },
+  { id: "kpi-deduction-cycle", name: "Deduction resolution cycle time", unit: "days", category: "Cycle Time", defaultBenchmark: 20, src: "APQC" },
+  { id: "kpi-cost-alloc-cycle", name: "Cost allocation cycle time", unit: "days", category: "Cycle Time", defaultBenchmark: 2, src: "APQC" },
+  { id: "kpi-rebate-settle", name: "Rebate settlement cycle time", unit: "days", category: "Cycle Time", defaultBenchmark: 15, src: "APQC" },
+  { id: "kpi-price-update", name: "Price list update cycle time", unit: "hours", category: "Cycle Time", defaultBenchmark: 4, src: "Hackett" },
+  { id: "kpi-blocked-order-time", name: "Blocked order resolution time", unit: "hours", category: "Cycle Time", defaultBenchmark: 4, src: "APQC" },
+  { id: "kpi-cash-app-cycle", name: "Cash application cycle time", unit: "hours", category: "Cycle Time", defaultBenchmark: 4, src: "Hackett" },
+  // ─── Cost Efficiency ───
+  { id: "kpi-cost-invoice-gen", name: "Cost per invoice generated", unit: "$", category: "Cost Efficiency", defaultBenchmark: 3.50, src: "APQC" },
+  { id: "kpi-cost-invoice-proc", name: "Cost per invoice processed", unit: "$", category: "Cost Efficiency", defaultBenchmark: 5.00, src: "Hackett" },
+  { id: "kpi-cost-po", name: "Cost per PO", unit: "$", category: "Cost Efficiency", defaultBenchmark: 25, src: "Hackett" },
+  { id: "kpi-cost-dispute", name: "Cost per dispute resolved", unit: "$", category: "Cost Efficiency", defaultBenchmark: 35, src: "APQC" },
+  { id: "kpi-cost-collection", name: "Cost per collection contact", unit: "$", category: "Cost Efficiency", defaultBenchmark: 8, src: "APQC" },
+  { id: "kpi-cost-return", name: "Return cost per unit", unit: "$", category: "Cost Efficiency", defaultBenchmark: 12, src: "APQC" },
+  { id: "kpi-warehouse-cost", name: "Warehouse cost per order", unit: "$", category: "Cost Efficiency", defaultBenchmark: 4.50, src: "APQC" },
+  { id: "kpi-freight-pct", name: "Freight cost as % of revenue", unit: "%", category: "Cost Efficiency", defaultBenchmark: 4.5, src: "Hackett" },
+  { id: "kpi-finance-cost-rev", name: "Finance function cost as % of revenue", unit: "%", category: "Cost Efficiency", defaultBenchmark: 0.8, src: "APQC" },
+  { id: "kpi-ap-cost-rev", name: "AP cost per $1000 disbursed", unit: "$", category: "Cost Efficiency", defaultBenchmark: 1.20, src: "Hackett" },
+  { id: "kpi-ar-cost-rev", name: "AR cost per $1000 revenue", unit: "$", category: "Cost Efficiency", defaultBenchmark: 1.50, src: "APQC" },
+  // ─── Revenue Leakage ───
+  { id: "kpi-bad-debt", name: "Bad debt write-off rate", unit: "%", category: "Revenue Leakage", defaultBenchmark: 0.25, src: "APQC" },
+  { id: "kpi-writeoff-rev", name: "Write-off as % of revenue", unit: "%", category: "Revenue Leakage", defaultBenchmark: 0.15, src: "APQC" },
+  { id: "kpi-dispute-rate", name: "Dispute rate", unit: "%", category: "Revenue Leakage", defaultBenchmark: 2.0, src: "Hackett" },
+  { id: "kpi-return-rate", name: "Return rate", unit: "%", category: "Revenue Leakage", defaultBenchmark: 8, src: "Hackett" },
+  { id: "kpi-cancel-rate", name: "Cancellation rate", unit: "%", category: "Revenue Leakage", defaultBenchmark: 3, src: "Hackett" },
+  { id: "kpi-invalid-deduction", name: "Invalid deduction recovery rate", unit: "%", category: "Revenue Leakage", defaultBenchmark: 60, src: "Hackett" },
+  { id: "kpi-price-realization", name: "Price realization rate", unit: "%", category: "Revenue Leakage", defaultBenchmark: 97, src: "Hackett" },
+  { id: "kpi-manual-price-override", name: "Manual pricing overrides", unit: "%", category: "Revenue Leakage", defaultBenchmark: 3, src: "Hackett" },
+  { id: "kpi-promo-roi", name: "Trade promotion ROI", unit: "%", category: "Revenue Leakage", defaultBenchmark: 115, src: "Hackett" },
+  // ─── Compliance ───
+  { id: "kpi-contract-compliance", name: "Contract compliance rate", unit: "%", category: "Compliance", defaultBenchmark: 92, src: "Hackett" },
+  { id: "kpi-contract-util", name: "Contract utilization rate", unit: "%", category: "Compliance", defaultBenchmark: 80, src: "APQC" },
+  { id: "kpi-process-conformance", name: "Process conformance rate", unit: "%", category: "Compliance", defaultBenchmark: 85, src: "Signavio" },
+  { id: "kpi-rework", name: "Rework rate", unit: "%", category: "Compliance", defaultBenchmark: 5, src: "APQC" },
+  { id: "kpi-accrual-reversal", name: "Accrual reversal rate", unit: "%", category: "Compliance", defaultBenchmark: 5, src: "APQC" },
+  { id: "kpi-credit-review", name: "Credit limit review frequency", unit: "days", category: "Compliance", defaultBenchmark: 90, src: "APQC" },
+  { id: "kpi-supplier-scorecard", name: "Supplier scorecard coverage", unit: "%", category: "Compliance", defaultBenchmark: 80, src: "APQC" },
+  { id: "kpi-strategic-spend", name: "Strategic supplier spend coverage", unit: "%", category: "Compliance", defaultBenchmark: 75, src: "Hackett" },
+  { id: "kpi-early-discount", name: "Early payment discount capture", unit: "%", category: "Compliance", defaultBenchmark: 70, src: "Hackett" },
+  { id: "kpi-ontime-payment", name: "On-time payment rate", unit: "%", category: "Compliance", defaultBenchmark: 95, src: "APQC" },
+  { id: "kpi-ontime-delivery", name: "On-time delivery rate", unit: "%", category: "Compliance", defaultBenchmark: 95, src: "APQC" },
+  { id: "kpi-collections-eff", name: "Collections effectiveness index", unit: "%", category: "Compliance", defaultBenchmark: 82, src: "Hackett" },
+  { id: "kpi-ar-90-past-due", name: "% AR > 90 days past due", unit: "%", category: "Compliance", defaultBenchmark: 5, src: "Hackett" },
+  { id: "kpi-order-fill", name: "Order fill rate", unit: "%", category: "Compliance", defaultBenchmark: 97, src: "Hackett" },
+  { id: "kpi-invoice-exception", name: "Invoice exception rate", unit: "%", category: "Compliance", defaultBenchmark: 15, src: "APQC" },
+  { id: "kpi-blocked-credit", name: "% orders blocked for credit", unit: "%", category: "Compliance", defaultBenchmark: 5, src: "Hackett" },
+  { id: "kpi-invoice-delivery", name: "Invoice delivery success rate", unit: "%", category: "Compliance", defaultBenchmark: 99, src: "APQC" },
+  { id: "kpi-atp-accuracy", name: "Available-to-promise accuracy", unit: "%", category: "Compliance", defaultBenchmark: 95, src: "APQC" },
+  { id: "kpi-rev-adj-post-close", name: "Revenue adjustments post-close", unit: "count", category: "Compliance", defaultBenchmark: 5, src: "APQC" },
+  { id: "kpi-manual-consol-adj", name: "Manual adjustments in consolidation", unit: "count", category: "Compliance", defaultBenchmark: 10, src: "Hackett" },
 ];
 
 // Flatten all L4 processes for quick lookups
