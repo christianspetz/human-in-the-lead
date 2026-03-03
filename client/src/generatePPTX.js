@@ -1,7 +1,8 @@
 import pptxgen from "pptxgenjs";
+import AGENT_SPECS from "./agentSpecs";
 
 /* ═══════════════════════════════════════════════════════
-   PPTX GENERATION — Big 4 Quality Phase 0 Deck (21 slides)
+   PPTX GENERATION — Big 4 Quality Phase 0 Deck (22 slides)
    ═══════════════════════════════════════════════════════ */
 
 export default function generatePPTX({
@@ -403,7 +404,71 @@ export default function generatePPTX({
   })();
 
   // ════════════════════════════════════════════
-  // SLIDE 17 — SAP MODULE COVERAGE (light bg)
+  // SLIDE 17 — IMPLEMENTATION ROADMAP (dark bg)
+  // ════════════════════════════════════════════
+  (() => {
+    const s = dkSl(); goldLn(s);
+    s.addText("AI Agent Implementation Roadmap", { x: 0.5, y: 0.5, w: 9.0, h: 0.5, fontSize: 24, fontFace: "Georgia", color: C.white });
+
+    // Build roadmap data sorted by ROI
+    const rmData = selProcs
+      .filter(p => AGENT_SPECS[p.id])
+      .map(p => {
+        const spec = AGENT_SPECS[p.id];
+        const imp = valResult.impacts.find(i => i.id === p.id);
+        const agV = imp?.agentValue || 0;
+        const roi = spec.implCost > 0 && agV > 0 ? Math.round((agV * 1000 / spec.implCost) * 100) : 0;
+        return { label: p.label, l4: p.l4, ...spec, agV, roi };
+      })
+      .sort((a, b) => b.roi - a.roi)
+      .slice(0, 8);
+
+    if (rmData.length > 0) {
+      const totalCost = rmData.reduce((s, r) => s + r.implCost, 0);
+      const avgPayback = Math.round(rmData.reduce((s, r) => s + r.paybackMonths, 0) / rmData.length);
+      const totalAgV = rmData.reduce((s, r) => s + r.agV, 0);
+      const pROI = totalCost > 0 && totalAgV > 0 ? Math.round((totalAgV * 1000 / totalCost) * 100) : 0;
+
+      // Summary stats
+      [
+        { l: "Total Cost", v: "$" + (totalCost >= 1000 ? (totalCost / 1000).toFixed(1) + "M" : totalCost + "K"), c: C.purple },
+        { l: "Avg Payback", v: avgPayback + " mo", c: C.gold },
+        { l: "Agent Value", v: totalAgV > 0 ? fmtD(totalAgV) + "/yr" : "TBD", c: C.green },
+        { l: "Portfolio ROI", v: pROI > 0 ? pROI + "%" : "TBD", c: pROI > 200 ? C.green : C.gold },
+      ].forEach((st, i) => {
+        const bx = 0.5 + i * 2.25;
+        s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: bx, y: 1.1, w: 2.0, h: 0.8, fill: { color: C.cardBg }, rectRadius: 0.08, line: { color: C.border, width: 0.5 } });
+        s.addText(st.v, { x: bx, y: 1.1, w: 2.0, h: 0.45, fontSize: 18, fontFace: "Georgia", color: st.c, bold: true, align: "center", valign: "bottom" });
+        s.addText(st.l, { x: bx, y: 1.55, w: 2.0, h: 0.3, fontSize: 9, fontFace: "Calibri", color: C.gray, align: "center", valign: "top" });
+      });
+
+      // Roadmap table
+      const rH = (t, ex) => ({ text: t, options: { bold: true, fontSize: 9, color: C.white, fill: { color: C.border }, ...ex } });
+      const rC = (t, ex) => ({ text: t, options: { fontSize: 9, color: C.white, ...ex } });
+      const rows = [[rH("Process"), rH("Type", { align: "center" }), rH("Effort", { align: "center" }), rH("Months", { align: "center" }), rH("Cost", { align: "right" }), rH("Feasibility", { align: "center" }), rH("Payback", { align: "center" }), rH("ROI", { align: "right" })]];
+      rmData.forEach(r => {
+        const fCl = r.feasibility >= 80 ? C.green : r.feasibility >= 60 ? C.gold : C.orange;
+        const rCl = r.roi > 200 ? C.green : r.roi > 100 ? C.gold : C.orange;
+        rows.push([
+          rC(trunc(r.label, 28)),
+          rC(r.agentType, { align: "center", fontSize: 8, color: r.agentType === "Autonomous" ? C.green : r.agentType === "Hybrid" ? C.gold : C.blue }),
+          rC(r.effort, { align: "center", color: r.effort === "Low" ? C.green : r.effort === "Medium" ? C.gold : C.red }),
+          rC(String(r.implMonths), { align: "center" }),
+          rC("$" + r.implCost + "K", { align: "right", color: C.purple }),
+          rC(String(r.feasibility), { align: "center", color: fCl, bold: true }),
+          rC(r.paybackMonths + "mo", { align: "center", color: C.gold }),
+          rC(r.roi > 0 ? r.roi + "%" : "\u2014", { align: "right", color: rCl, bold: true }),
+        ]);
+      });
+      s.addTable(rows, { x: 0.5, y: 2.1, w: 9.0, colW: [2.2, 1.0, 0.8, 0.8, 0.9, 0.9, 0.8, 0.6], border: { type: "solid", pt: 0.5, color: C.border }, rowH: 0.3 });
+    } else {
+      s.addText("No agent implementation specs available for selected processes.", { x: 0.5, y: 2.0, w: 9.0, h: 0.5, fontSize: 12, fontFace: "Calibri", color: C.gray, align: "center" });
+    }
+    addFtr(s, pg++);
+  })();
+
+  // ════════════════════════════════════════════
+  // SLIDE 18 — SAP MODULE COVERAGE (light bg)
   // ════════════════════════════════════════════
   (() => {
     const s = ltSl(); goldLn(s);
@@ -419,7 +484,7 @@ export default function generatePPTX({
   })();
 
   // ════════════════════════════════════════════
-  // SLIDE 18 — BASELINE FINDINGS (light bg)
+  // SLIDE 19 — BASELINE FINDINGS (light bg)
   // ════════════════════════════════════════════
   (() => {
     const s = ltSl(); goldLn(s);
@@ -451,7 +516,7 @@ export default function generatePPTX({
   })();
 
   // ════════════════════════════════════════════
-  // SLIDE 19 — CAPABILITY ROADMAP (dark bg)
+  // SLIDE 20 — CAPABILITY ROADMAP (dark bg)
   // ════════════════════════════════════════════
   (() => {
     const s = dkSl(); goldLn(s);
@@ -472,7 +537,7 @@ export default function generatePPTX({
   })();
 
   // ════════════════════════════════════════════
-  // SLIDE 20 — NEXT STEPS (dark bg)
+  // SLIDE 21 — NEXT STEPS (dark bg)
   // ════════════════════════════════════════════
   (() => {
     const s = dkSl(); goldLn(s);
@@ -497,7 +562,7 @@ export default function generatePPTX({
   })();
 
   // ════════════════════════════════════════════
-  // SLIDE 21 — CLOSING (dark bg)
+  // SLIDE 22 — CLOSING (dark bg)
   // ════════════════════════════════════════════
   (() => {
     const s = dkSl(); goldLn(s);
