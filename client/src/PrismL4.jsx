@@ -3344,6 +3344,104 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
                           </div>
                         </div>
 
+
+                        {/* Agent Implementation Spec */}
+                        {(() => {
+                          const spec = AGENT_SPECS[proc.id];
+                          if (!spec) return null;
+                          const fColor = spec.feasibility >= 80 ? GREEN : spec.feasibility >= 60 ? GOLD : spec.feasibility >= 40 ? ORANGE : RED;
+                          const eColor = spec.effort === "Low" ? GREEN : spec.effort === "Medium" ? GOLD : RED;
+                          const annualAgentVal = procAgentVal > 0 ? procAgentVal : 0;
+                          const roi = spec.implCost > 0 && annualAgentVal > 0 ? Math.round((annualAgentVal * 1000 / spec.implCost) * 100) : null;
+                          return (
+                            <div style={{ marginBottom: 12 }}>
+                              {/* Feasibility Gauge */}
+                              <div style={{ padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}`, marginBottom: 8 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                                  <div style={{ fontSize: 10, color: t.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px" }}>Feasibility Score</div>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                    <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: fColor + "18", color: fColor, fontWeight: 700 }}>{spec.agentType}</span>
+                                    <span style={{ fontSize: 16, fontFamily: "monospace", fontWeight: 700, color: fColor }}>{spec.feasibility}</span>
+                                  </div>
+                                </div>
+                                <div style={{ height: 8, background: t.bdr, borderRadius: 4, overflow: "hidden" }}>
+                                  <div style={{ height: "100%", width: `${spec.feasibility}%`, background: `linear-gradient(90deg, ${fColor}88, ${fColor})`, borderRadius: 4, transition: "width 0.5s" }} />
+                                </div>
+                                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}>
+                                  <span style={{ fontSize: 8, color: t.sub }}>0</span>
+                                  <span style={{ fontSize: 8, color: t.sub }}>100</span>
+                                </div>
+                              </div>
+
+                              {/* Implementation Spec Card */}
+                              <div style={{ padding: "12px 14px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}`, marginBottom: 8 }}>
+                                <div style={{ fontSize: 10, color: GOLD, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 8 }}>Implementation Specification</div>
+                                <div style={{ fontSize: 11, color: t.tx2, lineHeight: 1.6, marginBottom: 10 }}>{spec.description}</div>
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 10 }}>
+                                  <div style={{ textAlign: "center", padding: 6, borderRadius: 6, background: eColor + "0C", border: `1px solid ${eColor}22` }}>
+                                    <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase" }}>Effort</div>
+                                    <div style={{ fontSize: 14, fontWeight: 700, color: eColor }}>{spec.effort}</div>
+                                  </div>
+                                  <div style={{ textAlign: "center", padding: 6, borderRadius: 6, background: BLUE + "0C", border: `1px solid ${BLUE}22` }}>
+                                    <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase" }}>Timeline</div>
+                                    <div style={{ fontSize: 14, fontWeight: 700, color: BLUE }}>{spec.implMonths}mo</div>
+                                  </div>
+                                  <div style={{ textAlign: "center", padding: 6, borderRadius: 6, background: PURPLE + "0C", border: `1px solid ${PURPLE}22` }}>
+                                    <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase" }}>Cost</div>
+                                    <div style={{ fontSize: 14, fontWeight: 700, color: PURPLE }}>${spec.implCost}K</div>
+                                  </div>
+                                </div>
+                                <div style={{ marginBottom: 8 }}>
+                                  <div style={{ fontSize: 9, color: t.mut, fontWeight: 600, marginBottom: 3 }}>PREREQUISITES</div>
+                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                    {spec.prerequisites.map((p, pi) => (
+                                      <span key={pi} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: GREEN + "10", color: GREEN, border: `1px solid ${GREEN}25` }}>{p}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div style={{ marginBottom: 8 }}>
+                                  <div style={{ fontSize: 9, color: t.mut, fontWeight: 600, marginBottom: 3 }}>RISK FACTORS</div>
+                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                    {spec.riskFactors.map((r, ri) => (
+                                      <span key={ri} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: RED + "10", color: RED, border: `1px solid ${RED}25` }}>{r}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div style={{ fontSize: 9, color: t.mut, fontWeight: 600, marginBottom: 3 }}>TECH STACK</div>
+                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                    {spec.techStack.map((ts, ti) => (
+                                      <span key={ti} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: BLUE + "10", color: BLUE, border: `1px solid ${BLUE}25` }}>{ts}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* ROI Timeline */}
+                              <div style={{ padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
+                                <div style={{ fontSize: 10, color: GOLD, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 8 }}>ROI Timeline</div>
+                                <div style={{ display: "flex", gap: 12, alignItems: "flex-end", height: 50, marginBottom: 6 }}>
+                                  <div style={{ flex: 1, textAlign: "center" }}>
+                                    <div style={{ fontSize: 10, fontFamily: "monospace", color: RED, fontWeight: 700, marginBottom: 2 }}>-${spec.implCost}K</div>
+                                    <div style={{ height: 24, background: RED + "30", borderRadius: 4, border: `1px solid ${RED}40` }} />
+                                    <div style={{ fontSize: 8, color: t.sub, marginTop: 2 }}>Investment</div>
+                                  </div>
+                                  <div style={{ flex: 1, textAlign: "center" }}>
+                                    <div style={{ fontSize: 10, fontFamily: "monospace", color: GOLD, fontWeight: 700, marginBottom: 2 }}>{spec.paybackMonths}mo</div>
+                                    <div style={{ height: 16, background: GOLD + "30", borderRadius: 4, border: `1px solid ${GOLD}40` }} />
+                                    <div style={{ fontSize: 8, color: t.sub, marginTop: 2 }}>Payback</div>
+                                  </div>
+                                  <div style={{ flex: 1, textAlign: "center" }}>
+                                    <div style={{ fontSize: 10, fontFamily: "monospace", color: GREEN, fontWeight: 700, marginBottom: 2 }}>{annualAgentVal > 0 ? `$${annualAgentVal.toFixed(1)}M` : "TBD"}</div>
+                                    <div style={{ height: 32, background: GREEN + "30", borderRadius: 4, border: `1px solid ${GREEN}40` }} />
+                                    <div style={{ fontSize: 8, color: t.sub, marginTop: 2 }}>Annual Value</div>
+                                  </div>
+                                </div>
+                                {roi != null && <div style={{ fontSize: 10, color: t.tx2, textAlign: "center" }}>Estimated ROI: <span style={{ fontWeight: 700, color: roi > 200 ? GREEN : roi > 100 ? GOLD : ORANGE }}>{roi}%</span></div>}
+                              </div>
+                            </div>
+                          );
+                        })()}
                         {agentResults[proc.id] ? (
                           <div style={{ padding: 14, background: GOLD + "08", border: `1px solid ${GOLD}22`, borderRadius: 10 }}>
                             <div style={{ fontSize: 10, color: GOLD, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 8 }}>⚡ AI Agent Scenario</div>
