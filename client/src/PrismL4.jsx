@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, Suspense } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef, Suspense } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   AreaChart, CartesianGrid
@@ -653,15 +653,15 @@ const Q_TEMPLATES = [
 /* ═══════════════════════════════════════════════════════
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════ */
-export default function PrismL4({ user, onLogout }) {
-  const [page, setPage] = useState("entry");
+export default function PrismL4({ user, onLogout, assessmentId, initialData, isOwner, onBack }) {
+  const [page, setPage] = useState(initialData ? "work" : "entry");
   const [mode, setMode] = useState("dark");
   const isClientRole = user?.role === "client";
   const [viewMode, setViewMode] = useState(isClientRole ? "client" : "consultant"); // consultant | client
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(initialData?.lastStep || 1);
 
   // Scope selection (Step 1)
-  const [selectedProcs, setSelectedProcs] = useState(new Set());
+  const [selectedProcs, setSelectedProcs] = useState(() => new Set(initialData?.selectedProcs || []));
   const [expandedL1, setExpandedL1] = useState(new Set(["8.0"]));
   const [expandedL2, setExpandedL2] = useState(new Set(["8.2"]));
   const [expandedL3, setExpandedL3] = useState(new Set(["8.2.1"]));
@@ -670,7 +670,7 @@ export default function PrismL4({ user, onLogout }) {
 
   // Cascading scope selection
   const [scopeStage, setScopeStage] = useState(1);
-  const [selectedFunction, setSelectedFunction] = useState(null);
+  const [selectedFunction, setSelectedFunction] = useState(initialData?.selectedFunction || null);
   const [selectedBlueprints, setSelectedBlueprints] = useState(new Set());
   const [entryPath, setEntryPath] = useState(null);
   const [selectedE2Es, setSelectedE2Es] = useState(new Set());
@@ -682,44 +682,56 @@ export default function PrismL4({ user, onLogout }) {
   const [showBlueprint, setShowBlueprint] = useState(false);
 
   // Baseline data (Step 2)
-  const [baseline, setBaseline] = useState(DEF_BL);
-  const [questAnswers, setQuestAnswers] = useState({});
+  const [baseline, setBaseline] = useState(initialData?.baseline || DEF_BL);
+  const [questAnswers, setQuestAnswers] = useState(initialData?.questAnswers || {});
   const [signavioView, setSignavioView] = useState(null);
 
   // Value settings (Step 3)
-  const [procValues, setProcValues] = useState({});
+  const [procValues, setProcValues] = useState(initialData?.procValues || {});
 
   // Benchmarks (Step 4)
-  const [procBenchmarks, setProcBenchmarks] = useState({});
+  const [procBenchmarks, setProcBenchmarks] = useState(initialData?.procBenchmarks || {});
   const [catalystLoading, setCatalystLoading] = useState({});
-  const [catalystResults, setCatalystResults] = useState({});
+  const [catalystResults, setCatalystResults] = useState(initialData?.catalystResults || {});
 
   // ERP (Step 5)
   // Agent (Step 6)
   const [agentLoading, setAgentLoading] = useState({});
-  const [agentResults, setAgentResults] = useState({});
+  const [agentResults, setAgentResults] = useState(initialData?.agentResults || {});
 
   // Calculations (Step 7)
   const [scenarioLevel, setScenarioLevel] = useState("Medium");
-  const [savedScenarios, setSavedScenarios] = useState([]);
+  const [savedScenarios, setSavedScenarios] = useState(initialData?.savedScenarios || []);
 
   // Two-track baseline data (Step 2)
-  const [baselineData, setBaselineData] = useState({});
+  const [baselineData, setBaselineData] = useState(initialData?.baselineData || {});
 
   // Per-process potential categorization (Step 5 / Step 7)
-  const [procScenarios, setProcScenarios] = useState({});
+  const [procScenarios, setProcScenarios] = useState(initialData?.procScenarios || {});
 
   // Focus
   const [focusProc, setFocusProc] = useState(null);
   const [showBaselineEditor, setShowBaselineEditor] = useState(false);
 
   // Questionnaire upload & process mining
-  const [uploadedMining, setUploadedMining] = useState({});
+  const [uploadedMining, setUploadedMining] = useState(initialData?.uploadedMining || {});
 
   // Catalyst API key (entered by consultant, never stored)
   const [apiKey, setApiKey] = useState("");
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [catalystServer, setCatalystServer] = useState(null); // null=unknown, true=server proxy available, false=not configured
+
+  // Auto-save state
+  const saveTimer = useRef(null);
+  const [lastSaved, setLastSaved] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  // Share modal state
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareEmail, setShareEmail] = useState("");
+  const [shareRole, setShareRole] = useState("viewer");
+  const [shares, setShares] = useState([]);
+  const [shareLoading, setShareLoading] = useState(false);
 
   const t = TH[mode];
 
@@ -734,6 +746,67 @@ export default function PrismL4({ user, onLogout }) {
   const toggleSet = (setter, val) => setter(prev => { const n = new Set(prev); n.has(val) ? n.delete(val) : n.add(val); return n; });
   const selectAllInGroup = (procs) => setSelectedProcs(prev => { const n = new Set(prev); procs.forEach(p => n.add(p.id)); return n; });
   const deselectAllInGroup = (procs) => setSelectedProcs(prev => { const n = new Set(prev); procs.forEach(p => n.delete(p.id)); return n; });
+
+  // ═══ Auto-save to server ═══
+  const saveToServer = useCallback(async () => {
+    if (!assessmentId) return;
+    setSaving(true);
+    const data = {
+      baseline, selectedProcs: [...selectedProcs], selectedFunction,
+      procValues, procBenchmarks, questAnswers, baselineData, procScenarios,
+      catalystResults, agentResults, uploadedMining, savedScenarios, lastStep: step,
+    };
+    try {
+      await fetch(`/api/assessments/${assessmentId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ data, companyName: baseline.company }),
+      });
+      setLastSaved(new Date());
+    } catch (err) { console.error("Auto-save failed:", err); }
+    setSaving(false);
+  }, [assessmentId, baseline, selectedProcs, selectedFunction, procValues, procBenchmarks, questAnswers, baselineData, procScenarios, catalystResults, agentResults, uploadedMining, savedScenarios, step]);
+
+  // Auto-save every 30 seconds when data changes
+  useEffect(() => {
+    if (!assessmentId) return;
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(saveToServer, 30000);
+    return () => clearTimeout(saveTimer.current);
+  }, [baseline, selectedProcs, procValues, procBenchmarks, questAnswers, baselineData, procScenarios, catalystResults, agentResults, uploadedMining, savedScenarios, step]);
+
+  // ═══ Share helpers ═══
+  const fetchShares = useCallback(async () => {
+    if (!assessmentId) return;
+    try {
+      const res = await fetch(`/api/assessments/${assessmentId}/shares`, { credentials: "include" });
+      if (res.ok) { const data = await res.json(); setShares(data.shares || []); }
+    } catch {}
+  }, [assessmentId]);
+
+  const handleShare = async () => {
+    if (!shareEmail.trim()) return;
+    setShareLoading(true);
+    try {
+      await fetch(`/api/assessments/${assessmentId}/share`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email: shareEmail.trim(), role: shareRole }),
+      });
+      setShareEmail("");
+      fetchShares();
+    } catch {}
+    setShareLoading(false);
+  };
+
+  const handleRevokeShare = async (shareId) => {
+    try {
+      await fetch(`/api/assessments/${assessmentId}/share/${shareId}`, { method: "DELETE", credentials: "include" });
+      fetchShares();
+    } catch {}
+  };
 
   // Value computation for Step 7
   const computeValue = useCallback(() => {
@@ -1328,10 +1401,6 @@ export default function PrismL4({ user, onLogout }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 24px", borderBottom: `1px solid ${t.bdr}`, background: mode === "dark" ? "#131312" : "#EFEBE3", flexShrink: 0, flexWrap: "wrap", gap: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ fontSize: 18, fontFamily: SERIF, color: GOLD, fontWeight: 500, cursor: "pointer" }} onClick={() => setPage("entry")}>PrismL4</span>
-          <div style={{ height: 14, width: 1, background: t.bdr }} />
-          <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: viewMode === "consultant" ? GOLD + "20" : BLUE + "20", color: viewMode === "consultant" ? GOLD : BLUE, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px" }}>
-            {viewMode}
-          </span>
           {selectedFunction && (() => {
             const fn = FUNCTIONS.find(f => f.id === selectedFunction);
             return fn ? <>
@@ -1341,12 +1410,35 @@ export default function PrismL4({ user, onLogout }) {
           })()}
           <div style={{ height: 14, width: 1, background: t.bdr }} />
           <span onClick={() => setShowBaselineEditor(!showBaselineEditor)} style={{ fontSize: 13, color: t.tx2, fontWeight: 500, cursor: "pointer" }}>{baseline.company} ✎</span>
+          {/* Save status */}
+          {assessmentId && (
+            <>
+              <div style={{ height: 14, width: 1, background: t.bdr }} />
+              {saving ? (
+                <span style={{ fontSize: 10, color: GOLD }}>Saving...</span>
+              ) : lastSaved ? (
+                <span style={{ fontSize: 10, color: GREEN, cursor: "pointer" }} onClick={saveToServer} title="Click to save now">
+                  Saved {Math.round((Date.now() - lastSaved.getTime()) / 60000) || "<1"}m ago
+                </span>
+              ) : (
+                <span style={{ fontSize: 10, color: t.mut, cursor: "pointer" }} onClick={saveToServer}>Save Now</span>
+              )}
+            </>
+          )}
         </div>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <span style={{ fontSize: 12, color: t.mut }}>{selectedProcs.size} processes</span>
-          <button onClick={() => setShowApiKeyInput(!showApiKeyInput)} style={{ background: "none", border: `1px solid ${apiKey ? GREEN + "44" : t.bdr}`, borderRadius: 6, padding: "3px 10px", color: apiKey ? GREEN : t.mut, cursor: "pointer", fontSize: 11, fontFamily: FONT }}>
-            {apiKey ? "⚡ Catalyst" : "⚡ Set API Key"}
+          <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: viewMode === "consultant" ? GOLD + "20" : BLUE + "20", color: viewMode === "consultant" ? GOLD : BLUE, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px" }}>
+            {viewMode}
+          </span>
+          <span style={{ fontSize: 12, color: t.mut }}>{selectedProcs.size} proc</span>
+          <button onClick={() => setShowApiKeyInput(!showApiKeyInput)} style={{ background: "none", border: `1px solid ${apiKey || catalystServer ? GREEN + "44" : t.bdr}`, borderRadius: 6, padding: "3px 10px", color: apiKey || catalystServer ? GREEN : t.mut, cursor: "pointer", fontSize: 11, fontFamily: FONT }}>
+            {catalystServer ? "⚡ Catalyst" : apiKey ? "⚡ Catalyst" : "⚡ Set API Key"}
           </button>
+          {isOwner && assessmentId && (
+            <button onClick={() => { setShowShareModal(true); fetchShares(); }} style={{ background: "none", border: `1px solid ${PURPLE}44`, borderRadius: 6, padding: "3px 10px", color: PURPLE, cursor: "pointer", fontSize: 11, fontFamily: FONT, fontWeight: 600 }}>
+              Share
+            </button>
+          )}
           {!isClientRole && <button onClick={() => setViewMode(viewMode === "consultant" ? "client" : "consultant")} style={{ background: "none", border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "3px 10px", color: t.tx2, cursor: "pointer", fontSize: 11, fontFamily: FONT }}>
             ↔ {viewMode === "consultant" ? "Client" : "Consultant"}
           </button>}
@@ -1358,6 +1450,11 @@ export default function PrismL4({ user, onLogout }) {
               <div style={{ height: 14, width: 1, background: t.bdr }} />
               <span style={{ fontSize: 10, color: t.tx2 }}>{user.name}</span>
               <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: user.role === "admin" ? GOLD + "20" : user.role === "consultant" ? GREEN + "20" : BLUE + "20", color: user.role === "admin" ? GOLD : user.role === "consultant" ? GREEN : BLUE, fontWeight: 600 }}>{user.role}</span>
+              {onBack && (
+                <button onClick={() => { saveToServer(); onBack(); }} style={{ background: "none", border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "3px 10px", color: t.tx2, cursor: "pointer", fontSize: 10, fontFamily: FONT }}>
+                  Assessments
+                </button>
+              )}
               {onLogout && (
                 <button onClick={onLogout} style={{ background: "none", border: `1px solid ${RED}33`, borderRadius: 6, padding: "3px 10px", color: RED, cursor: "pointer", fontSize: 10, fontFamily: FONT }}>
                   Logout
@@ -1418,6 +1515,58 @@ export default function PrismL4({ user, onLogout }) {
               <span style={{ fontSize: 10, color: t.mut }}>Key stays in memory only — never stored or transmitted except to Anthropic API.</span>
             </>
           )}
+        </div>
+      )}
+
+      {/* ─── SHARE MODAL ─── */}
+      {showShareModal && assessmentId && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}
+          onClick={() => setShowShareModal(false)}>
+          <div style={{ background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 16, padding: "28px", maxWidth: 440, width: "100%" }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <span style={{ fontSize: 16, fontFamily: SERIF, color: t.tx }}>Share Assessment</span>
+              <button onClick={() => setShowShareModal(false)} style={{ background: "none", border: "none", color: t.mut, cursor: "pointer", fontSize: 16 }}>✕</button>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+              <input value={shareEmail} onChange={e => setShareEmail(e.target.value)} placeholder="email@example.com"
+                onKeyDown={e => e.key === "Enter" && handleShare()}
+                style={{ flex: 1, padding: "8px 12px", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, color: t.tx, fontFamily: FONT, fontSize: 13, outline: "none" }} />
+              <select value={shareRole} onChange={e => setShareRole(e.target.value)}
+                style={{ padding: "8px 10px", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, color: t.tx, fontFamily: FONT, fontSize: 12 }}>
+                <option value="viewer">Viewer</option>
+                <option value="editor">Editor</option>
+              </select>
+              <button onClick={handleShare} disabled={shareLoading || !shareEmail.trim()}
+                style={{ padding: "8px 16px", borderRadius: 6, background: PURPLE, border: "none", color: "#fff", fontFamily: FONT, fontWeight: 600, fontSize: 12, cursor: shareLoading ? "wait" : "pointer", opacity: shareEmail.trim() ? 1 : 0.4 }}>
+                Share
+              </button>
+            </div>
+
+            <button onClick={() => { navigator.clipboard.writeText(window.location.href); }}
+              style={{ width: "100%", padding: "8px", borderRadius: 6, background: t.bg, border: `1px solid ${t.bdr}`, color: t.tx2, fontFamily: FONT, fontSize: 11, cursor: "pointer", marginBottom: 16 }}>
+              Copy Link
+            </button>
+
+            {shares.length > 0 && (
+              <div>
+                <div style={{ fontSize: 10, color: t.mut, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 8 }}>Current Shares</div>
+                {shares.map(s => (
+                  <div key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: `1px solid ${t.bdr}` }}>
+                    <div>
+                      <span style={{ fontSize: 12, color: t.tx }}>{s.shared_with_email}</span>
+                      <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, marginLeft: 8, background: s.role === "editor" ? GREEN + "20" : BLUE + "20", color: s.role === "editor" ? GREEN : BLUE, fontWeight: 600, textTransform: "uppercase" }}>{s.role}</span>
+                    </div>
+                    <button onClick={() => handleRevokeShare(s.id)}
+                      style={{ background: "none", border: "none", color: RED, cursor: "pointer", fontSize: 11, fontFamily: FONT }}>
+                      Revoke
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
