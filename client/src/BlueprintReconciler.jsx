@@ -238,10 +238,10 @@ export default function BlueprintReconciler({ visible, onClose, apqcProcs = [], 
         <div style={header}>
           <div>
             <div style={{ fontSize: 18, fontWeight: 700, color: t.tx, fontFamily: FONT }}>
-              AI Value Blueprint Reconciler
+              EY.ai Value Blueprint Reconciler
             </div>
             <div style={{ fontSize: 13, color: t.tx2, marginTop: 2 }}>
-              Map blueprint jobs-to-be-done → APQC L4 processes
+              Map EY.ai Value Blueprint jobs-to-be-done → APQC L4 processes
             </div>
           </div>
           <button onClick={onClose} style={{ background: "none", border: "none", color: t.mut, fontSize: 22, cursor: "pointer" }}>✕</button>
@@ -254,7 +254,7 @@ export default function BlueprintReconciler({ visible, onClose, apqcProcs = [], 
           {step === "upload" && (
             <div>
               <div style={{ fontSize: 14, color: t.tx2, marginBottom: 12 }}>
-                Paste your AI Value Blueprint jobs-to-be-done below (one per line), or upload a CSV / JSON file.
+                Paste your EY.ai Value Blueprint jobs-to-be-done below (one per line), or upload a CSV / JSON file.
               </div>
               <textarea
                 style={textarea}

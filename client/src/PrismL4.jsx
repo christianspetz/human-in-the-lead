@@ -22,9 +22,24 @@ const TH = {
 };
 
 /* ═══════════════════════════════════════════════════════
-   BLUEPRINTS — EY-style blueprint areas → APQC L2 mapping
+   EY.ai VALUE BLUEPRINT — 7-tier AI transformation architecture
    ═══════════════════════════════════════════════════════ */
-const BLUEPRINTS = {
+const BLUEPRINT_TIERS = [
+  { id: "customer", name: "Customer", icon: "👤", color: "#7CB9A8", description: "New experiences, products and business models" },
+  { id: "workforce", name: "Workforce", icon: "🤝", color: "#D4A853", description: "Collaborative human-AI workforce model" },
+  { id: "processes", name: "Processes", icon: "⚙️", color: "#A3C4F3", description: "Reimagine outcomes and processes enabled by AI" },
+  { id: "trust", name: "Trust", icon: "🛡️", color: "#C49ED8", description: "Responsible AI frameworks, controls and guardrails" },
+  { id: "intelligence", name: "Intelligence", icon: "🧠", color: "#F4B942", description: "Enterprise knowledge and advanced analytics" },
+  { id: "agentic", name: "Agentic Platform", icon: "🤖", color: "#7CB9A8", description: "Agentic enterprise orchestration layer" },
+  { id: "systems", name: "Systems of Record", icon: "🗄️", color: "#E8927C", description: "Sources of truth via connectors for agent and human interaction" },
+];
+const BLUEPRINT_TIER_MAP = {};
+BLUEPRINT_TIERS.forEach(bt => BLUEPRINT_TIER_MAP[bt.id] = bt);
+
+/* ═══════════════════════════════════════════════════════
+   TRANSFORMATION AREAS — Finance blueprint areas → APQC L2 mapping
+   ═══════════════════════════════════════════════════════ */
+const TRANSFORMATION_AREAS = {
   finance: [
     { id: "bp-rev", name: "Revenue Management",
       desc: "Pricing, billing, collections, cash application, credit management",
@@ -594,17 +609,69 @@ const KPI_MASTER_LIST = [
   { id: "kpi-manual-consol-adj", name: "Manual adjustments in consolidation", unit: "count", category: "Compliance", defaultBenchmark: 10, src: "Hackett" },
 ];
 
+// EY.ai Value Blueprint tier mapping per L4 process
+const PROC_BLUEPRINT_TIERS = {
+  // O2C — customer-facing, revenue processes
+  "o2c-001": ["customer", "processes", "intelligence", "agentic", "workforce", "systems"],
+  "o2c-002": ["processes", "intelligence", "agentic", "workforce", "systems"],
+  "o2c-003": ["customer", "processes", "intelligence", "agentic", "workforce", "systems"],
+  "o2c-004": ["processes", "intelligence", "agentic", "systems"],
+  "o2c-005": ["processes", "intelligence", "systems"],
+  "o2c-006": ["customer", "processes", "intelligence", "agentic", "workforce", "systems"],
+  "o2c-007": ["processes", "intelligence", "agentic", "workforce", "systems"],
+  "o2c-008": ["customer", "processes", "intelligence", "agentic", "workforce", "systems"],
+  "o2c-009": ["processes", "intelligence", "agentic", "workforce", "systems"],
+  "o2c-010": ["processes", "intelligence", "agentic", "systems"],
+  "o2c-011": ["customer", "processes", "intelligence", "systems"],
+  "o2c-012": ["customer", "processes", "intelligence", "agentic", "workforce", "systems"],
+  "o2c-013": ["processes", "intelligence", "agentic", "systems"],
+  "o2c-014": ["processes", "intelligence", "agentic", "systems"],
+  "o2c-015": ["customer", "processes", "intelligence", "systems"],
+  "o2c-016": ["processes", "intelligence", "agentic", "systems"],
+  "o2c-017": ["processes", "intelligence", "agentic", "systems"],
+  "o2c-018": ["customer", "processes", "intelligence", "systems"],
+  "o2c-019": ["processes", "intelligence", "trust", "systems"],
+  "o2c-020": ["customer", "processes", "intelligence", "systems"],
+  "o2c-021": ["customer", "processes", "intelligence", "agentic", "systems"],
+  "o2c-022": ["processes", "intelligence", "systems"],
+  "o2c-023": ["processes", "intelligence", "systems"],
+  "o2c-024": ["processes", "intelligence", "systems"],
+  "o2c-025": ["processes", "intelligence", "systems"],
+  "o2c-026": ["processes", "intelligence", "systems"],
+  "o2c-027": ["processes", "intelligence", "agentic", "systems"],
+  // R2R — back-office, compliance
+  "r2r-001": ["processes", "intelligence", "systems"],
+  "r2r-002": ["processes", "intelligence", "systems"],
+  "r2r-003": ["processes", "intelligence", "agentic", "workforce", "systems"],
+  "r2r-004": ["processes", "intelligence", "agentic", "workforce", "trust", "systems"],
+  "r2r-005": ["processes", "intelligence", "systems"],
+  "r2r-006": ["processes", "intelligence", "trust", "systems"],
+  "r2r-007": ["processes", "intelligence", "trust", "systems"],
+  "r2r-008": ["processes", "intelligence", "systems"],
+  "r2r-009": ["processes", "intelligence", "systems"],
+  "r2r-010": ["processes", "intelligence", "trust", "systems"],
+  // P2P — procurement, payments
+  "p2p-001": ["processes", "intelligence", "agentic", "workforce", "systems"],
+  "p2p-002": ["processes", "intelligence", "agentic", "workforce", "systems"],
+  "p2p-003": ["processes", "intelligence", "agentic", "systems"],
+  "p2p-004": ["customer", "processes", "intelligence", "agentic", "workforce", "systems"],
+  "p2p-005": ["customer", "processes", "intelligence", "agentic", "workforce", "systems"],
+  "p2p-006": ["customer", "processes", "intelligence", "systems"],
+  "p2p-007": ["customer", "processes", "intelligence", "agentic", "workforce", "systems"],
+  "p2p-008": ["customer", "processes", "intelligence", "trust", "systems"],
+};
+
 // Flatten all L4 processes for quick lookups
 const ALL_PROCS = [];
 APQC.forEach(l1 => l1.groups.forEach(g => g.subs.forEach(s => s.procs.forEach(p => {
-  ALL_PROCS.push({ ...p, l1Label: l1.l1, l1id: l1.l1id, l1Color: l1.color, l1Icon: l1.icon, l2: g.l2, l2id: g.l2id, l3: s.l3, l3id: s.l3id, e2e: l1.e2e });
+  ALL_PROCS.push({ ...p, l1Label: l1.l1, l1id: l1.l1id, l1Color: l1.color, l1Icon: l1.icon, l2: g.l2, l2id: g.l2id, l3: s.l3, l3id: s.l3id, e2e: l1.e2e, blueprintTiers: PROC_BLUEPRINT_TIERS[p.id] || ["processes", "systems"] });
 }))));
 const PROC_MAP = {};
 ALL_PROCS.forEach(p => PROC_MAP[p.id] = p);
 
 // Blueprint → L2 lookup
 const getBlueprintForL2 = (l2id, functionId = "finance") => {
-  const bps = BLUEPRINTS[functionId];
+  const bps = TRANSFORMATION_AREAS[functionId];
   if (!bps) return null;
   return bps.find(bp => bp.apqcL2s.includes(l2id)) || null;
 };
@@ -746,8 +813,9 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
   const [selectedL3s, setSelectedL3s] = useState(new Set());
   const [scopeView, setScopeView] = useState("guided");
 
-  // Blueprint reconciler modal
+  // Blueprint reconciler modal & EY.ai explainer
   const [showBlueprint, setShowBlueprint] = useState(false);
+  const [showBlueprintExplainer, setShowBlueprintExplainer] = useState(false);
 
   // Baseline data (Step 2)
   const [baseline, setBaseline] = useState(initialData?.baseline || DEF_BL);
@@ -1636,7 +1704,7 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
     </div>
 
     ${(() => {
-      const bpAreas = entryPath === "blueprint" ? (BLUEPRINTS[selectedFunction] || []).filter(bp => selectedBlueprints.has(bp.id)) : [];
+      const bpAreas = entryPath === "blueprint" ? (TRANSFORMATION_AREAS[selectedFunction] || []).filter(bp => selectedBlueprints.has(bp.id)) : [];
       if (bpAreas.length === 0) return "";
       return `<h2>1b. Blueprint Scope</h2>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0">
@@ -1692,7 +1760,29 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
       </tbody>
     </table>` : ""}
 
-    <h2>${valResult.balanceSheet.totalWorkingCapital > 0 ? "5" : "4"}. Process-Level Analysis</h2>
+    ${(() => {
+      const secNum = valResult.balanceSheet.totalWorkingCapital > 0 ? "5" : "4";
+      const tierCounts = {};
+      BLUEPRINT_TIERS.forEach(bt => tierCounts[bt.id] = 0);
+      selProcs.forEach(p => (p.blueprintTiers || []).forEach(tid => { tierCounts[tid] = (tierCounts[tid] || 0) + 1; }));
+      const coveredCount = BLUEPRINT_TIERS.filter(bt => tierCounts[bt.id] > 0).length;
+      const missing = BLUEPRINT_TIERS.filter(bt => tierCounts[bt.id] === 0).map(bt => bt.name);
+      return `<h2>${secNum}. EY.ai Value Blueprint Alignment</h2>
+      <p style="font-size:13px;color:#555;margin-bottom:12px">Assessment covers <strong style="color:#D4A853">${coveredCount} of 7</strong> tiers across ${selProcs.length} processes</p>
+      <table>
+        <thead><tr><th>Tier</th><th>Description</th><th style="text-align:center">Processes</th></tr></thead>
+        <tbody>
+          ${BLUEPRINT_TIERS.map(bt => `<tr style="${tierCounts[bt.id] === 0 ? "opacity:0.4" : ""}">
+            <td style="font-weight:600;color:${bt.color}">${bt.icon} ${bt.name}</td>
+            <td style="font-size:12px">${bt.description}</td>
+            <td style="text-align:center;font-weight:700">${tierCounts[bt.id]}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
+      ${missing.length > 0 ? `<p style="font-size:11px;color:#888;margin-top:8px;font-style:italic">Consider expanding scope to address: ${missing.join(", ")}</p>` : ""}`;
+    })()}
+
+    <h2>${valResult.balanceSheet.totalWorkingCapital > 0 ? "6" : "5"}. Process-Level Analysis</h2>
     ${processRows}
 
     <div style="margin-top:40px;padding-top:16px;border-top:2px solid #eee;text-align:center;font-size:11px;color:#aaa">
@@ -1718,7 +1808,7 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
         processCount: selProcs.length,
         businessFunction: selectedFunction,
         functionName: FUNCTIONS.find(f => f.id === selectedFunction)?.name || null,
-        blueprintAreas: entryPath === "blueprint" ? (BLUEPRINTS[selectedFunction] || []).filter(bp => selectedBlueprints.has(bp.id)).map(bp => ({ id: bp.id, name: bp.name, apqcL2s: bp.apqcL2s })) : [],
+        blueprintAreas: entryPath === "blueprint" ? (TRANSFORMATION_AREAS[selectedFunction] || []).filter(bp => selectedBlueprints.has(bp.id)).map(bp => ({ id: bp.id, name: bp.name, apqcL2s: bp.apqcL2s })) : [],
       },
       baseline,
       processes: selProcs.map(proc => {
@@ -1778,6 +1868,7 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
           catalystBenchmarks: catalystResults[proc.id] || null,
           aiAgent: agentResults[proc.id] || null,
           agentSpec: AGENT_SPECS[proc.id] || null,
+          blueprintTiers: proc.blueprintTiers || [],
         };
       }),
       valuation: {
@@ -1790,6 +1881,13 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
         impacts: valResult.impacts,
       },
       savedScenarios,
+      blueprintTiers: BLUEPRINT_TIERS,
+      blueprintCoverage: (() => {
+        const cov = {};
+        BLUEPRINT_TIERS.forEach(bt => cov[bt.id] = 0);
+        selProcs.forEach(p => (p.blueprintTiers || []).forEach(tid => { cov[tid] = (cov[tid] || 0) + 1; }));
+        return cov;
+      })(),
     };
     const blob = new Blob([JSON.stringify(sessionData, null, 2)], { type: "application/json" });
     const link = document.createElement("a");
@@ -2256,7 +2354,7 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
                     {entryPath === "blueprint" && (
                       <div>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, marginBottom: 16 }}>
-                          {(BLUEPRINTS[selectedFunction] || []).map(bp => {
+                          {(TRANSFORMATION_AREAS[selectedFunction] || []).map(bp => {
                             const sel = selectedBlueprints.has(bp.id);
                             return (
                               <div key={bp.id} onClick={() => toggleSet(setSelectedBlueprints, bp.id)} style={{
@@ -2278,7 +2376,7 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
                           })}
                         </div>
                         {selectedBlueprints.size > 0 && <div style={{ textAlign: "right" }}><button onClick={() => {
-                          const bps = BLUEPRINTS[selectedFunction] || [];
+                          const bps = TRANSFORMATION_AREAS[selectedFunction] || [];
                           const l2Set = new Set();
                           bps.filter(bp => selectedBlueprints.has(bp.id)).forEach(bp => bp.apqcL2s.forEach(id => l2Set.add(id)));
                           setSelectedL2s(l2Set);
@@ -2497,12 +2595,12 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
                   <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <div style={{ background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 16, padding: 24, maxWidth: 700, width: "90%", maxHeight: "80vh", overflowY: "auto" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                        <div style={{ fontSize: 18, fontFamily: SERIF, color: GOLD }}>Blueprint Reconciler</div>
+                        <div style={{ fontSize: 18, fontFamily: SERIF, color: GOLD }}>EY.ai Value Blueprint Reconciler</div>
                         <button onClick={() => setShowBlueprint(false)} style={{ background: "none", border: "none", color: t.mut, cursor: "pointer", fontSize: 20 }}>×</button>
                       </div>
                       <Suspense fallback={<div style={{ padding: 20, textAlign: "center", color: t.mut }}>Loading...</div>}>
                         <BlueprintReconciler
-                          blueprints={BLUEPRINTS[selectedFunction] || []}
+                          blueprints={TRANSFORMATION_AREAS[selectedFunction] || []}
                           apqc={APQC}
                           selectedFunction={selectedFunction}
                           onConfirm={(matchedProcIds) => {
@@ -2650,6 +2748,72 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
               });
             })()}
             </>}
+
+            {/* ─── EY.ai Value Blueprint Alignment ─── */}
+            {selectedProcs.size > 0 && (() => {
+              const tierCounts = {};
+              BLUEPRINT_TIERS.forEach(bt => tierCounts[bt.id] = 0);
+              selProcs.forEach(p => (p.blueprintTiers || []).forEach(tid => { tierCounts[tid] = (tierCounts[tid] || 0) + 1; }));
+              const coveredCount = BLUEPRINT_TIERS.filter(bt => tierCounts[bt.id] > 0).length;
+              return (
+                <div style={{ marginTop: 24, padding: 20, background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 12 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: t.tx, marginBottom: 4, fontFamily: SERIF }}>EY.ai Value Blueprint Alignment</div>
+                  <div style={{ fontSize: 11, color: t.tx2, marginBottom: 14 }}>Selected processes cover <span style={{ color: GOLD, fontWeight: 700 }}>{coveredCount} of 7</span> blueprint tiers</div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {BLUEPRINT_TIERS.map(bt => {
+                      const count = tierCounts[bt.id] || 0;
+                      const covered = count > 0;
+                      return (
+                        <div key={bt.id} style={{ flex: "1 1 120px", minWidth: 110, padding: "10px 10px", borderRadius: 8, background: covered ? bt.color + "12" : t.bg, border: `1px solid ${covered ? bt.color + "33" : t.bdr}`, opacity: covered ? 1 : 0.45, textAlign: "center" }}>
+                          <div style={{ fontSize: 18, marginBottom: 2 }}>{bt.icon}</div>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: covered ? bt.color : t.mut }}>{bt.name}</div>
+                          {covered && <div style={{ fontSize: 9, color: t.tx2, marginTop: 2 }}>{count} processes</div>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* ─── Collapsible EY.ai Value Blueprint Explainer ─── */}
+            <div style={{ marginTop: 16 }}>
+              <button onClick={() => setShowBlueprintExplainer(prev => !prev)} style={{ background: "none", border: `1px solid ${t.bdr}`, borderRadius: 8, padding: "8px 16px", color: t.tx2, fontSize: 12, cursor: "pointer", fontFamily: FONT, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                {showBlueprintExplainer ? "▾" : "▸"} About EY.ai Value Blueprints
+              </button>
+              {showBlueprintExplainer && (
+                <div style={{ marginTop: 12, padding: 20, background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 12 }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: GOLD, fontFamily: SERIF, marginBottom: 2 }}>EY.ai Value Blueprint Framework</div>
+                  <div style={{ fontSize: 12, color: t.tx2, marginBottom: 16 }}>Seven interdependent tiers for building AI-native operations</div>
+                  <div style={{ display: "grid", gap: 8 }}>
+                    {[
+                      { mapping: "Quantifies customer-facing process improvements (O2C dispute resolution, collections, order management)" },
+                      { mapping: "Models human-AI collaboration through agent feasibility scoring and FTE impact analysis" },
+                      { mapping: "Core of PrismL4 — APQC L4 process baseline, benchmarking, and value calculation" },
+                      { mapping: "Audit trail, role-based access, responsible AI guardrails on Catalyst recommendations" },
+                      { mapping: "Multi-source benchmarks, process mining evidence, KPI analytics and quartile scoring" },
+                      { mapping: "AI agent assessment per process — feasibility, implementation specs, incremental value" },
+                      { mapping: "SAP S/4HANA module mapping, system integration prerequisites, data quality scoring" },
+                    ].map((info, i) => {
+                      const bt = BLUEPRINT_TIERS[i];
+                      return (
+                        <div key={bt.id} style={{ padding: "12px 14px", background: t.bg, borderRadius: 8, borderLeft: `3px solid ${bt.color}`, display: "flex", gap: 12, alignItems: "flex-start" }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: bt.color, minWidth: 16, textAlign: "center" }}>{i + 1}</div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: t.tx }}>{bt.icon} {bt.name}</div>
+                            <div style={{ fontSize: 11, color: t.tx2, marginTop: 2 }}>{bt.description}</div>
+                            <div style={{ fontSize: 10, color: t.mut, marginTop: 4, fontStyle: "italic" }}>{info.mapping}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ fontSize: 10, color: t.mut, marginTop: 14, lineHeight: 1.6, fontStyle: "italic" }}>
+                    PrismL4 provides the quantitative foundation for EY.ai Value Blueprint execution — measuring the value opportunity across tiers to prioritize transformation investments.
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div style={{ textAlign: "right", marginTop: 20 }}>
               <button onClick={() => setStep(2)} disabled={selectedProcs.size === 0} style={{ ...btnPrimary, opacity: selectedProcs.size > 0 ? 1 : 0.4 }}>Baseline Research →</button>
@@ -3111,13 +3275,16 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
 
                 return (
                   <div key={proc.id} style={{ ...cardStyle, borderLeft: `3px solid ${proc.l1Color}` }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                       <div>
                         <span style={{ fontSize: 10, fontFamily: "monospace", color: t.mut, marginRight: 6 }}>{proc.l4}</span>
                         <span style={{ fontSize: 14, fontWeight: 600, color: t.tx }}>{proc.label}</span>
                         {(() => { const _bp = getBlueprintForL2(proc.l2id); return _bp && <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, background: _bp.color + "20", color: _bp.color, marginLeft: 4 }}>{_bp.name}</span>; })()}
                       </div>
                       <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, background: proc.l1Color + "15", color: proc.l1Color, fontWeight: 600 }}>{proc.e2e}</span>
+                    </div>
+                    <div style={{ display: "flex", gap: 3, flexWrap: "wrap", marginBottom: 10 }}>
+                      {(proc.blueprintTiers || []).map(tid => { const bt = BLUEPRINT_TIER_MAP[tid]; return bt ? <span key={tid} style={{ fontSize: 9, padding: "1px 6px", borderRadius: 8, background: bt.color + "20", color: bt.color, border: `1px solid ${bt.color}33` }}>{bt.icon} {bt.name}</span> : null; })}
                     </div>
 
                     {/* Section Tabs */}
@@ -3770,6 +3937,41 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
               ))}
             </div>
 
+            {/* ─── Blueprint Coverage ─── */}
+            {(() => {
+              const tierCounts = {};
+              BLUEPRINT_TIERS.forEach(bt => tierCounts[bt.id] = 0);
+              selProcs.forEach(p => (p.blueprintTiers || []).forEach(tid => { tierCounts[tid] = (tierCounts[tid] || 0) + 1; }));
+              const coveredCount = BLUEPRINT_TIERS.filter(bt => tierCounts[bt.id] > 0).length;
+              const maxCount = Math.max(...Object.values(tierCounts), 1);
+              const missing = BLUEPRINT_TIERS.filter(bt => tierCounts[bt.id] === 0).map(bt => bt.name);
+              return (
+                <div style={{ marginBottom: 28 }}>
+                  <div style={labelStyle}>EY.ai Value Blueprint Coverage</div>
+                  <div style={{ ...cardStyle, padding: 20 }}>
+                    <div style={{ display: "grid", gap: 6 }}>
+                      {BLUEPRINT_TIERS.map(bt => {
+                        const count = tierCounts[bt.id] || 0;
+                        const pct = count > 0 ? Math.round((count / maxCount) * 100) : 0;
+                        return (
+                          <div key={bt.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <span style={{ fontSize: 14, minWidth: 22, textAlign: "center" }}>{bt.icon}</span>
+                            <span style={{ fontSize: 11, fontWeight: 600, color: count > 0 ? bt.color : t.mut, minWidth: 110 }}>{bt.name}</span>
+                            <div style={{ flex: 1, height: 14, background: t.bg, borderRadius: 7, overflow: "hidden" }}>
+                              {count > 0 && <div style={{ width: pct + "%", height: "100%", background: bt.color, borderRadius: 7, transition: "width 0.3s" }} />}
+                            </div>
+                            <span style={{ fontSize: 11, fontWeight: 600, color: count > 0 ? t.tx : t.mut, minWidth: 28, textAlign: "right" }}>{count}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div style={{ fontSize: 11, color: t.tx2, marginTop: 14 }}>Assessment covers <span style={{ color: GOLD, fontWeight: 700 }}>{coveredCount} of 7</span> tiers across {selProcs.length} processes</div>
+                    {missing.length > 0 && <div style={{ fontSize: 11, color: t.mut, marginTop: 6, fontStyle: "italic" }}>Consider expanding scope to address: {missing.join(", ")}</div>}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Downloads — Three Cards */}
             <div style={labelStyle}>Deliverables</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 28 }}>
@@ -3785,7 +3987,7 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
                 <div style={{ fontSize: 32, marginBottom: 8 }}>📊</div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: t.tx, marginBottom: 6 }}>Executive Deck</div>
                 <div style={{ fontSize: 11, color: t.tx2, lineHeight: 1.5, marginBottom: 14 }}>Board-ready presentation with ERP vs Agent value split and process deep dives</div>
-                <button onClick={() => generatePPTX({ baseline, selProcs, valResult, scenarioLevel, procValues, procBenchmarks, agentResults, baselineData, selectedFunction, totalKPIs, FUNCTIONS, PROC_MAP, getQuartile })} style={{ ...btnPrimary, padding: "10px 24px", fontSize: 13, width: "100%", background: BLUE }}>
+                <button onClick={() => generatePPTX({ baseline, selProcs, valResult, scenarioLevel, procValues, procBenchmarks, agentResults, baselineData, selectedFunction, totalKPIs, FUNCTIONS, PROC_MAP, getQuartile, BLUEPRINT_TIERS })} style={{ ...btnPrimary, padding: "10px 24px", fontSize: 13, width: "100%", background: BLUE }}>
                   ↓ Download PPTX
                 </button>
               </div>

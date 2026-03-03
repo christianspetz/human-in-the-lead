@@ -8,7 +8,7 @@ import AGENT_SPECS from "./agentSpecs";
 export default function generatePPTX({
   baseline, selProcs, valResult, scenarioLevel, procValues, procBenchmarks,
   agentResults, baselineData, selectedFunction, totalKPIs,
-  FUNCTIONS, PROC_MAP, getQuartile,
+  FUNCTIONS, PROC_MAP, getQuartile, BLUEPRINT_TIERS,
 }) {
   const pptx = new pptxgen();
   pptx.defineLayout({ name: "CUSTOM_16x9", width: 10, height: 5.625 });
@@ -484,7 +484,41 @@ export default function generatePPTX({
   })();
 
   // ════════════════════════════════════════════
-  // SLIDE 19 — BASELINE FINDINGS (light bg)
+  // SLIDE 19 — EY.ai VALUE BLUEPRINT ALIGNMENT (dark bg)
+  // ════════════════════════════════════════════
+  if (BLUEPRINT_TIERS && BLUEPRINT_TIERS.length > 0) {
+    (() => {
+      const s = dkSl(); goldLn(s);
+      s.addText("EY.ai Value Blueprint Alignment", { x: 0.5, y: 0.5, w: 9.0, h: 0.5, fontSize: 24, fontFace: "Georgia", color: C.white });
+
+      const tierCounts = {};
+      (BLUEPRINT_TIERS || []).forEach(bt => tierCounts[bt.id] = 0);
+      selProcs.forEach(p => (p.blueprintTiers || []).forEach(tid => { tierCounts[tid] = (tierCounts[tid] || 0) + 1; }));
+      const covered = (BLUEPRINT_TIERS || []).filter(bt => tierCounts[bt.id] > 0);
+
+      const bH = (t2, ex) => ({ text: t2, options: { bold: true, fontSize: 10, color: C.white, fill: { color: C.border }, ...ex } });
+      const bC = (t2, ex) => ({ text: t2, options: { fontSize: 10, color: C.white, ...ex } });
+      const bRows = [[bH("Tier"), bH("Description"), bH("Processes", { align: "center" })]];
+      (BLUEPRINT_TIERS || []).forEach(bt => {
+        const cnt = tierCounts[bt.id] || 0;
+        if (cnt > 0) {
+          bRows.push([
+            bC(bt.name, { bold: true, color: bt.color.replace("#", "") }),
+            bC(bt.description, { fontSize: 9 }),
+            bC(String(cnt), { align: "center", bold: true }),
+          ]);
+        }
+      });
+      if (bRows.length > 1) {
+        s.addTable(bRows, { x: 0.5, y: 1.2, w: 9.0, colW: [2.5, 5.0, 1.5], border: { type: "solid", pt: 0.5, color: C.border }, rowH: 0.38 });
+      }
+      s.addText("Assessment covers " + covered.length + " of 7 tiers", { x: 0.5, y: 4.6, w: 9.0, h: 0.3, fontSize: 12, fontFace: "Calibri", color: C.gold, align: "center", bold: true });
+      addFtr(s, pg++);
+    })();
+  }
+
+  // ════════════════════════════════════════════
+  // SLIDE 20 — BASELINE FINDINGS (light bg)
   // ════════════════════════════════════════════
   (() => {
     const s = ltSl(); goldLn(s);
