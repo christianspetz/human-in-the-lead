@@ -1,0 +1,1878 @@
+import { useState, useMemo, useCallback } from "react";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
+  AreaChart, CartesianGrid
+} from "recharts";
+
+/* ═══════════════════════════════════════════════════════
+   DESIGN TOKENS — Prism Design Language
+   ═══════════════════════════════════════════════════════ */
+const GOLD = "#D4A853", GREEN = "#7CB9A8", PURPLE = "#C4A1D4",
+  BLUE = "#7BA7CC", RED = "#D48A8A", ORANGE = "#D4A07A";
+const FONT = "'DM Sans',sans-serif", SERIF = "'Playfair Display',serif";
+const TH = {
+  dark: { bg: "#111110", card: "#1A1A18", bdr: "#2A2A25", tx: "#EEEAE4", tx2: "#B8B0A4", mut: "#888", sub: "#555", hover: "#1E1E1B" },
+  light: { bg: "#F5F0E8", card: "#FFFFFF", bdr: "#D8D2C6", tx: "#1A1A18", tx2: "#555548", mut: "#888880", sub: "#BBB5A8", hover: "#F0EBE0" },
+};
+
+/* ═══════════════════════════════════════════════════════
+   APQC L1→L4 PROCESS HIERARCHY
+   O2C: Deep (fully populated ~40 L4s with KPIs, benchmarks, SAP, agents)
+   R2R + P2P: Browsable with hierarchy, lighter data
+   ═══════════════════════════════════════════════════════ */
+const APQC = [
+  // ─── ORDER TO CASH (DEEP) ───
+  {
+    l1: "8.0 Manage Financial Resources", l1id: "8.0", e2e: "Order to Cash", color: BLUE, icon: "◆",
+    groups: [
+      {
+        l2: "8.2 Manage Revenue Accounting", l2id: "8.2",
+        subs: [
+          {
+            l3: "8.2.1 Process Customer Credit", l3id: "8.2.1",
+            procs: [
+              { id: "o2c-001", l4: "8.2.1.1", label: "Evaluate customer creditworthiness", kpis: [
+                { name: "Credit evaluation cycle time", unit: "days", current: null, benchmark: 2.0, src: "APQC", method: "Avg days from credit request to decision" },
+                { name: "Auto-approval rate", unit: "%", current: null, benchmark: 70, src: "Hackett", method: "% orders auto-approved without manual review" },
+                { name: "Bad debt write-off rate", unit: "%", current: null, benchmark: 0.25, src: "APQC", method: "Bad debt expense / net revenue × 100" },
+              ], sap: [{ module: "FI-AR", desc: "Credit management & scoring in SAP S/4HANA", scenario: "Automated credit scoring with ML-based risk assessment replaces manual review. Real-time credit exposure monitoring." }],
+                valLevers: [{ lever: "Reduce credit evaluation cycle time", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }],
+                },
+              { id: "o2c-002", l4: "8.2.1.2", label: "Establish & manage customer credit limits", kpis: [
+                { name: "Credit limit review frequency", unit: "days", current: null, benchmark: 90, src: "APQC", method: "Avg days between credit limit reviews" },
+                { name: "Credit limit utilization", unit: "%", current: null, benchmark: 65, src: "Hackett", method: "Avg credit used / credit limit × 100" },
+              ], sap: [{ module: "FI-AR", desc: "Dynamic credit limit management", scenario: "AI-driven dynamic credit limits adjust based on payment behavior, financial health signals, and market conditions." }],
+                valLevers: [{ lever: "Automate credit limit adjustments", vtype: "Tangible", vclass: "Standardization", fintype: "SGA", stmt: "Income Statement" }],
+                },
+              { id: "o2c-003", l4: "8.2.1.3", label: "Monitor & resolve customer credit issues", kpis: [
+                { name: "Blocked order resolution time", unit: "hours", current: null, benchmark: 4, src: "APQC", method: "Avg hours to resolve credit block" },
+                { name: "% orders blocked for credit", unit: "%", current: null, benchmark: 5, src: "Hackett", method: "Credit-blocked orders / total orders × 100" },
+              ], sap: [{ module: "FI-AR", desc: "Credit block management & workflow", scenario: "Intelligent credit block resolution with automated escalation, risk-tiered approval workflows, and customer self-service portal." }],
+                valLevers: [{ lever: "Reduce blocked order resolution time", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "Revenue", stmt: "Income Statement" }],
+                },
+            ]
+          },
+          {
+            l3: "8.2.2 Process Customer Billing", l3id: "8.2.2",
+            procs: [
+              { id: "o2c-004", l4: "8.2.2.1", label: "Generate customer billing data", kpis: [
+                { name: "Invoice accuracy rate", unit: "%", current: null, benchmark: 98.5, src: "APQC", method: "Correct invoices / total invoices × 100" },
+                { name: "Billing cycle time", unit: "days", current: null, benchmark: 1.5, src: "Hackett", method: "Avg days from delivery to invoice" },
+                { name: "Cost per invoice generated", unit: "$", current: null, benchmark: 3.50, src: "APQC", method: "Total billing cost / invoices generated" },
+              ], sap: [{ module: "SD-BIL", desc: "Billing document creation & output", scenario: "Automated billing triggered by goods issue/delivery confirmation. Self-billing for strategic customers." }],
+                valLevers: [{ lever: "Reduce cost per invoice", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" },
+                  { lever: "Improve invoice accuracy", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
+                },
+              { id: "o2c-005", l4: "8.2.2.2", label: "Transmit billing data to customers", kpis: [
+                { name: "E-invoicing adoption rate", unit: "%", current: null, benchmark: 75, src: "Hackett", method: "Electronic invoices / total invoices × 100" },
+                { name: "Invoice delivery success rate", unit: "%", current: null, benchmark: 99, src: "APQC", method: "Successfully delivered / total sent × 100" },
+              ], sap: [{ module: "SD-BIL", desc: "Electronic invoice output & EDI", scenario: "Multi-channel electronic invoicing with automatic format conversion (EDI, XML, PDF) per customer preference." }],
+                valLevers: [{ lever: "Increase e-invoicing adoption", vtype: "Tangible", vclass: "Standardization", fintype: "SGA", stmt: "Income Statement" }],
+                },
+              { id: "o2c-006", l4: "8.2.2.3", label: "Manage billing disputes & inquiries", kpis: [
+                { name: "Dispute resolution cycle time", unit: "days", current: null, benchmark: 15, src: "APQC", method: "Avg days from dispute opened to resolved" },
+                { name: "Dispute rate", unit: "%", current: null, benchmark: 2.0, src: "Hackett", method: "Disputed invoices / total invoices × 100" },
+                { name: "Cost per dispute resolved", unit: "$", current: null, benchmark: 35, src: "APQC", method: "Total dispute cost / disputes resolved" },
+              ], sap: [{ module: "FI-AR", desc: "Dispute management & FSCM", scenario: "AI-powered dispute classification and root cause analysis. Automated routing to responsible teams with suggested resolutions." }],
+                valLevers: [{ lever: "Reduce dispute rate & cycle time", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" },
+                  { lever: "Reduce revenue leakage from disputes", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
+                },
+            ]
+          },
+          {
+            l3: "8.2.3 Process Accounts Receivable", l3id: "8.2.3",
+            procs: [
+              { id: "o2c-007", l4: "8.2.3.1", label: "Record customer payments & apply to invoices", kpis: [
+                { name: "Cash application automation rate", unit: "%", current: null, benchmark: 85, src: "APQC", method: "Auto-matched payments / total payments × 100" },
+                { name: "Cash application cycle time", unit: "hours", current: null, benchmark: 4, src: "Hackett", method: "Avg hours from payment receipt to application" },
+                { name: "Unapplied cash as % of revenue", unit: "%", current: null, benchmark: 0.5, src: "APQC", method: "Unapplied cash balance / quarterly revenue × 100" },
+              ], sap: [{ module: "FI-AR", desc: "Incoming payment processing & matching", scenario: "ML-powered cash application matches incoming payments to open invoices with 95%+ accuracy. Handles partial payments, deductions, and cross-company remittances." }],
+                valLevers: [{ lever: "Increase auto-match rate", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" },
+                  { lever: "Reduce unapplied cash", vtype: "Tangible", vclass: "Working Capital", fintype: "SGA", stmt: "Balance Sheet" }],
+                },
+              { id: "o2c-008", l4: "8.2.3.2", label: "Manage & process collections", kpis: [
+                { name: "Days Sales Outstanding (DSO)", unit: "days", current: null, benchmark: 34, src: "APQC", method: "AR balance / (annual revenue / 365)" },
+                { name: "Collections effectiveness index", unit: "%", current: null, benchmark: 82, src: "Hackett", method: "(Beginning AR + credit sales - ending AR) / (beginning AR + credit sales) × 100" },
+                { name: "Cost per collection contact", unit: "$", current: null, benchmark: 8, src: "APQC", method: "Total collections cost / collection contacts made" },
+                { name: "% AR > 90 days past due", unit: "%", current: null, benchmark: 5, src: "Hackett", method: "AR over 90 days / total AR × 100" },
+              ], sap: [{ module: "FI-AR", desc: "Collections management & dunning", scenario: "AI prioritization engine ranks overdue accounts by likelihood-to-pay, dollar impact, and customer value. Auto-generates personalized dunning communications." }],
+                valLevers: [{ lever: "Reduce DSO", vtype: "Tangible", vclass: "Working Capital", fintype: "SGA", stmt: "Balance Sheet" },
+                  { lever: "Improve collections effectiveness", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }],
+                },
+              { id: "o2c-009", l4: "8.2.3.3", label: "Manage & process deductions", kpis: [
+                { name: "Deduction resolution cycle time", unit: "days", current: null, benchmark: 20, src: "APQC", method: "Avg days from deduction identified to resolved" },
+                { name: "Invalid deduction recovery rate", unit: "%", current: null, benchmark: 60, src: "Hackett", method: "Recovered invalid deductions / total invalid deductions × 100" },
+                { name: "Deduction backlog value", unit: "$M", current: null, benchmark: null, src: "Internal", method: "Total outstanding deduction value" },
+              ], sap: [{ module: "FI-AR", desc: "Deduction & claims management", scenario: "Automated deduction classification using ML. Pattern recognition identifies root causes across trade promotions, logistics claims, and pricing errors." }],
+                valLevers: [{ lever: "Improve invalid deduction recovery", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" },
+                  { lever: "Reduce deduction backlog", vtype: "Tangible", vclass: "Working Capital", fintype: "Revenue", stmt: "Balance Sheet" }],
+                },
+              { id: "o2c-010", l4: "8.2.3.4", label: "Manage AR aging & write-offs", kpis: [
+                { name: "Write-off as % of revenue", unit: "%", current: null, benchmark: 0.15, src: "APQC", method: "Annual write-offs / annual revenue × 100" },
+                { name: "Aging bucket accuracy", unit: "%", current: null, benchmark: 98, src: "Hackett", method: "Correctly aged items / total items × 100" },
+              ], sap: [{ module: "FI-AR", desc: "AR aging analysis & provisioning", scenario: "Predictive models estimate expected credit losses per IFRS 9. Automated provisioning and write-off workflows." }],
+                valLevers: [{ lever: "Reduce bad debt write-offs", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "SGA", stmt: "Income Statement" }],
+                },
+            ]
+          },
+          {
+            l3: "8.2.4 Manage & Process Customer Refunds", l3id: "8.2.4",
+            procs: [
+              { id: "o2c-011", l4: "8.2.4.1", label: "Process customer refunds & credits", kpis: [
+                { name: "Refund processing cycle time", unit: "days", current: null, benchmark: 3, src: "APQC", method: "Avg days from refund request to payment" },
+                { name: "Refund accuracy rate", unit: "%", current: null, benchmark: 99, src: "Hackett", method: "Correct refunds / total refunds × 100" },
+              ], sap: [{ module: "FI-AR", desc: "Credit memo & refund processing", scenario: "Automated refund workflow with approval routing based on amount thresholds and reason codes." }],
+                valLevers: [{ lever: "Reduce refund processing time", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }],
+                },
+            ]
+          },
+        ]
+      },
+      {
+        l2: "8.3 Manage Order Processing", l2id: "8.3",
+        subs: [
+          {
+            l3: "8.3.1 Process Sales Orders", l3id: "8.3.1",
+            procs: [
+              { id: "o2c-012", l4: "8.3.1.1", label: "Receive & validate sales orders", kpis: [
+                { name: "Order entry cycle time", unit: "minutes", current: null, benchmark: 5, src: "APQC", method: "Avg minutes from order receipt to system entry" },
+                { name: "Touchless order rate", unit: "%", current: null, benchmark: 65, src: "Hackett", method: "Orders requiring zero manual intervention / total orders × 100" },
+                { name: "Order accuracy rate", unit: "%", current: null, benchmark: 99.2, src: "APQC", method: "Error-free orders / total orders × 100" },
+              ], sap: [{ module: "SD-SLS", desc: "Sales order creation & validation", scenario: "Intelligent order capture from multiple channels (EDI, portal, email) with automated validation against pricing, availability, and credit rules." }],
+                valLevers: [{ lever: "Increase touchless order rate", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" },
+                  { lever: "Reduce order errors", vtype: "Tangible", vclass: "Standardization", fintype: "COGS", stmt: "Income Statement" }],
+                },
+              { id: "o2c-013", l4: "8.3.1.2", label: "Check product availability & allocate inventory", kpis: [
+                { name: "Available-to-promise accuracy", unit: "%", current: null, benchmark: 95, src: "APQC", method: "Correct ATP responses / total ATP checks × 100" },
+                { name: "Order fill rate", unit: "%", current: null, benchmark: 97, src: "Hackett", method: "Orders shipped complete / total orders × 100" },
+              ], sap: [{ module: "SD-SLS / MM-IM", desc: "ATP check & inventory allocation", scenario: "Real-time global ATP with intelligent allocation based on customer priority, margin, and supply constraints." }],
+                valLevers: [{ lever: "Improve order fill rate", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
+                },
+              { id: "o2c-014", l4: "8.3.1.3", label: "Determine pricing & apply discounts", kpis: [
+                { name: "Pricing accuracy rate", unit: "%", current: null, benchmark: 99, src: "APQC", method: "Correctly priced orders / total orders × 100" },
+                { name: "Manual pricing overrides", unit: "%", current: null, benchmark: 3, src: "Hackett", method: "Orders with manual price changes / total orders × 100" },
+              ], sap: [{ module: "SD-BF", desc: "Pricing conditions & discount management", scenario: "AI-powered pricing engine with dynamic discounting, customer-specific agreements, and automated rebate calculations." }],
+                valLevers: [{ lever: "Reduce pricing errors & leakage", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
+                },
+              { id: "o2c-015", l4: "8.3.1.4", label: "Process order changes & cancellations", kpis: [
+                { name: "Order change processing time", unit: "hours", current: null, benchmark: 2, src: "APQC", method: "Avg hours to process order modification" },
+                { name: "Cancellation rate", unit: "%", current: null, benchmark: 3, src: "Hackett", method: "Cancelled orders / total orders × 100" },
+              ], sap: [{ module: "SD-SLS", desc: "Order change management", scenario: "Self-service order modification portal with automated impact assessment on delivery, pricing, and production schedule." }],
+                valLevers: [{ lever: "Reduce order cancellation rate", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
+                },
+            ]
+          },
+          {
+            l3: "8.3.2 Manage Order Fulfillment", l3id: "8.3.2",
+            procs: [
+              { id: "o2c-016", l4: "8.3.2.1", label: "Pick, pack & ship customer orders", kpis: [
+                { name: "Perfect order rate", unit: "%", current: null, benchmark: 92, src: "APQC", method: "Orders delivered on time, in full, damage-free, correctly documented / total orders × 100" },
+                { name: "Order-to-ship cycle time", unit: "hours", current: null, benchmark: 24, src: "Hackett", method: "Avg hours from order confirmation to shipment" },
+                { name: "Warehouse cost per order", unit: "$", current: null, benchmark: 4.50, src: "APQC", method: "Total warehouse cost / orders shipped" },
+              ], sap: [{ module: "EWM / SD-SHP", desc: "Warehouse execution & shipping", scenario: "AI-optimized wave planning, pick-path optimization, and automated packing with real-time labor allocation." }],
+                valLevers: [{ lever: "Improve perfect order rate", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" },
+                  { lever: "Reduce warehouse cost per order", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "COGS", stmt: "Income Statement" }],
+                },
+              { id: "o2c-017", l4: "8.3.2.2", label: "Manage delivery scheduling & logistics", kpis: [
+                { name: "On-time delivery rate", unit: "%", current: null, benchmark: 95, src: "APQC", method: "Orders delivered on or before promised date / total orders × 100" },
+                { name: "Freight cost as % of revenue", unit: "%", current: null, benchmark: 4.5, src: "Hackett", method: "Total freight cost / net revenue × 100" },
+              ], sap: [{ module: "TM / SD-SHP", desc: "Transportation management & delivery", scenario: "Dynamic route optimization with real-time traffic, capacity, and cost balancing. Predictive ETA for customer visibility." }],
+                valLevers: [{ lever: "Reduce freight cost", vtype: "Tangible", vclass: "Cost Avoidance", fintype: "COGS", stmt: "Income Statement" },
+                  { lever: "Improve on-time delivery", vtype: "Intangible", vclass: "Customer Satisfaction", fintype: "Revenue", stmt: "Income Statement" }],
+                },
+              { id: "o2c-018", l4: "8.3.2.3", label: "Process returns & reverse logistics", kpis: [
+                { name: "Return processing cycle time", unit: "days", current: null, benchmark: 5, src: "APQC", method: "Avg days from return initiation to credit/replacement" },
+                { name: "Return rate", unit: "%", current: null, benchmark: 8, src: "Hackett", method: "Returned orders / total orders × 100" },
+                { name: "Return cost per unit", unit: "$", current: null, benchmark: 12, src: "APQC", method: "Total returns cost / units returned" },
+              ], sap: [{ module: "SD-SLS / EWM", desc: "Returns & reverse logistics", scenario: "Automated return authorization with AI-powered reason code analysis. Predictive return forecasting for inventory planning." }],
+                valLevers: [{ lever: "Reduce return processing cost", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "COGS", stmt: "Income Statement" },
+                  { lever: "Reduce return rate", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
+                },
+            ]
+          },
+          {
+            l3: "8.3.3 Manage Revenue Recognition", l3id: "8.3.3",
+            procs: [
+              { id: "o2c-019", l4: "8.3.3.1", label: "Recognize revenue per accounting standards", kpis: [
+                { name: "Revenue recognition automation rate", unit: "%", current: null, benchmark: 80, src: "Hackett", method: "Auto-recognized revenue / total revenue × 100" },
+                { name: "Revenue adjustments post-close", unit: "count", current: null, benchmark: 5, src: "APQC", method: "Revenue adjustments made after period close" },
+              ], sap: [{ module: "FI-AR / RAR", desc: "Revenue accounting & recognition", scenario: "Automated revenue recognition engine applies ASC 606 / IFRS 15 rules to contracts. Multi-element arrangement handling." }],
+                valLevers: [{ lever: "Automate revenue recognition", vtype: "Tangible", vclass: "Standardization", fintype: "SGA", stmt: "Income Statement" }],
+                },
+            ]
+          },
+        ]
+      },
+      {
+        l2: "8.4 Manage Customer Contracts & Pricing", l2id: "8.4",
+        subs: [
+          {
+            l3: "8.4.1 Customer Contract Management", l3id: "8.4.1",
+            procs: [
+              { id: "o2c-020", l4: "8.4.1.1", label: "Create & manage customer contracts", kpis: [
+                { name: "Contract creation cycle time", unit: "days", current: null, benchmark: 5, src: "APQC", method: "Avg days from request to executed contract" },
+                { name: "Contract compliance rate", unit: "%", current: null, benchmark: 92, src: "Hackett", method: "Contracts within compliance / total active contracts × 100" },
+              ], sap: [{ module: "SD-CAS", desc: "Contract & agreement management", scenario: "NLP-powered contract creation from templates with automated compliance checks. Smart clause library with risk scoring." }],
+                valLevers: [{ lever: "Reduce contract cycle time", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }],
+                },
+              { id: "o2c-021", l4: "8.4.1.2", label: "Manage rebates & trade promotions", kpis: [
+                { name: "Rebate accrual accuracy", unit: "%", current: null, benchmark: 95, src: "APQC", method: "Actual rebate vs accrued / total rebates × 100" },
+                { name: "Trade promotion ROI", unit: "%", current: null, benchmark: 115, src: "Hackett", method: "Incremental profit from promotion / promotion cost × 100" },
+                { name: "Rebate settlement cycle time", unit: "days", current: null, benchmark: 15, src: "APQC", method: "Avg days from period end to rebate settlement" },
+              ], sap: [{ module: "SD-CAS / FICO", desc: "Rebate & settlement processing", scenario: "Automated rebate calculation, accrual, and settlement. AI-driven promotion effectiveness analysis with predictive ROI scoring." }],
+                valLevers: [{ lever: "Improve rebate accuracy", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" },
+                  { lever: "Optimize trade promotion spend", vtype: "Tangible", vclass: "Cost Avoidance", fintype: "SGA", stmt: "Income Statement" }],
+                },
+            ]
+          },
+          {
+            l3: "8.4.2 Pricing & Margin Management", l3id: "8.4.2",
+            procs: [
+              { id: "o2c-022", l4: "8.4.2.1", label: "Manage pricing master data & conditions", kpis: [
+                { name: "Pricing master data accuracy", unit: "%", current: null, benchmark: 99, src: "APQC", method: "Correct pricing records / total pricing records × 100" },
+                { name: "Price list update cycle time", unit: "hours", current: null, benchmark: 4, src: "Hackett", method: "Avg hours to propagate price changes across systems" },
+              ], sap: [{ module: "SD-BF", desc: "Pricing condition maintenance", scenario: "Centralized pricing hub with automated condition record management. AI validates pricing changes against margin guardrails before activation." }],
+                valLevers: [{ lever: "Eliminate pricing data errors", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
+                },
+              { id: "o2c-023", l4: "8.4.2.2", label: "Analyze & optimize margin performance", kpis: [
+                { name: "Gross margin by customer", unit: "%", current: null, benchmark: null, src: "Internal", method: "Customer gross profit / customer revenue × 100" },
+                { name: "Price realization rate", unit: "%", current: null, benchmark: 97, src: "Hackett", method: "Net realized price / list price × 100" },
+              ], sap: [{ module: "CO-PA", desc: "Profitability analysis", scenario: "Real-time margin analytics by customer, product, channel with waterfall decomposition. AI identifies margin leakage patterns." }],
+                valLevers: [{ lever: "Improve price realization", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
+                },
+            ]
+          },
+        ]
+      },
+      {
+        l2: "8.5 Manage Cash & Treasury", l2id: "8.5",
+        subs: [
+          {
+            l3: "8.5.1 Cash Forecasting & Management", l3id: "8.5.1",
+            procs: [
+              { id: "o2c-024", l4: "8.5.1.1", label: "Forecast cash receipts from customers", kpis: [
+                { name: "Cash forecast accuracy (30-day)", unit: "%", current: null, benchmark: 90, src: "APQC", method: "1 - |Actual - Forecast| / Actual × 100" },
+                { name: "Cash forecast cycle time", unit: "hours", current: null, benchmark: 2, src: "Hackett", method: "Avg hours to produce weekly cash forecast" },
+              ], sap: [{ module: "TRM", desc: "Cash management & forecasting", scenario: "ML-based cash receipt forecasting using payment history, customer behavior, and macro signals. Daily rolling 13-week forecast." }],
+                valLevers: [{ lever: "Improve cash forecast accuracy", vtype: "Tangible", vclass: "Working Capital", fintype: "SGA", stmt: "Balance Sheet" }],
+                },
+              { id: "o2c-025", l4: "8.5.1.2", label: "Manage bank account reconciliation", kpis: [
+                { name: "Bank reconciliation automation rate", unit: "%", current: null, benchmark: 90, src: "APQC", method: "Auto-reconciled items / total items × 100" },
+                { name: "Reconciliation cycle time", unit: "hours", current: null, benchmark: 2, src: "Hackett", method: "Avg hours to complete daily bank reconciliation" },
+              ], sap: [{ module: "FI-BL", desc: "Bank statement processing & reconciliation", scenario: "Automated bank statement import and intelligent matching. ML handles complex multi-payment reconciliations." }],
+                valLevers: [{ lever: "Automate bank reconciliation", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }],
+                },
+            ]
+          },
+        ]
+      },
+      {
+        l2: "8.6 O2C Performance Management", l2id: "8.6",
+        subs: [
+          {
+            l3: "8.6.1 O2C Analytics & Reporting", l3id: "8.6.1",
+            procs: [
+              { id: "o2c-026", l4: "8.6.1.1", label: "Monitor O2C KPIs & generate reports", kpis: [
+                { name: "Report generation cycle time", unit: "hours", current: null, benchmark: 1, src: "APQC", method: "Avg hours to produce standard O2C report" },
+                { name: "KPI exception detection time", unit: "hours", current: null, benchmark: 4, src: "Hackett", method: "Avg hours from KPI breach to alert" },
+              ], sap: [{ module: "BW/4HANA / SAC", desc: "O2C analytics & dashboarding", scenario: "Real-time O2C control tower with anomaly detection, automated root cause analysis, and predictive alerts." }],
+                valLevers: [{ lever: "Reduce reporting effort", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }],
+                },
+              { id: "o2c-027", l4: "8.6.1.2", label: "Perform O2C process mining & optimization", kpis: [
+                { name: "Process conformance rate", unit: "%", current: null, benchmark: 85, src: "Signavio", method: "Process instances following standard path / total instances × 100" },
+                { name: "Rework rate", unit: "%", current: null, benchmark: 5, src: "APQC", method: "Process instances requiring rework / total instances × 100" },
+              ], sap: [{ module: "Signavio", desc: "Process mining & intelligence", scenario: "Continuous process mining identifies bottlenecks, deviations, and automation opportunities. Digital twin simulates improvement scenarios." }],
+                valLevers: [{ lever: "Reduce process rework rate", vtype: "Tangible", vclass: "Standardization", fintype: "SGA", stmt: "Income Statement" }],
+                },
+            ]
+          },
+        ]
+      },
+    ]
+  },
+
+  // ─── RECORD TO REPORT (BROWSABLE, LIGHTER) ───
+  {
+    l1: "9.0 Manage Financial Resources (R2R)", l1id: "9.0", e2e: "Record to Report", color: PURPLE, icon: "◈",
+    groups: [
+      {
+        l2: "9.1 General Accounting", l2id: "9.1",
+        subs: [
+          { l3: "9.1.1 Journal Entry Processing", l3id: "9.1.1", procs: [
+            { id: "r2r-001", l4: "9.1.1.1", label: "Process manual & recurring journal entries", kpis: [
+              { name: "Journal entry automation rate", unit: "%", current: null, benchmark: 75, src: "APQC" },
+              { name: "JE error rate", unit: "%", current: null, benchmark: 0.5, src: "Hackett" },
+            ], sap: [{ module: "FI-GL", desc: "General ledger postings" }], valLevers: [{ lever: "Automate journal entries", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
+            { id: "r2r-002", l4: "9.1.1.2", label: "Manage intercompany transactions & eliminations", kpis: [
+              { name: "Intercompany matching rate", unit: "%", current: null, benchmark: 95, src: "APQC" },
+            ], sap: [{ module: "FI-GL / Group Reporting", desc: "Intercompany reconciliation" }], valLevers: [{ lever: "Automate IC eliminations", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
+          ]},
+          { l3: "9.1.2 Account Reconciliation", l3id: "9.1.2", procs: [
+            { id: "r2r-003", l4: "9.1.2.1", label: "Perform account reconciliations", kpis: [
+              { name: "Reconciliation automation rate", unit: "%", current: null, benchmark: 70, src: "APQC" },
+              { name: "Reconciling items aging (days)", unit: "days", current: null, benchmark: 5, src: "Hackett" },
+            ], sap: [{ module: "FI-GL / ACDOCA", desc: "Account reconciliation & matching" }], valLevers: [{ lever: "Automate reconciliations", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
+          ]},
+          { l3: "9.1.3 Period-End Close", l3id: "9.1.3", procs: [
+            { id: "r2r-004", l4: "9.1.3.1", label: "Execute period-end close activities", kpis: [
+              { name: "Days to close", unit: "days", current: null, benchmark: 4.8, src: "APQC" },
+              { name: "Close task automation rate", unit: "%", current: null, benchmark: 60, src: "Hackett" },
+            ], sap: [{ module: "FI-GL / S/4 Close Cockpit", desc: "Financial close management" }], valLevers: [{ lever: "Accelerate close cycle", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
+            { id: "r2r-005", l4: "9.1.3.2", label: "Manage accruals & provisions", kpis: [
+              { name: "Accrual reversal rate", unit: "%", current: null, benchmark: 5, src: "APQC" },
+            ], sap: [{ module: "FI-GL", desc: "Accrual engine" }], valLevers: [{ lever: "Improve accrual accuracy", vtype: "Tangible", vclass: "Standardization", fintype: "SGA", stmt: "Income Statement" }] },
+          ]},
+          { l3: "9.1.4 Financial Reporting & Consolidation", l3id: "9.1.4", procs: [
+            { id: "r2r-006", l4: "9.1.4.1", label: "Prepare consolidated financial statements", kpis: [
+              { name: "Consolidation cycle time", unit: "days", current: null, benchmark: 3, src: "APQC" },
+              { name: "Manual adjustments in consolidation", unit: "count", current: null, benchmark: 10, src: "Hackett" },
+            ], sap: [{ module: "Group Reporting / BPC", desc: "Group consolidation" }], valLevers: [{ lever: "Automate consolidation", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
+            { id: "r2r-007", l4: "9.1.4.2", label: "Perform management & statutory reporting", kpis: [
+              { name: "Report generation time", unit: "hours", current: null, benchmark: 4, src: "APQC" },
+            ], sap: [{ module: "SAC / BW4", desc: "Management reporting" }], valLevers: [{ lever: "Automate reporting", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
+          ]},
+        ]
+      },
+      {
+        l2: "9.2 Fixed Assets", l2id: "9.2",
+        subs: [
+          { l3: "9.2.1 Asset Accounting", l3id: "9.2.1", procs: [
+            { id: "r2r-008", l4: "9.2.1.1", label: "Manage fixed asset lifecycle", kpis: [
+              { name: "Asset capitalization accuracy", unit: "%", current: null, benchmark: 98, src: "APQC" },
+            ], sap: [{ module: "FI-AA", desc: "Asset accounting" }], valLevers: [{ lever: "Automate asset capitalization", vtype: "Tangible", vclass: "Standardization", fintype: "SGA", stmt: "Income Statement" }] },
+          ]},
+        ]
+      },
+      {
+        l2: "9.3 Cost Management", l2id: "9.3",
+        subs: [
+          { l3: "9.3.1 Cost Allocation & Analysis", l3id: "9.3.1", procs: [
+            { id: "r2r-009", l4: "9.3.1.1", label: "Perform cost allocation & product costing", kpis: [
+              { name: "Cost allocation cycle time", unit: "days", current: null, benchmark: 2, src: "APQC" },
+            ], sap: [{ module: "CO-PC / CO-PA", desc: "Product costing & profitability" }], valLevers: [{ lever: "Automate cost allocation", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
+          ]},
+        ]
+      },
+      {
+        l2: "9.4 Tax Management", l2id: "9.4",
+        subs: [
+          { l3: "9.4.1 Tax Compliance", l3id: "9.4.1", procs: [
+            { id: "r2r-010", l4: "9.4.1.1", label: "Calculate & file tax returns", kpis: [
+              { name: "Tax filing accuracy", unit: "%", current: null, benchmark: 99.5, src: "APQC" },
+            ], sap: [{ module: "FI-TX / ACR", desc: "Tax determination & reporting" }], valLevers: [{ lever: "Automate tax calculations", vtype: "Tangible", vclass: "Standardization", fintype: "SGA", stmt: "Income Statement" }] },
+          ]},
+        ]
+      },
+    ]
+  },
+
+  // ─── PROCURE TO PAY (BROWSABLE, LIGHTER) ───
+  {
+    l1: "10.0 Acquire & Manage Suppliers (P2P)", l1id: "10.0", e2e: "Procure to Pay", color: GREEN, icon: "◉",
+    groups: [
+      {
+        l2: "10.1 Requisition & Procurement", l2id: "10.1",
+        subs: [
+          { l3: "10.1.1 Purchase Requisition Processing", l3id: "10.1.1", procs: [
+            { id: "p2p-001", l4: "10.1.1.1", label: "Create & approve purchase requisitions", kpis: [
+              { name: "Requisition-to-PO cycle time", unit: "days", current: null, benchmark: 2, src: "APQC" },
+              { name: "Auto-approval rate", unit: "%", current: null, benchmark: 50, src: "Hackett" },
+            ], sap: [{ module: "MM-PUR", desc: "Purchase requisition management" }], valLevers: [{ lever: "Automate requisition approvals", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
+          ]},
+          { l3: "10.1.2 Purchase Order Management", l3id: "10.1.2", procs: [
+            { id: "p2p-002", l4: "10.1.2.1", label: "Create & manage purchase orders", kpis: [
+              { name: "PO accuracy rate", unit: "%", current: null, benchmark: 98, src: "APQC" },
+              { name: "Cost per PO", unit: "$", current: null, benchmark: 25, src: "Hackett" },
+            ], sap: [{ module: "MM-PUR", desc: "Purchase order processing" }], valLevers: [{ lever: "Reduce cost per PO", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
+            { id: "p2p-003", l4: "10.1.2.2", label: "Manage goods receipt & 3-way matching", kpis: [
+              { name: "3-way match rate", unit: "%", current: null, benchmark: 85, src: "APQC" },
+              { name: "GR processing time", unit: "hours", current: null, benchmark: 4, src: "Hackett" },
+            ], sap: [{ module: "MM-IM / MM-IV", desc: "Goods receipt & invoice verification" }], valLevers: [{ lever: "Increase auto-matching rate", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
+          ]},
+        ]
+      },
+      {
+        l2: "10.2 Accounts Payable", l2id: "10.2",
+        subs: [
+          { l3: "10.2.1 Invoice Processing", l3id: "10.2.1", procs: [
+            { id: "p2p-004", l4: "10.2.1.1", label: "Receive & process supplier invoices", kpis: [
+              { name: "Touchless invoice rate", unit: "%", current: null, benchmark: 75, src: "APQC" },
+              { name: "Cost per invoice processed", unit: "$", current: null, benchmark: 5.00, src: "Hackett" },
+              { name: "Invoice exception rate", unit: "%", current: null, benchmark: 15, src: "APQC" },
+            ], sap: [{ module: "MM-IV / FI-AP", desc: "Invoice processing & verification" }], valLevers: [{ lever: "Increase touchless processing rate", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
+          ]},
+          { l3: "10.2.2 Payment Processing", l3id: "10.2.2", procs: [
+            { id: "p2p-005", l4: "10.2.2.1", label: "Schedule & execute supplier payments", kpis: [
+              { name: "On-time payment rate", unit: "%", current: null, benchmark: 95, src: "APQC" },
+              { name: "Early payment discount capture", unit: "%", current: null, benchmark: 70, src: "Hackett" },
+              { name: "Days payable outstanding (DPO)", unit: "days", current: null, benchmark: 45, src: "APQC" },
+            ], sap: [{ module: "FI-AP", desc: "Payment processing & bank comms" }], valLevers: [{ lever: "Optimize payment timing", vtype: "Tangible", vclass: "Working Capital", fintype: "COGS", stmt: "Balance Sheet" }] },
+            { id: "p2p-006", l4: "10.2.2.2", label: "Manage supplier financing & dynamic discounting", kpis: [
+              { name: "Supply chain financing adoption", unit: "%", current: null, benchmark: 30, src: "Hackett" },
+            ], sap: [{ module: "FSCM", desc: "Supply chain finance" }], valLevers: [{ lever: "Implement dynamic discounting", vtype: "Tangible", vclass: "Cost Avoidance", fintype: "COGS", stmt: "Income Statement" }] },
+          ]},
+        ]
+      },
+      {
+        l2: "10.3 Supplier Management", l2id: "10.3",
+        subs: [
+          { l3: "10.3.1 Supplier Evaluation & Risk", l3id: "10.3.1", procs: [
+            { id: "p2p-007", l4: "10.3.1.1", label: "Evaluate & manage supplier performance", kpis: [
+              { name: "Supplier scorecard coverage", unit: "%", current: null, benchmark: 80, src: "APQC" },
+              { name: "Strategic supplier spend coverage", unit: "%", current: null, benchmark: 75, src: "Hackett" },
+            ], sap: [{ module: "SLC / Ariba", desc: "Supplier lifecycle management" }], valLevers: [{ lever: "Improve supplier management coverage", vtype: "Intangible", vclass: "Risk Mitigation", fintype: "COGS", stmt: "Income Statement" }] },
+          ]},
+          { l3: "10.3.2 Contract Management", l3id: "10.3.2", procs: [
+            { id: "p2p-008", l4: "10.3.2.1", label: "Manage supplier contracts & compliance", kpis: [
+              { name: "Contract utilization rate", unit: "%", current: null, benchmark: 80, src: "APQC" },
+            ], sap: [{ module: "Ariba / CLM", desc: "Contract lifecycle management" }], valLevers: [{ lever: "Increase contract compliance", vtype: "Tangible", vclass: "Cost Avoidance", fintype: "COGS", stmt: "Income Statement" }] },
+          ]},
+        ]
+      },
+    ]
+  },
+];
+
+// Flatten all L4 processes for quick lookups
+const ALL_PROCS = [];
+APQC.forEach(l1 => l1.groups.forEach(g => g.subs.forEach(s => s.procs.forEach(p => {
+  ALL_PROCS.push({ ...p, l1Label: l1.l1, l1Color: l1.color, l1Icon: l1.icon, l2: g.l2, l3: s.l3, e2e: l1.e2e });
+}))));
+const PROC_MAP = {};
+ALL_PROCS.forEach(p => PROC_MAP[p.id] = p);
+
+/* ═══════════════════════════════════════════════════════
+   DROPDOWN OPTIONS
+   ═══════════════════════════════════════════════════════ */
+const VALUE_TYPES = ["Tangible", "Intangible"];
+const VALUE_CLASSES = ["Labor Efficiency", "Standardization", "Revenue Leakage", "Working Capital", "Cost Avoidance", "Risk Mitigation", "Customer Satisfaction", "Compliance"];
+const FIN_TYPES = ["SGA", "COGS", "Revenue"];
+const STMT_TYPES = ["Income Statement", "Balance Sheet"];
+const SCENARIO_LEVELS = ["High", "Medium", "Low"];
+
+/* ═══════════════════════════════════════════════════════
+   DEFAULT BASELINE
+   ═══════════════════════════════════════════════════════ */
+const DEF_BL = { company: "Demo Company", industry: "Consumer Products", revenue: 12000, cogs: 6600, sga: 3400, da: 800, ebitda: 2800, interest: 200, taxRate: 0.25, ni: 1650, inventory: 1200, recv: 1800, pay: 1400, cash: 2200 };
+
+/* ═══════════════════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════════════════ */
+const fm = v => { if (!v && v !== 0) return "—"; const a = Math.abs(v), s = v < 0 ? "-" : ""; return a >= 1000 ? `${s}$${(a / 1000).toFixed(1)}B` : `${s}$${a.toFixed(0)}M`; };
+const fd = v => { if (Math.abs(v) < 0.5) return "—"; const s = v >= 0 ? "+" : ""; return Math.abs(v) >= 1000 ? `${s}$${(v / 1000).toFixed(1)}B` : `${s}$${v.toFixed(0)}M`; };
+
+/* ═══════════════════════════════════════════════════════
+   QUESTIONNAIRE TEMPLATES (Step 2)
+   ═══════════════════════════════════════════════════════ */
+const Q_TEMPLATES = [
+  { q: "How many FTEs are dedicated to this process?", type: "number" },
+  { q: "What is the estimated % of rework in this process?", type: "number" },
+  { q: "Are there known data quality issues? Describe.", type: "text" },
+  { q: "What is the current cycle time (days)?", type: "number" },
+  { q: "Is there process documentation / standard operating procedures?", type: "select", opts: ["Yes — documented & followed", "Partial — documented but not followed", "No — undocumented"] },
+  { q: "Rate the level of automation (1=fully manual, 5=fully automated)", type: "number" },
+  { q: "Are there compliance or audit findings related to this process?", type: "select", opts: ["Yes — material findings", "Yes — minor findings", "No findings"] },
+];
+
+/* ═══════════════════════════════════════════════════════
+   MAIN COMPONENT
+   ═══════════════════════════════════════════════════════ */
+export default function PrismL4() {
+  const [page, setPage] = useState("entry");
+  const [mode, setMode] = useState("dark");
+  const [viewMode, setViewMode] = useState("consultant"); // consultant | client
+  const [step, setStep] = useState(1);
+
+  // Scope selection (Step 1)
+  const [selectedProcs, setSelectedProcs] = useState(new Set());
+  const [expandedL1, setExpandedL1] = useState(new Set(["8.0"]));
+  const [expandedL2, setExpandedL2] = useState(new Set(["8.2"]));
+  const [expandedL3, setExpandedL3] = useState(new Set(["8.2.1"]));
+  const [e2eFilter, setE2eFilter] = useState("all");
+  const [procSearch, setProcSearch] = useState("");
+
+  // Baseline data (Step 2)
+  const [baseline, setBaseline] = useState(DEF_BL);
+  const [questAnswers, setQuestAnswers] = useState({});
+  const [signavioView, setSignavioView] = useState(null);
+
+  // Value settings (Step 3)
+  const [procValues, setProcValues] = useState({});
+
+  // Benchmarks (Step 4)
+  const [procBenchmarks, setProcBenchmarks] = useState({});
+  const [catalystLoading, setCatalystLoading] = useState({});
+  const [catalystResults, setCatalystResults] = useState({});
+
+  // ERP (Step 5)
+  // Agent (Step 6)
+  const [agentLoading, setAgentLoading] = useState({});
+  const [agentResults, setAgentResults] = useState({});
+
+  // Calculations (Step 7)
+  const [scenarioLevel, setScenarioLevel] = useState("Medium");
+  const [savedScenarios, setSavedScenarios] = useState([]);
+
+  // Focus
+  const [focusProc, setFocusProc] = useState(null);
+  const [showBaselineEditor, setShowBaselineEditor] = useState(false);
+
+  // Questionnaire upload & process mining
+  const [uploadedMining, setUploadedMining] = useState({});
+
+  // Catalyst API key (entered by consultant, never stored)
+  const [apiKey, setApiKey] = useState("");
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+
+  const t = TH[mode];
+
+  // Selected processes as array
+  const selProcs = useMemo(() => ALL_PROCS.filter(p => selectedProcs.has(p.id)), [selectedProcs]);
+
+  // Total stats
+  const totalKPIs = useMemo(() => selProcs.reduce((s, p) => s + (p.kpis?.length || 0), 0), [selProcs]);
+  const totalSAP = useMemo(() => selProcs.reduce((s, p) => s + (p.sap?.length || 0), 0), [selProcs]);
+
+  // Toggle helpers
+  const toggleSet = (setter, val) => setter(prev => { const n = new Set(prev); n.has(val) ? n.delete(val) : n.add(val); return n; });
+  const selectAllInGroup = (procs) => setSelectedProcs(prev => { const n = new Set(prev); procs.forEach(p => n.add(p.id)); return n; });
+  const deselectAllInGroup = (procs) => setSelectedProcs(prev => { const n = new Set(prev); procs.forEach(p => n.delete(p.id)); return n; });
+
+  // Value computation for Step 7
+  const computeValue = useCallback(() => {
+    const multipliers = { High: 1.0, Medium: 0.65, Low: 0.35 };
+    const m = multipliers[scenarioLevel];
+    let totalValue = 0;
+    let revImpact = 0, cogsImpact = 0, sgaImpact = 0;
+    const procImpacts = [];
+
+    selProcs.forEach(proc => {
+      const vals = procValues[proc.id] || {};
+      const bmarks = procBenchmarks[proc.id] || {};
+      let procVal = 0;
+
+      (proc.kpis || []).forEach((kpi, ki) => {
+        const current = vals[`kpi_current_${ki}`] ?? kpi.current;
+        const bench = bmarks[`bench_${ki}`] ?? kpi.benchmark;
+        if (current != null && bench != null && bench !== 0) {
+          const gap = Math.abs(current - bench);
+          const addressable = gap * m;
+          const lever = proc.valLevers?.[0];
+          const baseAmt = lever?.fintype === "Revenue" ? baseline.revenue :
+            lever?.fintype === "COGS" ? baseline.cogs : baseline.sga;
+          // Unit-aware impact calculation
+          let impact;
+          if (kpi.unit === "%") {
+            impact = (addressable / 100) * baseAmt * 0.01;
+          } else {
+            const gapPct = bench !== 0 ? (addressable / Math.abs(bench)) : 0;
+            impact = gapPct * baseAmt * 0.01;
+          }
+          procVal += impact;
+          if (lever?.fintype === "Revenue") revImpact += impact;
+          else if (lever?.fintype === "COGS") cogsImpact += impact;
+          else sgaImpact += impact;
+        }
+      });
+
+      procImpacts.push({ id: proc.id, label: proc.label, l4: proc.l4, value: procVal, e2e: proc.e2e, color: proc.l1Color });
+      totalValue += procVal;
+    });
+
+    // Working Capital calculations
+    let receivablesImpact = 0, payablesImpact = 0, inventoryImpact = 0;
+    const dailyRevenue = baseline.revenue / 365;
+    const dailyCOGS = baseline.cogs / 365;
+
+    selProcs.forEach(proc => {
+      const vals = procValues[proc.id] || {};
+      const bmarks = procBenchmarks[proc.id] || {};
+
+      (proc.kpis || []).forEach((kpi, ki) => {
+        const current = vals[`kpi_current_${ki}`] ?? kpi.current;
+        const bench = bmarks[`bench_${ki}`] ?? kpi.benchmark;
+        const lever = proc.valLevers?.[0];
+
+        if (current != null && bench != null && lever?.stmt === "Balance Sheet" && lever?.vclass === "Working Capital") {
+          const gap = Math.abs(current - bench) * m;
+          const kpiLower = kpi.name.toLowerCase();
+
+          if (kpiLower.includes("dso") || kpiLower.includes("days sales outstanding") ||
+              kpiLower.includes("receivable") || kpiLower.includes("collection") ||
+              kpiLower.includes("cash application") || kpiLower.includes("unapplied")) {
+            if (kpi.unit === "days" || kpi.unit === "hours") {
+              receivablesImpact += gap * dailyRevenue;
+            } else {
+              receivablesImpact += (gap / 100) * baseline.recv;
+            }
+          } else if (kpiLower.includes("dpo") || kpiLower.includes("payable") || kpiLower.includes("payment timing")) {
+            if (kpi.unit === "days") {
+              payablesImpact += gap * dailyCOGS;
+            } else {
+              payablesImpact += (gap / 100) * baseline.pay;
+            }
+          } else if (kpiLower.includes("inventory") || kpiLower.includes("dio")) {
+            if (kpi.unit === "days") {
+              inventoryImpact += gap * dailyCOGS;
+            } else {
+              inventoryImpact += (gap / 100) * baseline.inventory;
+            }
+          } else {
+            if (kpi.unit === "days" || kpi.unit === "hours") {
+              receivablesImpact += gap * dailyRevenue * 0.5;
+            } else {
+              receivablesImpact += (gap / 100) * baseline.recv * 0.01;
+            }
+          }
+        }
+      });
+    });
+
+    return {
+      total: totalValue,
+      impacts: procImpacts.sort((a, b) => b.value - a.value),
+      pnl: { revImpact, cogsImpact, sgaImpact },
+      balanceSheet: { receivablesImpact, payablesImpact, inventoryImpact,
+        totalWorkingCapital: receivablesImpact + payablesImpact + inventoryImpact }
+    };
+  }, [selProcs, procValues, procBenchmarks, scenarioLevel, baseline]);
+
+  const valResult = useMemo(() => computeValue(), [computeValue]);
+
+  // Step completion indicators
+  const stepStatus = useMemo(() => ({
+    1: selectedProcs.size > 0,
+    2: Object.keys(questAnswers).length > 0 || Object.keys(uploadedMining).length > 0,
+    3: Object.keys(procValues).length > 0,
+    4: Object.keys(procBenchmarks).length > 0 || Object.keys(catalystResults).length > 0,
+    5: selectedProcs.size > 0,
+    6: Object.keys(agentResults).length > 0,
+    7: valResult.total > 0,
+  }), [selectedProcs, questAnswers, uploadedMining, procValues, procBenchmarks, catalystResults, agentResults, valResult]);
+
+  // Catalyst API call
+  const callCatalyst = async (procId, prompt, resultSetter, loadingSetter) => {
+    if (!apiKey) { setShowApiKeyInput(true); return; }
+    loadingSetter(prev => ({ ...prev, [procId]: true }));
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1500,
+          messages: [{ role: "user", content: prompt }],
+        })
+      });
+      if (!response.ok) {
+        const err = await response.text();
+        throw new Error(`API ${response.status}: ${err.slice(0, 200)}`);
+      }
+      const data = await response.json();
+      const text = data.content?.map(i => i.text || "").join("\n") || "No response";
+      resultSetter(prev => ({ ...prev, [procId]: text }));
+    } catch (err) {
+      resultSetter(prev => ({ ...prev, [procId]: `Catalyst error: ${err.message}` }));
+    }
+    loadingSetter(prev => ({ ...prev, [procId]: false }));
+  };
+
+  // ═══ Questionnaire Export ═══
+  const exportQuestionnaire = () => {
+    const headers = ["Process ID", "APQC Code", "Process Label", "E2E",
+      ...Q_TEMPLATES.map((qt, i) => `Q${i + 1}: ${qt.q}`),
+      "Mining: Variants Discovered", "Mining: Conformance Rate (%)",
+      "Mining: Avg Cycle Time (days)", "Mining: Rework Loops (%)"];
+    const rows = selProcs.map(proc => {
+      const answers = Q_TEMPLATES.map((_, qi) => questAnswers[`${proc.id}_q${qi}`] || "");
+      const mining = uploadedMining[proc.id] || {};
+      return [proc.id, proc.l4, proc.label, proc.e2e, ...answers,
+        mining.variants || "", mining.conformance || "", mining.cycleTime || "", mining.rework || ""];
+    });
+    const csvContent = [headers, ...rows].map(row =>
+      row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+    ).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${baseline.company.replace(/\s+/g, "_")}_questionnaire.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
+  // ═══ Questionnaire Upload (triggers process mining) ═══
+  const handleQuestionnaireUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      const lines = text.split("\n").map(line => {
+        const result = [];
+        let current = "", inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          if (line[i] === '"') { if (inQuotes && line[i + 1] === '"') { current += '"'; i++; } else { inQuotes = !inQuotes; } }
+          else if (line[i] === "," && !inQuotes) { result.push(current.trim()); current = ""; }
+          else { current += line[i]; }
+        }
+        result.push(current.trim());
+        return result;
+      }).filter(r => r.length > 1);
+      if (lines.length < 2) return;
+      const headers = lines[0];
+      const qStartIdx = 4; // after Process ID, APQC Code, Process Label, E2E
+      const miningStartIdx = qStartIdx + Q_TEMPLATES.length;
+      const newAnswers = { ...questAnswers };
+      const newMining = { ...uploadedMining };
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i];
+        const procId = row[0];
+        if (!procId || !PROC_MAP[procId]) continue;
+        // Import questionnaire answers
+        Q_TEMPLATES.forEach((_, qi) => {
+          const val = row[qStartIdx + qi];
+          if (val) newAnswers[`${procId}_q${qi}`] = val;
+        });
+        // Import mining data
+        const variants = row[miningStartIdx];
+        const conformance = row[miningStartIdx + 1];
+        const cycleTime = row[miningStartIdx + 2];
+        const rework = row[miningStartIdx + 3];
+        if (variants || conformance || cycleTime || rework) {
+          newMining[procId] = {
+            variants: variants ? parseInt(variants) || variants : null,
+            conformance: conformance ? parseFloat(conformance) || conformance : null,
+            cycleTime: cycleTime ? parseFloat(cycleTime) || cycleTime : null,
+            rework: rework ? parseFloat(rework) || rework : null,
+          };
+        }
+      }
+      setQuestAnswers(newAnswers);
+      setUploadedMining(newMining);
+    };
+    reader.readAsText(file);
+    event.target.value = "";
+  };
+
+  // ═══ Phase 0 Report Generator ═══
+  const generatePhase0Report = () => {
+    const now = new Date().toISOString().split("T")[0];
+    const processRows = selProcs.map(proc => {
+      const answers = Q_TEMPLATES.map((qt, qi) => {
+        const val = questAnswers[`${proc.id}_q${qi}`];
+        return val ? `<tr><td style="padding:4px 8px;color:#888;font-size:12px">${qt.q}</td><td style="padding:4px 8px;font-size:12px">${val}</td></tr>` : "";
+      }).join("");
+      const mining = uploadedMining[proc.id];
+      const miningHtml = mining ? `<div style="margin:8px 0;padding:8px;background:#f8f4ff;border-radius:6px;font-size:12px">
+        <strong style="color:#C4A1D4">Process Mining:</strong>
+        ${mining.variants ? `Variants: ${mining.variants}` : ""} ${mining.conformance ? `| Conformance: ${mining.conformance}%` : ""} ${mining.cycleTime ? `| Cycle Time: ${mining.cycleTime} days` : ""} ${mining.rework ? `| Rework: ${mining.rework}%` : ""}
+      </div>` : "";
+      const benchmarks = (proc.kpis || []).map((kpi, ki) => {
+        const current = procValues[proc.id]?.[`kpi_current_${ki}`] ?? kpi.current;
+        const bench = procBenchmarks[proc.id]?.[`bench_${ki}`] ?? kpi.benchmark;
+        return `<tr>
+          <td style="padding:4px 8px;font-size:12px">${kpi.name}</td>
+          <td style="padding:4px 8px;font-size:12px;text-align:center">${current ?? "—"} ${kpi.unit}</td>
+          <td style="padding:4px 8px;font-size:12px;text-align:center;color:#7CB9A8">${bench ?? "—"} ${kpi.unit}</td>
+          <td style="padding:4px 8px;font-size:12px;text-align:center">${kpi.src}</td>
+        </tr>`;
+      }).join("");
+      const sapHtml = (proc.sap || []).map(s =>
+        `<div style="margin:4px 0;padding:6px 8px;background:#f0f4ff;border-radius:4px;font-size:12px"><strong style="color:#7BA7CC">${s.module}</strong> — ${s.desc}${s.scenario ? `<br/><em>${s.scenario}</em>` : ""}</div>`
+      ).join("");
+      const agentHtml = agentResults[proc.id] ? `<div style="margin:8px 0;padding:10px;background:#fdf8ef;border:1px solid #D4A85322;border-radius:8px;font-size:12px;white-space:pre-wrap"><strong style="color:#D4A853">AI Agent Scenario</strong><br/>${agentResults[proc.id]}</div>` : "";
+      const impact = valResult.impacts.find(i => i.id === proc.id);
+      return `<div style="margin:20px 0;padding:16px;border:1px solid #ddd;border-radius:10px;border-left:4px solid ${proc.l1Color}">
+        <h3 style="margin:0 0 4px;font-size:16px">${proc.l4} — ${proc.label}</h3>
+        <div style="font-size:12px;color:#888;margin-bottom:8px">${proc.e2e}${impact?.value > 0 ? ` · Value Impact: $${impact.value.toFixed(1)}M` : ""}</div>
+        ${answers ? `<table style="width:100%;border-collapse:collapse;margin:8px 0"><tr style="background:#f5f5f5"><th style="text-align:left;padding:4px 8px;font-size:11px">Question</th><th style="text-align:left;padding:4px 8px;font-size:11px">Response</th></tr>${answers}</table>` : ""}
+        ${miningHtml}
+        ${benchmarks ? `<table style="width:100%;border-collapse:collapse;margin:8px 0"><tr style="background:#f5f5f5"><th style="text-align:left;padding:4px 8px;font-size:11px">KPI</th><th style="text-align:center;padding:4px 8px;font-size:11px">Current</th><th style="text-align:center;padding:4px 8px;font-size:11px">Benchmark</th><th style="text-align:center;padding:4px 8px;font-size:11px">Source</th></tr>${benchmarks}</table>` : ""}
+        ${sapHtml}
+        ${agentHtml}
+      </div>`;
+    }).join("");
+    const { revImpact, cogsImpact, sgaImpact } = valResult.pnl;
+    const totalImpact = revImpact + cogsImpact + sgaImpact;
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Phase 0 Report — ${baseline.company}</title>
+    <style>body{font-family:'DM Sans',Helvetica,Arial,sans-serif;max-width:900px;margin:0 auto;padding:40px;color:#1a1a18;line-height:1.6}
+    h1{font-family:'Playfair Display',Georgia,serif;font-size:32px;margin-bottom:4px}
+    h2{font-family:'Playfair Display',Georgia,serif;font-size:22px;color:#D4A853;margin-top:36px;border-bottom:2px solid #D4A85333;padding-bottom:6px}
+    .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+    .kpi-box{text-align:center;padding:14px;border-radius:10px;border:1px solid #ddd}
+    .kpi-box .value{font-size:24px;font-family:'Playfair Display',Georgia,serif;font-weight:600}
+    .kpi-box .label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#888;margin-top:4px}
+    table{width:100%;border-collapse:collapse}th,td{padding:6px 10px;border-bottom:1px solid #eee;text-align:left;font-size:13px}
+    th{background:#f9f7f3;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#888}
+    .pnl-impact{font-weight:700;color:#7CB9A8}.pnl-neg{color:#D48A8A}
+    @media print{body{padding:20px}.kpi-grid{grid-template-columns:repeat(2,1fr)}}</style></head>
+    <body>
+    <div style="text-align:center;margin-bottom:40px">
+      <div style="font-size:12px;color:#888;letter-spacing:3px;text-transform:uppercase">humaninthelead.ai</div>
+      <h1>Phase 0 Report</h1>
+      <div style="font-size:18px;color:#D4A853;font-weight:500">${baseline.company}</div>
+      <div style="font-size:13px;color:#888;margin-top:4px">${baseline.industry} · Generated ${now} · PrismL4</div>
+    </div>
+
+    <h2>1. Executive Summary</h2>
+    <div class="kpi-grid">
+      <div class="kpi-box"><div class="value" style="color:#D4A853">${totalImpact > 0 ? `$${totalImpact.toFixed(0)}M` : "—"}</div><div class="label">Total Value Identified</div></div>
+      <div class="kpi-box"><div class="value" style="color:#7BA7CC">${selProcs.length}</div><div class="label">Processes In Scope</div></div>
+      <div class="kpi-box"><div class="value" style="color:#7CB9A8">${totalKPIs}</div><div class="label">KPIs Measured</div></div>
+      <div class="kpi-box"><div class="value" style="color:#C4A1D4">${scenarioLevel}</div><div class="label">Scenario</div></div>
+    </div>
+
+    <h2>2. Company Baseline</h2>
+    <table>
+      <tr><th>Metric</th><th style="text-align:right">Value</th></tr>
+      ${[["Revenue", baseline.revenue], ["COGS", baseline.cogs], ["SG&A", baseline.sga], ["EBITDA", baseline.ebitda],
+        ["Accounts Receivable", baseline.recv], ["Accounts Payable", baseline.pay], ["Inventory", baseline.inventory]]
+        .map(([l, v]) => `<tr><td>${l}</td><td style="text-align:right;font-family:monospace">$${v?.toLocaleString()}M</td></tr>`).join("")}
+    </table>
+
+    <h2>3. P&L Impact Summary (${scenarioLevel} Scenario)</h2>
+    <table>
+      <tr><th>Line Item</th><th style="text-align:right">Baseline</th><th style="text-align:right">Impact</th><th style="text-align:right">Improved</th></tr>
+      ${[
+        ["Revenue", baseline.revenue, revImpact],
+        ["COGS", baseline.cogs, -cogsImpact],
+        ["Gross Profit", baseline.revenue - baseline.cogs, revImpact + cogsImpact],
+        ["SG&A", baseline.sga, -sgaImpact],
+        ["EBITDA", baseline.ebitda, totalImpact],
+      ].map(([l, base, imp]) => `<tr${l === "EBITDA" ? ' style="background:#fdf8ef;font-weight:700"' : ""}>
+        <td>${l}</td>
+        <td style="text-align:right;font-family:monospace">$${base?.toLocaleString()}M</td>
+        <td style="text-align:right;font-family:monospace" class="${imp > 0 ? "pnl-impact" : imp < 0 ? "pnl-neg" : ""}">${imp !== 0 ? (imp > 0 ? "+" : "") + "$" + imp.toFixed(1) + "M" : "—"}</td>
+        <td style="text-align:right;font-family:monospace">$${(base + imp).toLocaleString()}M</td>
+      </tr>`).join("")}
+    </table>
+
+    ${valResult.balanceSheet.totalWorkingCapital > 0 ? `
+    <h2>Working Capital Impact</h2>
+    <table>
+      <thead><tr><th>Line Item</th><th style="text-align:right">Current ($M)</th><th style="text-align:right">Improvement</th><th style="text-align:right">Improved ($M)</th></tr></thead>
+      <tbody>
+        <tr><td>Accounts Receivable</td><td style="text-align:right;font-family:monospace">$${baseline.recv.toFixed(0)}M</td><td style="text-align:right;font-family:monospace;color:#7CB9A8">-$${valResult.balanceSheet.receivablesImpact.toFixed(1)}M</td><td style="text-align:right;font-family:monospace">$${(baseline.recv - valResult.balanceSheet.receivablesImpact).toFixed(0)}M</td></tr>
+        <tr><td>Inventory</td><td style="text-align:right;font-family:monospace">$${baseline.inventory.toFixed(0)}M</td><td style="text-align:right;font-family:monospace;color:#7CB9A8">-$${valResult.balanceSheet.inventoryImpact.toFixed(1)}M</td><td style="text-align:right;font-family:monospace">$${(baseline.inventory - valResult.balanceSheet.inventoryImpact).toFixed(0)}M</td></tr>
+        <tr><td>Accounts Payable</td><td style="text-align:right;font-family:monospace">$${baseline.pay.toFixed(0)}M</td><td style="text-align:right;font-family:monospace;color:#7BA7CC">+$${valResult.balanceSheet.payablesImpact.toFixed(1)}M</td><td style="text-align:right;font-family:monospace">$${(baseline.pay + valResult.balanceSheet.payablesImpact).toFixed(0)}M</td></tr>
+        <tr style="font-weight:700;background:#fdf8ef"><td style="color:#D4A853">Net Working Capital Freed</td><td colspan="3" style="text-align:right;color:#D4A853;font-family:'Playfair Display',Georgia,serif;font-size:18px">$${valResult.balanceSheet.totalWorkingCapital.toFixed(1)}M</td></tr>
+      </tbody>
+    </table>` : ""}
+
+    <h2>${valResult.balanceSheet.totalWorkingCapital > 0 ? "5" : "4"}. Process-Level Analysis</h2>
+    ${processRows}
+
+    <div style="margin-top:40px;padding-top:16px;border-top:2px solid #eee;text-align:center;font-size:11px;color:#aaa">
+      Generated by PrismL4 · Bottom-Up Value Identification Engine · humaninthelead.ai
+    </div>
+    </body></html>`;
+    const blob = new Blob([html], { type: "text/html;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${baseline.company.replace(/\s+/g, "_")}_Phase0_Report_${now}.html`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
+  // ═══ JSON Session Export (for PPTX generator) ═══
+  const exportSessionJSON = () => {
+    const sessionData = {
+      meta: {
+        company: baseline.company,
+        industry: baseline.industry,
+        exportDate: new Date().toISOString(),
+        scenarioLevel,
+        processCount: selProcs.length,
+      },
+      baseline,
+      processes: selProcs.map(proc => {
+        const vals = procValues[proc.id] || {};
+        const bmarks = procBenchmarks[proc.id] || {};
+        const answers = Q_TEMPLATES.map((qt, qi) => ({
+          question: qt.q,
+          answer: questAnswers[`${proc.id}_q${qi}`] || null,
+        }));
+        const mining = uploadedMining[proc.id] || null;
+        return {
+          id: proc.id,
+          l4: proc.l4,
+          label: proc.label,
+          e2e: proc.e2e,
+          l1: proc.l1Label,
+          l2: proc.l2,
+          l3: proc.l3,
+          kpis: (proc.kpis || []).map((kpi, ki) => ({
+            name: kpi.name,
+            unit: kpi.unit,
+            current: vals[`kpi_current_${ki}`] ?? kpi.current,
+            benchmark: bmarks[`bench_${ki}`] ?? kpi.benchmark,
+            source: kpi.src,
+            method: kpi.method,
+          })),
+          sap: proc.sap || [],
+          valLevers: proc.valLevers || [],
+          questionnaire: answers,
+          mining,
+          catalystBenchmarks: catalystResults[proc.id] || null,
+          aiAgent: agentResults[proc.id] || null,
+        };
+      }),
+      valuation: {
+        total: valResult.total,
+        scenarioLevel,
+        pnl: valResult.pnl,
+        balanceSheet: valResult.balanceSheet,
+        impacts: valResult.impacts,
+      },
+      savedScenarios,
+    };
+    const blob = new Blob([JSON.stringify(sessionData, null, 2)], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${baseline.company.replace(/\s+/g, "_")}_phase0_data.json`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
+  // ═══ Styles ═══
+  const btnPrimary = { background: GOLD, color: "#111", border: "none", borderRadius: 10, padding: "12px 28px", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: FONT };
+  const btnSecondary = { background: "none", border: `1px solid ${t.bdr}`, borderRadius: 10, padding: "12px 28px", color: t.tx2, cursor: "pointer", fontSize: 15, fontFamily: FONT };
+  const cardStyle = { background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 12, padding: 16 };
+  const labelStyle = { fontSize: 11, color: t.mut, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginBottom: 6 };
+  const stepHeader = (num, title) => (
+    <div style={{ marginBottom: 20 }}>
+      <div style={labelStyle}>Step {num} of 7</div>
+      <div style={{ fontSize: 26, fontFamily: SERIF, color: t.tx }}>{title}</div>
+    </div>
+  );
+
+  // ═══════════════════════════════════════════════════
+  // ENTRY PAGE
+  // ═══════════════════════════════════════════════════
+  if (page === "entry") return (
+    <div style={{ minHeight: "100vh", background: t.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT, padding: 20 }}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet" />
+      <div style={{ textAlign: "center", maxWidth: 600 }}>
+        <div style={{ fontSize: 12, color: t.mut, letterSpacing: "3px", textTransform: "uppercase", marginBottom: 16 }}>humaninthelead.ai</div>
+        <div style={{ fontSize: 52, fontFamily: SERIF, color: t.tx, fontWeight: 400, letterSpacing: "-1px", marginBottom: 4 }}>PrismL4</div>
+        <div style={{ fontSize: 18, color: GOLD, fontWeight: 500, marginBottom: 8 }}>Bottom-Up Value Identification Engine</div>
+        <div style={{ fontSize: 14, color: t.tx2, lineHeight: 1.6, marginBottom: 24, maxWidth: 440, margin: "0 auto 24px" }}>
+          Process-up value tool. Start from APQC L4 processes, attach KPIs, set benchmarks, map SAP modules, generate AI agent scenarios, and calculate financial impact.
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 28, maxWidth: 440, margin: "0 auto 28px" }}>
+          {[
+            { v: ALL_PROCS.length, l: "L4 Processes" },
+            { v: ALL_PROCS.reduce((s, p) => s + (p.kpis?.length || 0), 0), l: "KPIs" },
+            { v: "Live", l: "Catalyst AI" },
+          ].map((s, i) => (
+            <div key={i} style={{ ...cardStyle, textAlign: "center", padding: "14px 10px" }}>
+              <div style={{ fontSize: 22, fontFamily: SERIF, color: GOLD, fontWeight: 500 }}>{s.v}</div>
+              <div style={{ fontSize: 11, color: t.mut, textTransform: "uppercase", letterSpacing: ".5px" }}>{s.l}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 10, flexWrap: "wrap" }}>
+          {APQC.map(l1 => (
+            <span key={l1.l1id} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 6, background: l1.color + "15", color: l1.color, fontWeight: 600 }}>
+              {l1.icon} {l1.e2e}
+            </span>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", gap: 10, justifyContent: "center", marginBottom: 24, marginTop: 24 }}>
+          <button onClick={() => { setPage("work"); setStep(1); setViewMode("consultant"); }} style={btnPrimary}>
+            Consultant Mode
+          </button>
+          <button onClick={() => { setPage("work"); setStep(1); setViewMode("client"); }} style={btnSecondary}>
+            Client View
+          </button>
+        </div>
+        <button onClick={() => setMode(mode === "dark" ? "light" : "dark")} style={{ background: "none", border: "none", color: t.mut, cursor: "pointer", fontSize: 12, fontFamily: FONT }}>
+          {mode === "dark" ? "☀ Light" : "◐ Dark"}
+        </button>
+        <div style={{ marginTop: 40, fontSize: 11, color: t.sub }}>Successor to Prism · Built by Christian Spetz</div>
+      </div>
+    </div>
+  );
+
+  // ═══════════════════════════════════════════════════
+  // WORKSPACE
+  // ═══════════════════════════════════════════════════
+  const steps = [
+    { n: 1, l: "Scope" }, { n: 2, l: "Baseline" }, { n: 3, l: "Value" },
+    { n: 4, l: "Benchmarks" }, { n: 5, l: "ERP" }, { n: 6, l: "AI Agents" }, { n: 7, l: "Calculations" }
+  ];
+
+  return (
+    <div style={{ minHeight: "100vh", background: t.bg, color: t.tx, fontFamily: FONT, display: "flex", flexDirection: "column" }}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+      {/* ─── HEADER ─── */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 24px", borderBottom: `1px solid ${t.bdr}`, background: mode === "dark" ? "#131312" : "#EFEBE3", flexShrink: 0, flexWrap: "wrap", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ fontSize: 18, fontFamily: SERIF, color: GOLD, fontWeight: 500, cursor: "pointer" }} onClick={() => setPage("entry")}>PrismL4</span>
+          <div style={{ height: 14, width: 1, background: t.bdr }} />
+          <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: viewMode === "consultant" ? GOLD + "20" : BLUE + "20", color: viewMode === "consultant" ? GOLD : BLUE, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px" }}>
+            {viewMode}
+          </span>
+          <div style={{ height: 14, width: 1, background: t.bdr }} />
+          <span onClick={() => setShowBaselineEditor(!showBaselineEditor)} style={{ fontSize: 13, color: t.tx2, fontWeight: 500, cursor: "pointer" }}>{baseline.company} ✎</span>
+        </div>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <span style={{ fontSize: 12, color: t.mut }}>{selectedProcs.size} processes</span>
+          <button onClick={() => setShowApiKeyInput(!showApiKeyInput)} style={{ background: "none", border: `1px solid ${apiKey ? GREEN + "44" : t.bdr}`, borderRadius: 6, padding: "3px 10px", color: apiKey ? GREEN : t.mut, cursor: "pointer", fontSize: 11, fontFamily: FONT }}>
+            {apiKey ? "⚡ Catalyst" : "⚡ Set API Key"}
+          </button>
+          <button onClick={() => setViewMode(viewMode === "consultant" ? "client" : "consultant")} style={{ background: "none", border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "3px 10px", color: t.tx2, cursor: "pointer", fontSize: 11, fontFamily: FONT }}>
+            ↔ {viewMode === "consultant" ? "Client" : "Consultant"}
+          </button>
+          <button onClick={() => setMode(mode === "dark" ? "light" : "dark")} style={{ background: "none", border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "3px 10px", color: t.mut, cursor: "pointer", fontSize: 11, fontFamily: FONT }}>
+            {mode === "dark" ? "☀" : "◐"}
+          </button>
+        </div>
+      </div>
+
+      {/* ─── BASELINE EDITOR ─── */}
+      {showBaselineEditor && viewMode === "consultant" && (
+        <div style={{ background: t.bg, borderBottom: `1px solid ${t.bdr}`, padding: "14px 24px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <span style={{ fontSize: 13, color: GOLD, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px" }}>Company Financials</span>
+            <button onClick={() => setShowBaselineEditor(false)} style={{ background: "none", border: "none", color: t.mut, cursor: "pointer", fontSize: 16 }}>✕</button>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 8 }}>
+            {[
+              { k: "company", l: "Company", type: "text" },
+              { k: "industry", l: "Industry", type: "text" },
+              { k: "revenue", l: "Revenue ($M)", type: "number" },
+              { k: "cogs", l: "COGS ($M)", type: "number" },
+              { k: "sga", l: "SG&A ($M)", type: "number" },
+              { k: "ebitda", l: "EBITDA ($M)", type: "number" },
+              { k: "recv", l: "Receivables ($M)", type: "number" },
+              { k: "pay", l: "Payables ($M)", type: "number" },
+              { k: "inventory", l: "Inventory ($M)", type: "number" },
+            ].map(f => (
+              <div key={f.k}>
+                <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase", marginBottom: 2 }}>{f.l}</div>
+                <input type={f.type} value={baseline[f.k] ?? ""} onChange={e => setBaseline(prev => ({ ...prev, [f.k]: f.type === "number" ? (parseFloat(e.target.value) || 0) : e.target.value }))}
+                  style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 4, padding: "5px 8px", color: t.tx, fontFamily: f.type === "number" ? "monospace" : FONT, fontSize: 12 }} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─── API KEY INPUT (for Catalyst) ─── */}
+      {showApiKeyInput && viewMode === "consultant" && (
+        <div style={{ background: t.bg, borderBottom: `1px solid ${GOLD}33`, padding: "10px 24px", display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 11, color: GOLD, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px" }}>Catalyst API Key</span>
+          <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="sk-ant-..."
+            style={{ flex: 1, maxWidth: 400, background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: "monospace", fontSize: 12 }} />
+          <button onClick={() => setShowApiKeyInput(false)} style={{ fontSize: 11, padding: "4px 14px", borderRadius: 6, background: apiKey ? GREEN + "20" : t.card, border: `1px solid ${apiKey ? GREEN + "44" : t.bdr}`, color: apiKey ? GREEN : t.mut, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
+            {apiKey ? "✓ Set" : "Close"}
+          </button>
+          <span style={{ fontSize: 10, color: t.mut }}>Key stays in memory only — never stored or transmitted except to Anthropic API.</span>
+        </div>
+      )}
+
+      {/* ─── HERO BAR ─── */}
+      <div style={{ background: `linear-gradient(90deg,${GOLD}10,transparent)`, borderBottom: `1px solid ${GOLD}22`, padding: "6px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, flexWrap: "wrap", gap: 6 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+          <div><span style={{ fontSize: 10, color: GOLD, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginRight: 4 }}>Processes</span><span style={{ fontSize: 18, fontFamily: SERIF, color: GOLD }}>{selectedProcs.size}</span></div>
+          <div style={{ height: 16, width: 1, background: t.bdr }} />
+          <div><span style={{ fontSize: 10, color: GREEN, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginRight: 4 }}>KPIs</span><span style={{ fontSize: 18, fontFamily: SERIF, color: GREEN }}>{totalKPIs}</span></div>
+          <div style={{ height: 16, width: 1, background: t.bdr }} />
+          <div><span style={{ fontSize: 10, color: BLUE, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginRight: 4 }}>SAP</span><span style={{ fontSize: 18, fontFamily: SERIF, color: BLUE }}>{totalSAP}</span></div>
+          {valResult.total > 0 && <>
+            <div style={{ height: 16, width: 1, background: t.bdr }} />
+            <div><span style={{ fontSize: 10, color: GOLD, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginRight: 4 }}>Value</span><span style={{ fontSize: 18, fontFamily: SERIF, color: GOLD }}>{fd(valResult.total)}</span></div>
+          </>}
+          {valResult.balanceSheet?.totalWorkingCapital > 0 && <>
+            <div style={{ height: 16, width: 1, background: t.bdr }} />
+            <div><span style={{ fontSize: 10, color: GREEN, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginRight: 4 }}>WC Freed</span><span style={{ fontSize: 18, fontFamily: SERIF, color: GREEN }}>{fm(valResult.balanceSheet.totalWorkingCapital)}</span></div>
+          </>}
+        </div>
+        <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
+          {steps.map(s => (
+            <button key={s.n} onClick={() => setStep(s.n)} style={{
+              background: step === s.n ? GOLD : "none",
+              color: step === s.n ? "#111" : t.tx2,
+              border: step === s.n ? "none" : `1px solid ${t.bdr}`,
+              borderRadius: 6, padding: "4px 12px", cursor: "pointer", fontSize: 11, fontWeight: step === s.n ? 700 : 500, fontFamily: FONT,
+              position: "relative",
+            }}>
+              {s.n}. {s.l}
+              {stepStatus[s.n] && step !== s.n && (
+                <span style={{
+                  position: "absolute", top: -2, right: -2,
+                  width: 6, height: 6, borderRadius: "50%",
+                  background: GREEN, display: "block",
+                }} />
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ─── CONTENT ─── */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "24px 32px", maxWidth: 1200, margin: "0 auto", width: "100%" }}>
+
+        {/* ═══════════════════════════════════════════════
+            STEP 1 — Browse APQC L1→L4, Select Scope
+           ═══════════════════════════════════════════════ */}
+        {step === 1 && (
+          <div>
+            {stepHeader(1, "Process Scope Selection")}
+            <div style={{ fontSize: 13, color: t.tx2, marginBottom: 16 }}>Browse the APQC hierarchy and select L4 processes to include in scope. {viewMode === "consultant" ? "Configure with client." : "Review selected scope."}</div>
+
+            {/* E2E Filter */}
+            <div style={{ display: "flex", gap: 4, marginBottom: 12, flexWrap: "wrap" }}>
+              <button onClick={() => setE2eFilter("all")} style={{ fontSize: 11, padding: "4px 12px", borderRadius: 6, background: e2eFilter === "all" ? GOLD + "20" : "none", border: `1px solid ${e2eFilter === "all" ? GOLD + "44" : t.bdr}`, color: e2eFilter === "all" ? GOLD : t.tx2, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>All</button>
+              {APQC.map(l1 => (
+                <button key={l1.e2e} onClick={() => setE2eFilter(l1.e2e)} style={{ fontSize: 11, padding: "4px 12px", borderRadius: 6, background: e2eFilter === l1.e2e ? l1.color + "20" : "none", border: `1px solid ${e2eFilter === l1.e2e ? l1.color + "44" : t.bdr}`, color: e2eFilter === l1.e2e ? l1.color : t.tx2, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
+                  {l1.icon} {l1.e2e}
+                </button>
+              ))}
+            </div>
+
+            {/* Process Search */}
+            <div style={{ marginBottom: 12 }}>
+              <input
+                type="text"
+                value={procSearch}
+                onChange={e => setProcSearch(e.target.value)}
+                placeholder="Search processes, KPIs, APQC codes..."
+                style={{
+                  width: "100%", padding: "8px 14px", background: t.card,
+                  border: `1px solid ${procSearch ? GOLD + "44" : t.bdr}`,
+                  borderRadius: 8, color: t.tx, fontSize: 13, fontFamily: FONT,
+                  outline: "none", boxSizing: "border-box",
+                }}
+              />
+            </div>
+
+            {/* Tree */}
+            {(() => {
+              const searchLower = procSearch.toLowerCase();
+              const matchesSearch = (proc, sub, group) => {
+                if (!procSearch) return true;
+                return proc.label.toLowerCase().includes(searchLower) ||
+                  proc.l4.toLowerCase().includes(searchLower) ||
+                  (sub?.l3 || "").toLowerCase().includes(searchLower) ||
+                  (group?.l2 || "").toLowerCase().includes(searchLower);
+              };
+              const isSearching = procSearch.length > 0;
+
+              return APQC.filter(l1 => e2eFilter === "all" || l1.e2e === e2eFilter).map(l1 => {
+                // When searching, check if any procs in this L1 match
+                if (isSearching) {
+                  const hasMatch = l1.groups.some(g => g.subs.some(s => s.procs.some(p => matchesSearch(p, s, g))));
+                  if (!hasMatch) return null;
+                }
+                const l1Open = isSearching || expandedL1.has(l1.l1id);
+                const allL4 = []; l1.groups.forEach(g => g.subs.forEach(s => s.procs.forEach(p => allL4.push(p.id))));
+                const selCount = allL4.filter(id => selectedProcs.has(id)).length;
+
+                return (
+                  <div key={l1.l1id} style={{ marginBottom: 8 }}>
+                    {/* L1 */}
+                    <div onClick={() => toggleSet(setExpandedL1, l1.l1id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: l1Open ? l1.color + "08" : t.card, border: `1px solid ${l1Open ? l1.color + "33" : t.bdr}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
+                      <span style={{ fontSize: 16, color: l1.color }}>{l1.icon}</span>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: t.tx, flex: 1 }}>{l1.l1}</span>
+                      <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 4, background: l1.color + "15", color: l1.color, fontWeight: 600 }}>{l1.e2e}</span>
+                      <span style={{ fontSize: 12, color: selCount > 0 ? GREEN : t.mut, fontWeight: 600 }}>{selCount}/{allL4.length}</span>
+                      <span style={{ fontSize: 12, color: t.mut }}>{l1Open ? "▾" : "▸"}</span>
+                    </div>
+
+                    {l1Open && l1.groups.map(group => {
+                      if (isSearching) {
+                        const hasMatch = group.subs.some(s => s.procs.some(p => matchesSearch(p, s, group)));
+                        if (!hasMatch) return null;
+                      }
+                      const g2Open = isSearching || expandedL2.has(group.l2id);
+                      return (
+                        <div key={group.l2id} style={{ marginLeft: 20, marginTop: 4 }}>
+                          {/* L2 */}
+                          <div onClick={() => toggleSet(setExpandedL2, group.l2id)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", background: g2Open ? t.hover : "transparent", borderRadius: 8, cursor: "pointer" }}>
+                            <span style={{ fontSize: 11, color: l1.color, fontWeight: 700 }}>L2</span>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: t.tx, flex: 1 }}>{group.l2}</span>
+                            <span style={{ fontSize: 11, color: t.mut }}>{g2Open ? "▾" : "▸"}</span>
+                          </div>
+
+                          {g2Open && group.subs.map(sub => {
+                            const filteredProcs = isSearching ? sub.procs.filter(p => matchesSearch(p, sub, group)) : sub.procs;
+                            if (isSearching && filteredProcs.length === 0) return null;
+                            const s3Open = isSearching || expandedL3.has(sub.l3id);
+                            const allInSub = sub.procs.map(p => p.id);
+                            const allSelected = allInSub.every(id => selectedProcs.has(id));
+                            return (
+                              <div key={sub.l3id} style={{ marginLeft: 20, marginTop: 2 }}>
+                                {/* L3 */}
+                                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px" }}>
+                                  <div onClick={() => toggleSet(setExpandedL3, sub.l3id)} style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, cursor: "pointer" }}>
+                                    <span style={{ fontSize: 10, color: GOLD, fontWeight: 700 }}>L3</span>
+                                    <span style={{ fontSize: 12, fontWeight: 500, color: t.tx2 }}>{sub.l3}</span>
+                                    <span style={{ fontSize: 11, color: t.mut }}>{s3Open ? "▾" : "▸"}</span>
+                                  </div>
+                                  {viewMode === "consultant" && (
+                                    <button onClick={() => allSelected ? deselectAllInGroup(sub.procs) : selectAllInGroup(sub.procs)} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: allSelected ? GREEN + "20" : "none", border: `1px solid ${allSelected ? GREEN + "44" : t.bdr}`, color: allSelected ? GREEN : t.mut, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
+                                      {allSelected ? "Deselect All" : "Select All"}
+                                    </button>
+                                  )}
+                                </div>
+
+                                {s3Open && (
+                                  <div style={{ marginLeft: 20, display: "grid", gridTemplateColumns: "1fr", gap: 3, marginBottom: 6 }}>
+                                    {filteredProcs.map(proc => {
+                                      const sel = selectedProcs.has(proc.id);
+                                      return (
+                                        <div key={proc.id} onClick={() => viewMode === "consultant" && toggleSet(setSelectedProcs, proc.id)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: sel ? l1.color + "08" : "transparent", borderRadius: 6, borderLeft: sel ? `3px solid ${l1.color}` : `3px solid transparent`, transition: "all 0.12s", cursor: viewMode === "consultant" ? "pointer" : "default" }}>
+                                          <div style={{
+                                            width: 20, height: 20, borderRadius: 5,
+                                            background: sel ? l1.color : "transparent",
+                                            border: sel ? "none" : `1px solid ${t.bdr}`,
+                                            display: "flex", alignItems: "center", justifyContent: "center",
+                                            fontSize: 11, color: sel ? "#111" : t.mut, fontWeight: 700,
+                                            flexShrink: 0
+                                          }}>{sel ? "✓" : ""}</div>
+                                          <span style={{ fontSize: 10, fontFamily: "monospace", color: t.mut, minWidth: 60 }}>{proc.l4}</span>
+                                          <span style={{ fontSize: 12, color: sel ? t.tx : t.tx2, flex: 1, fontWeight: sel ? 500 : 400 }}>{proc.label}</span>
+                                          <span style={{ fontSize: 10, color: t.mut }}>{proc.kpis?.length || 0} KPIs</span>
+                                          {proc.sap?.[0] && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: BLUE + "15", color: BLUE, fontWeight: 600 }}>{proc.sap[0].module}</span>}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              });
+            })()}
+
+            <div style={{ textAlign: "right", marginTop: 20 }}>
+              <button onClick={() => setStep(2)} disabled={selectedProcs.size === 0} style={{ ...btnPrimary, opacity: selectedProcs.size > 0 ? 1 : 0.4 }}>Baseline Research →</button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            STEP 2 — Baseline Research
+           ═══════════════════════════════════════════════ */}
+        {step === 2 && (
+          <div>
+            {stepHeader(2, "Baseline Research")}
+            <div style={{ fontSize: 13, color: t.tx2, marginBottom: 12 }}>
+              {viewMode === "consultant"
+                ? "Build questionnaires for process owners. Export the questionnaire, send to process owners, and upload completed responses to trigger process mining."
+                : "Review baseline data collected from questionnaires and process mining."
+              }
+            </div>
+
+            {/* Export / Upload Controls */}
+            {viewMode === "consultant" && selProcs.length > 0 && (
+              <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
+                <button onClick={exportQuestionnaire} style={{ fontSize: 11, padding: "6px 16px", borderRadius: 8, background: GREEN + "15", border: `1px solid ${GREEN}33`, color: GREEN, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
+                  ↓ Export Questionnaire (CSV)
+                </button>
+                <label style={{ fontSize: 11, padding: "6px 16px", borderRadius: 8, background: PURPLE + "15", border: `1px solid ${PURPLE}33`, color: PURPLE, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
+                  ↑ Upload Completed Questionnaire
+                  <input type="file" accept=".csv" onChange={handleQuestionnaireUpload} style={{ display: "none" }} />
+                </label>
+                {Object.keys(uploadedMining).length > 0 && (
+                  <span style={{ fontSize: 10, padding: "3px 8px", borderRadius: 4, background: PURPLE + "20", color: PURPLE, fontWeight: 600 }}>
+                    {Object.keys(uploadedMining).length} processes with mining data
+                  </span>
+                )}
+                <span style={{ fontSize: 10, color: t.mut, fontStyle: "italic" }}>Export → send to process owners → upload their responses</span>
+              </div>
+            )}
+
+            <div style={{ display: "grid", gridTemplateColumns: focusProc ? "1fr 1fr" : "1fr", gap: 16 }}>
+              {/* Process list */}
+              <div>
+                <div style={labelStyle}>Selected Processes ({selProcs.length})</div>
+                <div style={{ display: "grid", gap: 4 }}>
+                  {selProcs.map(proc => {
+                    const isFocused = focusProc === proc.id;
+                    const answered = Object.keys(questAnswers).filter(k => k.startsWith(proc.id)).length;
+                    return (
+                      <div key={proc.id} onClick={() => setFocusProc(isFocused ? null : proc.id)} style={{
+                        ...cardStyle, padding: "10px 14px", cursor: "pointer",
+                        borderLeft: `3px solid ${proc.l1Color}`,
+                        background: isFocused ? proc.l1Color + "08" : t.card,
+                        border: `1px solid ${isFocused ? proc.l1Color + "44" : t.bdr}`,
+                        borderLeftWidth: 3, borderLeftColor: proc.l1Color, borderLeftStyle: "solid"
+                      }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div>
+                            <span style={{ fontSize: 10, fontFamily: "monospace", color: t.mut, marginRight: 6 }}>{proc.l4}</span>
+                            <span style={{ fontSize: 13, fontWeight: 500, color: t.tx }}>{proc.label}</span>
+                          </div>
+                          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                            {answered > 0 && <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: GREEN + "20", color: GREEN, fontWeight: 600 }}>{answered} answers</span>}
+                            <span style={{ fontSize: 11, color: t.mut }}>{isFocused ? "▾" : "▸"}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Detail panel */}
+              {focusProc && PROC_MAP[focusProc] && (
+                <div style={{ ...cardStyle, maxHeight: 600, overflowY: "auto" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                    <div>
+                      <div style={{ fontSize: 10, fontFamily: "monospace", color: t.mut }}>{PROC_MAP[focusProc].l4}</div>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: t.tx }}>{PROC_MAP[focusProc].label}</div>
+                    </div>
+                    <button onClick={() => setFocusProc(null)} style={{ background: "none", border: "none", color: t.mut, cursor: "pointer", fontSize: 16 }}>×</button>
+                  </div>
+
+                  {/* Questionnaire */}
+                  <div style={labelStyle}>Questionnaire</div>
+                  {Q_TEMPLATES.map((qt, qi) => (
+                    <div key={qi} style={{ marginBottom: 10 }}>
+                      <div style={{ fontSize: 12, color: t.tx2, marginBottom: 4 }}>{qt.q}</div>
+                      {qt.type === "text" ? (
+                        <textarea value={questAnswers[`${focusProc}_q${qi}`] || ""} onChange={e => setQuestAnswers(p => ({ ...p, [`${focusProc}_q${qi}`]: e.target.value }))}
+                          placeholder="Enter response..." rows={2}
+                          style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, resize: "vertical" }} />
+                      ) : qt.type === "select" ? (
+                        <select value={questAnswers[`${focusProc}_q${qi}`] || ""} onChange={e => setQuestAnswers(p => ({ ...p, [`${focusProc}_q${qi}`]: e.target.value }))}
+                          style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12 }}>
+                          <option value="">Select...</option>
+                          {qt.opts.map(o => <option key={o} value={o}>{o}</option>)}
+                        </select>
+                      ) : (
+                        <input type="number" value={questAnswers[`${focusProc}_q${qi}`] || ""} onChange={e => setQuestAnswers(p => ({ ...p, [`${focusProc}_q${qi}`]: e.target.value }))}
+                          placeholder="0" style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12 }} />
+                      )}
+                    </div>
+                  ))}
+
+                  {/* Process Mining Evidence */}
+                  <div style={{ ...labelStyle, marginTop: 16 }}>Process Mining Evidence</div>
+                  {uploadedMining[focusProc] ? (
+                    <div style={{ background: t.bg, border: `1px solid ${GREEN}33`, borderRadius: 10, padding: 14, marginBottom: 10 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                        <div style={{ fontSize: 12, color: GREEN, fontWeight: 600 }}>Process Mining — {PROC_MAP[focusProc].label}</div>
+                        <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, background: GREEN + "20", color: GREEN, fontWeight: 600 }}>UPLOADED</span>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
+                        {[
+                          { l: "Variants Discovered", v: uploadedMining[focusProc].variants },
+                          { l: "Conformance Rate", v: uploadedMining[focusProc].conformance != null ? `${uploadedMining[focusProc].conformance}%` : null },
+                          { l: "Avg Cycle Time", v: uploadedMining[focusProc].cycleTime != null ? `${uploadedMining[focusProc].cycleTime} days` : null },
+                          { l: "Rework Loops", v: uploadedMining[focusProc].rework != null ? `${uploadedMining[focusProc].rework}%` : null },
+                        ].filter(m => m.v != null).map(m => (
+                          <div key={m.l} style={{ padding: "6px 10px", background: t.card, borderRadius: 6, border: `1px solid ${t.bdr}` }}>
+                            <div style={{ fontSize: 10, color: t.mut }}>{m.l}</div>
+                            <div style={{ fontSize: 16, fontFamily: SERIF, color: GREEN }}>{m.v}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ fontSize: 11, color: GREEN, fontStyle: "italic" }}>Data from uploaded questionnaire</div>
+                    </div>
+                  ) : (
+                    <>
+                      <div onClick={() => setSignavioView(focusProc)} style={{ padding: 16, border: `2px dashed ${PURPLE}44`, borderRadius: 10, textAlign: "center", cursor: "pointer", marginBottom: 10 }}>
+                        <div style={{ fontSize: 13, color: PURPLE, fontWeight: 600 }}>◉ Signavio Process Intelligence</div>
+                        <div style={{ fontSize: 11, color: t.mut, marginTop: 4 }}>Click to view mock process mining data</div>
+                      </div>
+                      {signavioView === focusProc && (
+                        <div style={{ background: t.bg, border: `1px solid ${PURPLE}33`, borderRadius: 10, padding: 14, marginBottom: 10 }}>
+                          <div style={{ fontSize: 12, color: PURPLE, fontWeight: 600, marginBottom: 8 }}>Process Mining — {PROC_MAP[focusProc].label}</div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
+                            {(() => {
+                              const seed = focusProc.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+                              const s = n => ((seed * (n + 1) * 9301 + 49297) % 233280) / 233280;
+                              return [
+                                { l: "Variants Discovered", v: Math.floor(s(1) * 30 + 5) },
+                                { l: "Conformance Rate", v: `${Math.floor(s(2) * 30 + 65)}%` },
+                                { l: "Avg Cycle Time", v: `${(s(3) * 8 + 1).toFixed(1)} days` },
+                                { l: "Rework Loops", v: `${Math.floor(s(4) * 15 + 2)}%` },
+                              ];
+                            })().map(m => (
+                              <div key={m.l} style={{ padding: "6px 10px", background: t.card, borderRadius: 6, border: `1px solid ${t.bdr}` }}>
+                                <div style={{ fontSize: 10, color: t.mut }}>{m.l}</div>
+                                <div style={{ fontSize: 16, fontFamily: SERIF, color: PURPLE }}>{m.v}</div>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ fontSize: 11, color: t.mut, fontStyle: "italic" }}>Mock data — upload completed questionnaire for real process mining data</div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
+              <button onClick={() => setStep(1)} style={btnSecondary}>← Scope</button>
+              <button onClick={() => setStep(3)} style={btnPrimary}>Value Setting →</button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            STEP 3 — Value Setting
+           ═══════════════════════════════════════════════ */}
+        {step === 3 && (
+          <div>
+            {stepHeader(3, "Value Setting")}
+            <div style={{ fontSize: 13, color: t.tx2, marginBottom: 20 }}>Attach value levers and KPIs to each L4 process. Set value type, classification, financial type, and statement type.</div>
+
+            <div style={{ display: "grid", gap: 8 }}>
+              {selProcs.map(proc => {
+                const vals = procValues[proc.id] || {};
+                const setVal = (key, val) => setProcValues(prev => ({ ...prev, [proc.id]: { ...(prev[proc.id] || {}), [key]: val } }));
+                return (
+                  <div key={proc.id} style={{ ...cardStyle, borderLeft: `3px solid ${proc.l1Color}` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                      <div>
+                        <span style={{ fontSize: 10, fontFamily: "monospace", color: t.mut, marginRight: 6 }}>{proc.l4}</span>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: t.tx }}>{proc.label}</span>
+                      </div>
+                      <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, background: proc.l1Color + "15", color: proc.l1Color, fontWeight: 600 }}>{proc.e2e}</span>
+                    </div>
+
+                    {/* Value Levers */}
+                    {(proc.valLevers || []).map((lv, li) => (
+                      <div key={li} style={{ padding: "8px 10px", background: t.bg, borderRadius: 8, marginBottom: 6, border: `1px solid ${t.bdr}` }}>
+                        <div style={{ fontSize: 12, color: t.tx, fontWeight: 500, marginBottom: 6 }}>{lv.lever}</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 6 }}>
+                          {[
+                            { l: "Value Type", k: `vtype_${li}`, opts: VALUE_TYPES, def: lv.vtype },
+                            { l: "Classification", k: `vclass_${li}`, opts: VALUE_CLASSES, def: lv.vclass },
+                            { l: "Financial Type", k: `fintype_${li}`, opts: FIN_TYPES, def: lv.fintype },
+                            { l: "Statement", k: `stmt_${li}`, opts: STMT_TYPES, def: lv.stmt },
+                          ].map(dd => (
+                            <div key={dd.k}>
+                              <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase", marginBottom: 2 }}>{dd.l}</div>
+                              <select value={vals[dd.k] || dd.def || ""} onChange={e => setVal(dd.k, e.target.value)}
+                                disabled={viewMode === "client"}
+                                style={{ width: "100%", background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 4, padding: "4px 6px", color: t.tx, fontFamily: FONT, fontSize: 11 }}>
+                                {dd.opts.map(o => <option key={o} value={o}>{o}</option>)}
+                              </select>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* KPI Baselines */}
+                    <div style={{ ...labelStyle, marginTop: 8, fontSize: 10 }}>KPI Baselines</div>
+                    <div style={{ display: "grid", gap: 4 }}>
+                      {(proc.kpis || []).map((kpi, ki) => (
+                        <div key={ki} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+                          <span style={{ fontSize: 12, color: t.tx2, flex: 1 }}>{kpi.name}</span>
+                          <input type="number" placeholder="Current" value={vals[`kpi_current_${ki}`] ?? ""} onChange={e => setVal(`kpi_current_${ki}`, parseFloat(e.target.value) || null)}
+                            disabled={viewMode === "client"}
+                            style={{ width: 80, background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 4, padding: "3px 6px", color: t.tx, fontFamily: "monospace", fontSize: 12, textAlign: "right" }} />
+                          <span style={{ fontSize: 10, color: t.mut, minWidth: 30 }}>{kpi.unit}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
+              <button onClick={() => setStep(2)} style={btnSecondary}>← Baseline</button>
+              <button onClick={() => setStep(4)} style={btnPrimary}>Benchmarks →</button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            STEP 4 — Benchmark KPIs
+           ═══════════════════════════════════════════════ */}
+        {step === 4 && (
+          <div>
+            {stepHeader(4, "Benchmark KPIs")}
+            <div style={{ fontSize: 13, color: t.tx2, marginBottom: 20 }}>Pre-loaded APQC/Hackett benchmarks. Use Catalyst (Claude API) to suggest industry-specific benchmarks.</div>
+
+            <div style={{ display: "grid", gap: 8 }}>
+              {selProcs.map(proc => {
+                const bmarks = procBenchmarks[proc.id] || {};
+                const setBmark = (key, val) => setProcBenchmarks(prev => ({ ...prev, [proc.id]: { ...(prev[proc.id] || {}), [key]: val } }));
+                return (
+                  <div key={proc.id} style={{ ...cardStyle, borderLeft: `3px solid ${proc.l1Color}` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                      <div>
+                        <span style={{ fontSize: 10, fontFamily: "monospace", color: t.mut, marginRight: 6 }}>{proc.l4}</span>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: t.tx }}>{proc.label}</span>
+                      </div>
+                      <button onClick={() => callCatalyst(proc.id,
+                        `You are a benchmarking expert for ${baseline.industry} companies. For the process "${proc.label}" (APQC ${proc.l4}), provide TWO sections:\n\nSECTION 1 — TRADITIONAL BENCHMARKS\nProvide 3-5 specific benchmark suggestions from published sources. Include: KPI name, benchmark value with unit, source/year, and brief calculation methodology. Focus on APQC, Hackett, Gartner, and industry benchmarks.\n\nSECTION 2 — AI AGENT IMPACT BENCHMARKS\nFor this same process, what efficiency gains have AI agents achieved in published case studies? Include: agent type, % efficiency improvement, source/case study, and sample size or company type. Look for Deloitte, McKinsey, Gartner, Forrester, and vendor case studies (e.g., Celonis, HighRadius, Esker, BlackLine).\n\nBe specific and quantitative. Format as concise bullet points with numbers.`,
+                        setCatalystResults, setCatalystLoading
+                      )} disabled={catalystLoading[proc.id]}
+                        style={{ fontSize: 10, padding: "4px 12px", borderRadius: 6, background: GOLD + "15", border: `1px solid ${GOLD}33`, color: GOLD, cursor: catalystLoading[proc.id] ? "wait" : "pointer", fontFamily: FONT, fontWeight: 600 }}>
+                        {catalystLoading[proc.id] ? "⟳ Loading..." : "⚡ Catalyst"}
+                      </button>
+                    </div>
+
+                    <div style={{ display: "grid", gap: 6 }}>
+                      {(proc.kpis || []).map((kpi, ki) => {
+                        const currentVal = procValues[proc.id]?.[`kpi_current_${ki}`] ?? kpi.current;
+                        const benchVal = bmarks[`bench_${ki}`] ?? kpi.benchmark;
+                        const gap = currentVal != null && benchVal != null ? Math.abs(currentVal - benchVal) : null;
+                        return (
+                          <div key={ki} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: t.bg, borderRadius: 6, border: `1px solid ${t.bdr}` }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 12, color: t.tx, fontWeight: 500 }}>{kpi.name}</div>
+                              <div style={{ fontSize: 10, color: t.mut }}>{kpi.src} · {kpi.method || ""}</div>
+                            </div>
+                            <div style={{ textAlign: "center", minWidth: 70 }}>
+                              <div style={{ fontSize: 9, color: t.mut }}>Current</div>
+                              <div style={{ fontSize: 14, fontFamily: "monospace", color: currentVal != null ? t.tx : t.sub }}>{currentVal ?? "—"}<span style={{ fontSize: 9, color: t.mut }}>{kpi.unit}</span></div>
+                            </div>
+                            <div style={{ textAlign: "center", minWidth: 70 }}>
+                              <div style={{ fontSize: 9, color: t.mut }}>Benchmark</div>
+                              <input type="number" value={bmarks[`bench_${ki}`] ?? kpi.benchmark ?? ""} onChange={e => setBmark(`bench_${ki}`, parseFloat(e.target.value) || null)}
+                                style={{ width: 60, background: t.card, border: `1px solid ${GREEN}33`, borderRadius: 4, padding: "2px 4px", color: GREEN, fontFamily: "monospace", fontSize: 14, textAlign: "center" }} />
+                              <div style={{ fontSize: 8, color: t.mut }}>{kpi.unit}</div>
+                            </div>
+                            {gap != null && (
+                              <div style={{ textAlign: "center", minWidth: 50 }}>
+                                <div style={{ fontSize: 9, color: t.mut }}>Gap</div>
+                                <div style={{ fontSize: 14, fontFamily: "monospace", color: gap > 0 ? RED : GREEN, fontWeight: 700 }}>{gap.toFixed(1)}</div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Catalyst results */}
+                    {catalystResults[proc.id] && (
+                      <div style={{ marginTop: 10, padding: 12, background: GOLD + "08", border: `1px solid ${GOLD}22`, borderRadius: 8 }}>
+                        <div style={{ fontSize: 10, color: GOLD, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>⚡ Catalyst — Benchmarks & Agent Impact</div>
+                        <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{catalystResults[proc.id]}</div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
+              <button onClick={() => setStep(3)} style={btnSecondary}>← Value Setting</button>
+              <button onClick={() => setStep(5)} style={btnPrimary}>ERP Impact →</button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            STEP 5 — ERP Impact (SAP S/4HANA)
+           ═══════════════════════════════════════════════ */}
+        {step === 5 && (
+          <div>
+            {stepHeader(5, "ERP Impact — SAP S/4HANA")}
+            <div style={{ fontSize: 13, color: t.tx2, marginBottom: 20 }}>SAP module mappings with scenario descriptions for each in-scope L4 process.</div>
+
+            {/* Module summary */}
+            {(() => {
+              const modules = {};
+              selProcs.forEach(p => (p.sap || []).forEach(s => { if (!modules[s.module]) modules[s.module] = []; modules[s.module].push(p.label); }));
+              return (
+                <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
+                  {Object.entries(modules).map(([mod, procs]) => (
+                    <div key={mod} style={{ padding: "6px 12px", background: BLUE + "10", border: `1px solid ${BLUE}22`, borderRadius: 8 }}>
+                      <div style={{ fontSize: 13, color: BLUE, fontWeight: 700 }}>{mod}</div>
+                      <div style={{ fontSize: 10, color: t.mut }}>{procs.length} processes</div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+            <div style={{ display: "grid", gap: 8 }}>
+              {selProcs.map(proc => (
+                <div key={proc.id} style={{ ...cardStyle, borderLeft: `3px solid ${BLUE}` }}>
+                  <div style={{ marginBottom: 8 }}>
+                    <span style={{ fontSize: 10, fontFamily: "monospace", color: t.mut, marginRight: 6 }}>{proc.l4}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: t.tx }}>{proc.label}</span>
+                  </div>
+                  {(proc.sap || []).map((sap, si) => (
+                    <div key={si} style={{ padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${BLUE}15`, marginBottom: 4 }}>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
+                        <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, background: BLUE + "18", color: BLUE, fontWeight: 700 }}>{sap.module}</span>
+                        <span style={{ fontSize: 12, color: t.tx2 }}>{sap.desc}</span>
+                      </div>
+                      {sap.scenario && <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.5, fontStyle: "italic" }}>{sap.scenario}</div>}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
+              <button onClick={() => setStep(4)} style={btnSecondary}>← Benchmarks</button>
+              <button onClick={() => setStep(6)} style={btnPrimary}>AI Agents →</button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            STEP 6 — AI Impact Agents
+           ═══════════════════════════════════════════════ */}
+        {step === 6 && (
+          <div>
+            {stepHeader(6, "AI Impact Agents")}
+            <div style={{ fontSize: 13, color: t.tx2, marginBottom: 20 }}>Catalyst generates AI agent scenarios with quantitative impact benchmarks — efficiency gains, cost reductions, and published case studies per L4 process.</div>
+
+            <div style={{ display: "grid", gap: 8 }}>
+              {selProcs.map(proc => (
+                <div key={proc.id} style={{ ...cardStyle, borderLeft: `3px solid ${GOLD}` }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                    <div>
+                      <span style={{ fontSize: 10, fontFamily: "monospace", color: t.mut, marginRight: 6 }}>{proc.l4}</span>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: t.tx }}>{proc.label}</span>
+                    </div>
+                    <button onClick={() => callCatalyst(proc.id,
+                      `You are an AI transformation consultant for ${baseline.industry} companies. For the process "${proc.label}" (APQC ${proc.l4}), provide a detailed AI agent assessment:\n\n1. AGENT NAME & TYPE — Give it a specific name and classify (e.g., autonomous, copilot, predictive, generative)\n\n2. WHAT IT DOES — Specific actions this agent performs in this process (not generic). Reference actual inputs/outputs.\n\n3. QUANTITATIVE IMPACT — Be very specific with numbers:\n   - Labor efficiency gain: X-Y% (cite source)\n   - Cycle time reduction: X-Y% (cite source)\n   - Error/rework reduction: X-Y% (cite source)\n   - Cost per transaction reduction: $X → $Y (cite source)\n\n4. PUBLISHED CASE STUDIES — Find 2-3 real deployments:\n   - Company/industry, agent/tool used, measured outcome, year\n   - Example sources: Gartner, Forrester, McKinsey, Deloitte, vendor case studies (HighRadius, Celonis, BlackLine, Esker, Coupa, SAP)\n\n5. IMPLEMENTATION — Complexity (Low/Medium/High), typical timeline, prerequisites\n\nBe specific and quantitative. Every claim needs a number and a source. If uncertain, say "estimated" and explain basis.`,
+                      setAgentResults, setAgentLoading
+                    )} disabled={agentLoading[proc.id]}
+                      style={{ fontSize: 11, padding: "6px 16px", borderRadius: 8, background: GOLD, border: "none", color: "#111", cursor: agentLoading[proc.id] ? "wait" : "pointer", fontFamily: FONT, fontWeight: 600 }}>
+                      {agentLoading[proc.id] ? "⟳ Generating..." : "⚡ Generate Agent"}
+                    </button>
+                  </div>
+
+                  {agentResults[proc.id] ? (
+                    <div style={{ padding: 14, background: GOLD + "08", border: `1px solid ${GOLD}22`, borderRadius: 10 }}>
+                      <div style={{ fontSize: 10, color: GOLD, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 8 }}>⚡ AI Agent Scenario</div>
+                      <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{agentResults[proc.id]}</div>
+                    </div>
+                  ) : (
+                    <div style={{ padding: 20, border: `2px dashed ${t.bdr}`, borderRadius: 10, textAlign: "center" }}>
+                      <div style={{ fontSize: 12, color: t.mut }}>Click "Generate Agent" to have Catalyst describe an AI agent for this process</div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
+              <button onClick={() => setStep(5)} style={btnSecondary}>← ERP Impact</button>
+              <button onClick={() => setStep(7)} style={btnPrimary}>Calculations →</button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            STEP 7 — Value Calculations
+           ═══════════════════════════════════════════════ */}
+        {step === 7 && (
+          <div>
+            {stepHeader(7, "Value Calculations")}
+            <div style={{ fontSize: 13, color: t.tx2, marginBottom: 20 }}>Baseline vs benchmark gap → addressable value → scenario rollup.</div>
+
+            {/* Scenario selector */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 20, alignItems: "center" }}>
+              <span style={{ fontSize: 12, color: t.mut }}>Scenario:</span>
+              {SCENARIO_LEVELS.map(lvl => (
+                <button key={lvl} onClick={() => setScenarioLevel(lvl)} style={{
+                  fontSize: 12, padding: "6px 16px", borderRadius: 8,
+                  background: scenarioLevel === lvl ? (lvl === "High" ? GREEN + "20" : lvl === "Medium" ? GOLD + "20" : ORANGE + "20") : "none",
+                  border: `1px solid ${scenarioLevel === lvl ? (lvl === "High" ? GREEN : lvl === "Medium" ? GOLD : ORANGE) + "44" : t.bdr}`,
+                  color: scenarioLevel === lvl ? (lvl === "High" ? GREEN : lvl === "Medium" ? GOLD : ORANGE) : t.tx2,
+                  cursor: "pointer", fontFamily: FONT, fontWeight: 600
+                }}>{lvl} ({lvl === "High" ? "100%" : lvl === "Medium" ? "65%" : "35%"})</button>
+              ))}
+              <div style={{ flex: 1 }} />
+              <button onClick={() => {
+                const name = prompt("Scenario name:", `${scenarioLevel} Scenario`);
+                if (name) setSavedScenarios(p => [...p, { name, level: scenarioLevel, value: valResult.total, count: selProcs.length }]);
+              }} style={{ ...btnPrimary, padding: "8px 20px", fontSize: 13 }}>Save Scenario</button>
+            </div>
+
+            {/* Summary KPIs */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 24 }}>
+              {[
+                { l: "Total Value", v: fd(valResult.total), c: GOLD },
+                { l: "Processes", v: selProcs.length, c: BLUE },
+                { l: "Scenario", v: scenarioLevel, c: scenarioLevel === "High" ? GREEN : scenarioLevel === "Medium" ? GOLD : ORANGE },
+                { l: "KPIs Measured", v: totalKPIs, c: GREEN },
+              ].map(k => (
+                <div key={k.l} style={{ background: `${k.c}0C`, border: `1px solid ${k.c}22`, borderRadius: 10, padding: "12px 16px", textAlign: "center" }}>
+                  <div style={{ fontSize: 11, color: k.c, textTransform: "uppercase", letterSpacing: ".5px", fontWeight: 600, marginBottom: 4 }}>{k.l}</div>
+                  <div style={{ fontSize: 22, fontFamily: SERIF, color: k.c }}>{k.v}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Value by E2E */}
+            <div style={labelStyle}>Value by End-to-End Process</div>
+            {(() => {
+              const e2eData = {};
+              valResult.impacts.forEach(imp => {
+                if (!e2eData[imp.e2e]) e2eData[imp.e2e] = 0;
+                e2eData[imp.e2e] += imp.value;
+              });
+              const chartData = Object.entries(e2eData).map(([name, value]) => ({ name, value: Math.round(value * 10) / 10 })).filter(d => d.value > 0);
+              return chartData.length > 0 ? (
+                <div style={{ height: 220, marginBottom: 24 }}>
+                  <ResponsiveContainer>
+                    <BarChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 40 }} barSize={48}>
+                      <XAxis dataKey="name" tick={{ fill: t.tx2, fontSize: 11 }} angle={-15} textAnchor="end" axisLine={{ stroke: t.bdr }} tickLine={false} />
+                      <YAxis tick={{ fill: t.mut, fontSize: 11, fontFamily: "monospace" }} axisLine={{ stroke: t.bdr }} tickLine={false} tickFormatter={v => `$${v}M`} />
+                      <Tooltip contentStyle={{ background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 8, fontSize: 13, color: t.tx }} formatter={v => [`$${v}M`, "Value"]} />
+                      <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                        {chartData.map((d, i) => <Cell key={i} fill={[BLUE, PURPLE, GREEN, GOLD][i % 4]} fillOpacity={0.75} />)}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div style={{ padding: 20, textAlign: "center", color: t.mut, marginBottom: 24, border: `2px dashed ${t.bdr}`, borderRadius: 10 }}>
+                  Enter current KPI values in Step 3 to see value calculations
+                </div>
+              );
+            })()}
+
+            {/* P&L Impact Summary */}
+            <div style={labelStyle}>P&L Impact Summary</div>
+            {(() => {
+              const { revImpact, cogsImpact, sgaImpact } = valResult.pnl;
+              return (
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginBottom: 24 }}>
+                  <thead><tr>{["Line Item", "Baseline", "Impact", "Improved"].map((h, i) => (
+                    <th key={i} style={{ padding: "8px 12px", borderBottom: `2px solid ${t.bdr}`, textAlign: i === 0 ? "left" : "right", color: t.mut, fontWeight: 600, fontSize: 12 }}>{h}</th>
+                  ))}</tr></thead>
+                  <tbody>
+                    {[
+                      { l: "Revenue", base: baseline.revenue, imp: revImpact, c: GREEN },
+                      { l: "COGS", base: baseline.cogs, imp: -cogsImpact, c: RED },
+                      { l: "Gross Profit", base: baseline.revenue - baseline.cogs, imp: revImpact + cogsImpact, c: GOLD },
+                      { l: "SG&A", base: baseline.sga, imp: -sgaImpact, c: RED },
+                      { l: "EBITDA", base: baseline.ebitda, imp: revImpact + cogsImpact + sgaImpact, c: GOLD },
+                    ].map(row => (
+                      <tr key={row.l} style={{ background: row.l === "EBITDA" ? GOLD + "08" : "transparent" }}>
+                        <td style={{ padding: "6px 12px", borderBottom: `1px solid ${t.bdr}40`, color: row.l === "EBITDA" ? GOLD : t.tx2, fontWeight: row.l === "EBITDA" ? 700 : 400 }}>{row.l}</td>
+                        <td style={{ padding: "6px 12px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", fontSize: 13, color: t.mut }}>{fm(row.base)}</td>
+                        <td style={{ padding: "6px 12px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", fontSize: 13, color: row.imp > 0 ? GREEN : row.imp < 0 ? GREEN : t.sub, fontWeight: 600 }}>{row.imp !== 0 ? fd(row.imp) : "—"}</td>
+                        <td style={{ padding: "6px 12px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", fontSize: 13, color: row.l === "EBITDA" ? GOLD : t.tx, fontWeight: row.l === "EBITDA" ? 700 : 500 }}>{fm(row.base + row.imp)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              );
+            })()}
+
+            {/* Balance Sheet / Working Capital Impact */}
+            {valResult.balanceSheet.totalWorkingCapital > 0 && (
+              <>
+                <div style={labelStyle}>Working Capital Impact</div>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginBottom: 24 }}>
+                  <thead><tr>
+                    {["Line Item", "Current ($M)", "Improvement", "Improved ($M)"].map((h, i) => (
+                      <th key={i} style={{ padding: "8px 12px", borderBottom: `2px solid ${t.bdr}`, textAlign: i === 0 ? "left" : "right", color: t.mut, fontWeight: 600, fontSize: 12 }}>{h}</th>
+                    ))}
+                  </tr></thead>
+                  <tbody>
+                    {[
+                      { l: "Accounts Receivable", base: baseline.recv, imp: -valResult.balanceSheet.receivablesImpact, c: GREEN },
+                      { l: "Inventory", base: baseline.inventory, imp: -valResult.balanceSheet.inventoryImpact, c: GREEN },
+                      { l: "Accounts Payable", base: baseline.pay, imp: valResult.balanceSheet.payablesImpact, c: BLUE },
+                      { l: "Net Working Capital",
+                        base: baseline.recv + baseline.inventory - baseline.pay,
+                        imp: -(valResult.balanceSheet.receivablesImpact + valResult.balanceSheet.inventoryImpact - valResult.balanceSheet.payablesImpact),
+                        c: GOLD },
+                    ].map(row => (
+                      <tr key={row.l} style={{ background: row.l === "Net Working Capital" ? GOLD + "08" : "transparent" }}>
+                        <td style={{ padding: "6px 12px", borderBottom: `1px solid ${t.bdr}40`, color: row.l === "Net Working Capital" ? GOLD : t.tx2, fontWeight: row.l === "Net Working Capital" ? 700 : 400 }}>{row.l}</td>
+                        <td style={{ padding: "6px 12px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", fontSize: 13, color: t.mut }}>{fm(row.base)}</td>
+                        <td style={{ padding: "6px 12px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", fontSize: 13, color: GREEN, fontWeight: 600 }}>{row.imp !== 0 ? fd(row.imp) : "—"}</td>
+                        <td style={{ padding: "6px 12px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", fontSize: 13, color: row.l === "Net Working Capital" ? GOLD : t.tx, fontWeight: row.l === "Net Working Capital" ? 700 : 500 }}>{fm(row.base + row.imp)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            )}
+
+            {/* Process-level impact table */}
+            <div style={labelStyle}>Value by L4 Process</div>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginBottom: 24 }}>
+              <thead><tr>{["APQC L4", "Process", "E2E", "Value ($M)"].map((h, i) => (
+                <th key={i} style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: i === 3 ? "right" : "left", color: t.mut, fontWeight: 600, fontSize: 12 }}>{h}</th>
+              ))}</tr></thead>
+              <tbody>
+                {valResult.impacts.filter(i => i.value > 0).map((imp, idx) => (
+                  <tr key={idx}>
+                    <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, fontFamily: "monospace", fontSize: 11, color: t.mut }}>{imp.l4}</td>
+                    <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx }}>{imp.label}</td>
+                    <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40` }}>
+                      <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 3, background: imp.color + "15", color: imp.color, fontWeight: 600 }}>{imp.e2e}</span>
+                    </td>
+                    <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: GREEN, fontWeight: 700 }}>{fd(imp.value)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Saved Scenarios */}
+            {savedScenarios.length > 0 && (
+              <>
+                <div style={labelStyle}>Saved Scenarios</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 8, marginBottom: 20 }}>
+                  {savedScenarios.map((sc, i) => (
+                    <div key={i} style={{ ...cardStyle, textAlign: "center" }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: t.tx }}>{sc.name}</div>
+                      <div style={{ fontSize: 22, fontFamily: SERIF, color: GOLD, margin: "6px 0" }}>{fd(sc.value)}</div>
+                      <div style={{ fontSize: 11, color: t.mut }}>{sc.count} processes · {sc.level}</div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Phase 0 Report */}
+            <div style={{ marginTop: 24, padding: 20, background: GOLD + "08", border: `1px solid ${GOLD}22`, borderRadius: 12, textAlign: "center" }}>
+              <div style={{ fontSize: 11, color: GOLD, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Phase 0 Deliverable</div>
+              <div style={{ fontSize: 14, color: t.tx, marginBottom: 4 }}>Generate a comprehensive Phase 0 Report</div>
+              <div style={{ fontSize: 12, color: t.tx2, marginBottom: 12 }}>Compiles scope, questionnaire responses, process mining data, benchmarks, SAP mappings, AI agent scenarios, and value calculations into a downloadable HTML report.</div>
+              <button onClick={generatePhase0Report} style={{ ...btnPrimary, padding: "10px 32px", fontSize: 14 }}>
+                ↓ Download Phase 0 Report
+              </button>
+              <button onClick={exportSessionJSON} style={{ ...btnSecondary, padding: "10px 32px", fontSize: 14, marginLeft: 8 }}>
+                ↓ Export Data (JSON)
+              </button>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
+              <button onClick={() => setStep(6)} style={btnSecondary}>← AI Agents</button>
+            </div>
+          </div>
+        )}
+
+      </div>
+
+      {/* ─── FOOTER ─── */}
+      <div style={{ borderTop: `1px solid ${t.bdr}`, background: mode === "dark" ? "#131312" : "#EFEBE3", padding: "6px 24px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 10, color: t.mut, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>PrismL4</span>
+        <div style={{ height: 10, width: 1, background: t.bdr }} />
+        <span style={{ fontSize: 10, color: t.sub }}>Bottom-Up Value Identification Engine</span>
+        <div style={{ flex: 1 }} />
+        <span style={{ fontSize: 10, color: t.sub }}>humaninthelead.ai</span>
+      </div>
+    </div>
+  );
+}
