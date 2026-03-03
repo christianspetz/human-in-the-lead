@@ -1,6 +1,6 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const pool = require('../db');
+const pool = require('../pgPool');
 
 const router = express.Router();
 

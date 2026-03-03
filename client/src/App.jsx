@@ -14,7 +14,7 @@ import ArclineGate from './components/ArclineGate';
 import ApolloEngine from './components/ApolloEngine';
 import ZeroHumanCompany from './components/ZeroHumanCompany';
 import Prism from './Prism';
-import PrismL4Gate from './PrismL4Gate';
+import PrismAuth from './PrismAuth';
 
 const SCREENS = {
   LANDING: 'landing',
@@ -234,7 +234,7 @@ export default function App() {
 
       {screen === SCREENS.PRISM && <Prism />}
 
-      {screen === SCREENS.PRISML4 && <PrismL4Gate />}
+      {screen === SCREENS.PRISML4 && <PrismAuth />}
 
       {screen !== SCREENS.ARCLINE && screen !== SCREENS.APOLLO && screen !== SCREENS.ZERO_HUMAN && screen !== SCREENS.PRISM && screen !== SCREENS.PRISML4 && <footer className="app-footer">
         <p style={{ fontSize: '0.7rem', color: 'var(--slate)', marginBottom: '0.75rem', maxWidth: '500px', margin: '0 auto 0.75rem', lineHeight: '1.5' }}>

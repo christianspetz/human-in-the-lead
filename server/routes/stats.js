@@ -1,5 +1,5 @@
 const express = require('express');
-const pool = require('../db');
+const pool = require('../pgPool');
 const router = express.Router();
 
 router.get('/stats', async (req, res) => {

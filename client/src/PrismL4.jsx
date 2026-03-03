@@ -1,8 +1,12 @@
-import { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, Suspense } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   AreaChart, CartesianGrid
 } from "recharts";
+
+/* Lazy-loaded companion components (graceful fallback if not yet created) */
+const BlueprintReconciler = React.lazy(() => import("./BlueprintReconciler").catch(() => ({ default: () => null })));
+const MiningLinker = React.lazy(() => import("./MiningLinker").catch(() => ({ default: () => null })));
 
 /* ═══════════════════════════════════════════════════════
    DESIGN TOKENS — Prism Design Language
@@ -603,13 +607,14 @@ const getBlueprintForL2 = (l2id, functionId = "finance") => {
   return bps.find(bp => bp.apqcL2s.includes(l2id)) || null;
 };
 
-// Quartile scoring: compares current value to benchmark
-const getQuartile = (current, benchmark) => {
+// Quartile scoring: compares current value to benchmark, direction-aware
+const getQuartile = (current, benchmark, kpi) => {
   if (current == null || benchmark == null || benchmark === 0) return null;
-  const gapPct = Math.abs(current - benchmark) / Math.abs(benchmark);
-  if (gapPct <= 0.1) return { label: "Top", color: GREEN, score: 3 };
-  if (gapPct <= 0.35) return { label: "Average", color: GOLD, score: 2 };
-  return { label: "Bottom", color: RED, score: 1 };
+  const higherIsBetter = kpi ? /rate|score|adoption|fill|perfect|touchless|match|auto|straight/i.test(kpi.name) : true;
+  const ratio = higherIsBetter ? (current / benchmark) : (benchmark / current);
+  if (ratio >= 0.95) return { label: "Top Quartile", color: GREEN, icon: "▲", score: 3 };
+  if (ratio >= 0.70) return { label: "Average", color: GOLD, icon: "●", score: 2 };
+  return { label: "Bottom Quartile", color: RED, icon: "▼", score: 1 };
 };
 
 /* ═══════════════════════════════════════════════════════
@@ -648,10 +653,11 @@ const Q_TEMPLATES = [
 /* ═══════════════════════════════════════════════════════
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════ */
-export default function PrismL4() {
+export default function PrismL4({ user, onLogout }) {
   const [page, setPage] = useState("entry");
   const [mode, setMode] = useState("dark");
-  const [viewMode, setViewMode] = useState("consultant"); // consultant | client
+  const isClientRole = user?.role === "client";
+  const [viewMode, setViewMode] = useState(isClientRole ? "client" : "consultant"); // consultant | client
   const [step, setStep] = useState(1);
 
   // Scope selection (Step 1)
@@ -671,6 +677,9 @@ export default function PrismL4() {
   const [selectedL2s, setSelectedL2s] = useState(new Set());
   const [selectedL3s, setSelectedL3s] = useState(new Set());
   const [scopeView, setScopeView] = useState("guided");
+
+  // Blueprint reconciler modal
+  const [showBlueprint, setShowBlueprint] = useState(false);
 
   // Baseline data (Step 2)
   const [baseline, setBaseline] = useState(DEF_BL);
@@ -710,6 +719,7 @@ export default function PrismL4() {
   // Catalyst API key (entered by consultant, never stored)
   const [apiKey, setApiKey] = useState("");
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+  const [catalystServer, setCatalystServer] = useState(null); // null=unknown, true=server proxy available, false=not configured
 
   const t = TH[mode];
 
@@ -735,8 +745,9 @@ export default function PrismL4() {
     selProcs.forEach(proc => {
       const vals = procValues[proc.id] || {};
       const bmarks = procBenchmarks[proc.id] || {};
-      const procLevel = procScenarios[proc.id] || scenarioLevel;
-      const m = multipliers[procLevel];
+      const potential = procScenarios[proc.id]?.potential || scenarioLevel;
+      const addressablePct = (procScenarios[proc.id]?.addressable || 80) / 100;
+      const m = multipliers[potential] * addressablePct;
       let procVal = 0;
 
       (proc.kpis || []).forEach((kpi, ki) => {
@@ -763,7 +774,7 @@ export default function PrismL4() {
         }
       });
 
-      procImpacts.push({ id: proc.id, label: proc.label, l4: proc.l4, value: procVal, e2e: proc.e2e, color: proc.l1Color, scenario: procLevel });
+      procImpacts.push({ id: proc.id, label: proc.label, l4: proc.l4, value: procVal, e2e: proc.e2e, color: proc.l1Color, scenario: potential });
       totalValue += procVal;
     });
 
@@ -775,8 +786,9 @@ export default function PrismL4() {
     selProcs.forEach(proc => {
       const vals = procValues[proc.id] || {};
       const bmarks = procBenchmarks[proc.id] || {};
-      const wcLevel = procScenarios[proc.id] || scenarioLevel;
-      const wcM = multipliers[wcLevel];
+      const wcPotential = procScenarios[proc.id]?.potential || scenarioLevel;
+      const wcAddrPct = (procScenarios[proc.id]?.addressable || 80) / 100;
+      const wcM = multipliers[wcPotential] * wcAddrPct;
 
       (proc.kpis || []).forEach((kpi, ki) => {
         const current = vals[`kpi_current_${ki}`] ?? kpi.current;
@@ -840,10 +852,36 @@ export default function PrismL4() {
     7: valResult.total > 0,
   }), [selectedProcs, questAnswers, uploadedMining, procValues, procBenchmarks, catalystResults, agentResults, valResult]);
 
-  // Catalyst API call
+  // Catalyst API call — tries server proxy first, falls back to browser-side key
   const callCatalyst = async (procId, prompt, resultSetter, loadingSetter) => {
-    if (!apiKey) { setShowApiKeyInput(true); return; }
     loadingSetter(prev => ({ ...prev, [procId]: true }));
+    try {
+      // Try server proxy first (API key stays server-side)
+      const proxyRes = await fetch("/api/catalyst", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      const proxyData = await proxyRes.json();
+
+      if (proxyRes.ok && proxyData.result) {
+        setCatalystServer(true);
+        resultSetter(prev => ({ ...prev, [procId]: proxyData.result }));
+        loadingSetter(prev => ({ ...prev, [procId]: false }));
+        return;
+      }
+
+      // Server not configured — fall back to browser-side key
+      if (proxyData.error === "Catalyst not configured on server") {
+        setCatalystServer(false);
+      }
+    } catch (_) {
+      // Server unreachable (e.g. dev mode without server) — fall back
+      setCatalystServer(false);
+    }
+
+    // Fallback: direct browser call with user-provided API key
+    if (!apiKey) { setShowApiKeyInput(true); loadingSetter(prev => ({ ...prev, [procId]: false })); return; }
     try {
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
@@ -1207,16 +1245,16 @@ export default function PrismL4() {
               <div style={{ fontSize: 13, fontWeight: 600, color: fn.active ? fn.color : t.mut }}>{fn.name}</div>
               <div style={{ fontSize: 9, color: t.mut, marginTop: 2 }}>{fn.desc}</div>
               {!fn.active && <div style={{ fontSize: 8, color: t.sub, marginTop: 4, fontStyle: "italic" }}>Coming Soon</div>}
-              {fn.active && <div style={{ fontSize: 8, color: GREEN, marginTop: 4, fontWeight: 600 }}>{fn.status}</div>}
+              {fn.active && <div style={{ fontSize: 8, color: GREEN, marginTop: 4, fontWeight: 600 }}>{fn.status} · {APQC.filter(l1 => fn.apqcL1s.some(id => l1.l1id === id)).reduce((s, l1) => s + l1.groups.reduce((s2, g) => s2 + g.subs.reduce((s3, sub) => s3 + sub.procs.length, 0), 0), 0)} processes</div>}
             </div>
           ))}
         </div>
 
         <div style={{ display: "flex", gap: 10, justifyContent: "center", marginBottom: 24, marginTop: 24 }}>
-          <button onClick={() => { setPage("work"); setStep(1); setViewMode("consultant"); }} style={btnPrimary}>
-            Consultant Mode
+          <button onClick={() => { if (selectedFunction) { setPage("work"); setStep(1); setViewMode("consultant"); } }} style={{ ...btnPrimary, opacity: selectedFunction ? 1 : 0.4, cursor: selectedFunction ? "pointer" : "default" }} disabled={!selectedFunction}>
+            {selectedFunction ? "Begin Assessment" : "Select a Function"}
           </button>
-          <button onClick={() => { setPage("work"); setStep(1); setViewMode("client"); }} style={btnSecondary}>
+          <button onClick={() => { if (selectedFunction) { setPage("work"); setStep(1); setViewMode("client"); } }} style={{ ...btnSecondary, opacity: selectedFunction ? 1 : 0.4, cursor: selectedFunction ? "pointer" : "default" }} disabled={!selectedFunction}>
             Client View
           </button>
         </div>
@@ -1263,12 +1301,24 @@ export default function PrismL4() {
           <button onClick={() => setShowApiKeyInput(!showApiKeyInput)} style={{ background: "none", border: `1px solid ${apiKey ? GREEN + "44" : t.bdr}`, borderRadius: 6, padding: "3px 10px", color: apiKey ? GREEN : t.mut, cursor: "pointer", fontSize: 11, fontFamily: FONT }}>
             {apiKey ? "⚡ Catalyst" : "⚡ Set API Key"}
           </button>
-          <button onClick={() => setViewMode(viewMode === "consultant" ? "client" : "consultant")} style={{ background: "none", border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "3px 10px", color: t.tx2, cursor: "pointer", fontSize: 11, fontFamily: FONT }}>
+          {!isClientRole && <button onClick={() => setViewMode(viewMode === "consultant" ? "client" : "consultant")} style={{ background: "none", border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "3px 10px", color: t.tx2, cursor: "pointer", fontSize: 11, fontFamily: FONT }}>
             ↔ {viewMode === "consultant" ? "Client" : "Consultant"}
-          </button>
-          <button onClick={() => setMode(mode === "dark" ? "light" : "dark")} style={{ background: "none", border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "3px 10px", color: t.mut, cursor: "pointer", fontSize: 11, fontFamily: FONT }}>
+          </button>}
+          {!isClientRole && <button onClick={() => setMode(mode === "dark" ? "light" : "dark")} style={{ background: "none", border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "3px 10px", color: t.mut, cursor: "pointer", fontSize: 11, fontFamily: FONT }}>
             {mode === "dark" ? "☀" : "◐"}
-          </button>
+          </button>}
+          {user && (
+            <>
+              <div style={{ height: 14, width: 1, background: t.bdr }} />
+              <span style={{ fontSize: 10, color: t.tx2 }}>{user.name}</span>
+              <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: user.role === "admin" ? GOLD + "20" : user.role === "consultant" ? GREEN + "20" : BLUE + "20", color: user.role === "admin" ? GOLD : user.role === "consultant" ? GREEN : BLUE, fontWeight: 600 }}>{user.role}</span>
+              {onLogout && (
+                <button onClick={onLogout} style={{ background: "none", border: `1px solid ${RED}33`, borderRadius: 6, padding: "3px 10px", color: RED, cursor: "pointer", fontSize: 10, fontFamily: FONT }}>
+                  Logout
+                </button>
+              )}
+            </>
+          )}
         </div>
       </div>
 
@@ -1304,13 +1354,24 @@ export default function PrismL4() {
       {/* ─── API KEY INPUT (for Catalyst) ─── */}
       {showApiKeyInput && viewMode === "consultant" && (
         <div style={{ background: t.bg, borderBottom: `1px solid ${GOLD}33`, padding: "10px 24px", display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 11, color: GOLD, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px" }}>Catalyst API Key</span>
-          <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="sk-ant-..."
-            style={{ flex: 1, maxWidth: 400, background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: "monospace", fontSize: 12 }} />
-          <button onClick={() => setShowApiKeyInput(false)} style={{ fontSize: 11, padding: "4px 14px", borderRadius: 6, background: apiKey ? GREEN + "20" : t.card, border: `1px solid ${apiKey ? GREEN + "44" : t.bdr}`, color: apiKey ? GREEN : t.mut, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
-            {apiKey ? "✓ Set" : "Close"}
-          </button>
-          <span style={{ fontSize: 10, color: t.mut }}>Key stays in memory only — never stored or transmitted except to Anthropic API.</span>
+          <span style={{ fontSize: 11, color: GOLD, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px" }}>Catalyst API</span>
+          {catalystServer === true ? (
+            <>
+              <span style={{ fontSize: 12, color: GREEN, fontWeight: 600 }}>Server-configured API — no key needed</span>
+              <button onClick={() => setShowApiKeyInput(false)} style={{ fontSize: 11, padding: "4px 14px", borderRadius: 6, background: GREEN + "20", border: `1px solid ${GREEN}44`, color: GREEN, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
+                ✓ OK
+              </button>
+            </>
+          ) : (
+            <>
+              <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="sk-ant-..."
+                style={{ flex: 1, maxWidth: 400, background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: "monospace", fontSize: 12 }} />
+              <button onClick={() => setShowApiKeyInput(false)} style={{ fontSize: 11, padding: "4px 14px", borderRadius: 6, background: apiKey ? GREEN + "20" : t.card, border: `1px solid ${apiKey ? GREEN + "44" : t.bdr}`, color: apiKey ? GREEN : t.mut, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
+                {apiKey ? "✓ Set" : "Close"}
+              </button>
+              <span style={{ fontSize: 10, color: t.mut }}>Key stays in memory only — never stored or transmitted except to Anthropic API.</span>
+            </>
+          )}
         </div>
       )}
 
@@ -1384,6 +1445,7 @@ export default function PrismL4() {
                     ...(entryPath !== "blueprint" ? [{ s: 3, l: "L2 Groups" }] : []),
                     { s: 4, l: "L3 Subs" },
                     { s: 5, l: "L4 Processes" },
+                    { s: 6, l: "Review" },
                   ].map((bc, i) => (
                     <span key={bc.s} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                       {i > 0 && <span style={{ color: t.sub, fontSize: 11 }}>›</span>}
@@ -1470,7 +1532,12 @@ export default function PrismL4() {
                             );
                           })}
                         </div>
-                        {selectedE2Es.size > 0 && <div style={{ textAlign: "right" }}><button onClick={() => setScopeStage(3)} style={btnPrimary}>Next — Select L2 Groups →</button></div>}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
+                          <button onClick={() => setShowBlueprint(true)} style={{ fontSize: 11, padding: "6px 16px", borderRadius: 8, background: GOLD + "15", border: `1px solid ${GOLD}33`, color: GOLD, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
+                            Import from Blueprint
+                          </button>
+                          {selectedE2Es.size > 0 && <button onClick={() => setScopeStage(3)} style={btnPrimary}>Next — Select L2 Groups →</button>}
+                        </div>
                       </div>
                     )}
 
@@ -1653,6 +1720,12 @@ export default function PrismL4() {
                                   {proc.valLevers?.[0] && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: ORANGE + "15", color: ORANGE }}>{proc.valLevers[0].vclass}</span>}
                                   {bp && <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, background: bp.color + "20", color: bp.color }}>{bp.name}</span>}
                                 </div>
+                                {proc.jobs?.length > 0 && (
+                                  <div style={{ marginLeft: 28, marginTop: 4, fontSize: 10, color: t.mut }}>
+                                    {proc.jobs.slice(0, 2).map((j, ji) => <span key={ji} style={{ marginRight: 8 }}>• {j}</span>)}
+                                    {proc.jobs.length > 2 && <span style={{ color: t.sub }}>+{proc.jobs.length - 2} more</span>}
+                                  </div>
+                                )}
                               </div>
                             );
                           });
@@ -1660,7 +1733,75 @@ export default function PrismL4() {
                         return items;
                       })()}
                     </div>
-                    {selectedProcs.size > 0 && <div style={{ textAlign: "right" }}><button onClick={() => setStep(2)} style={btnPrimary}>Confirm Scope — Baseline Research →</button></div>}
+                    {selectedProcs.size > 0 && <div style={{ textAlign: "right" }}><button onClick={() => setScopeStage(6)} style={btnPrimary}>Review Selection →</button></div>}
+                  </div>
+                )}
+
+                {/* Stage 6 — Review */}
+                {scopeStage === 6 && (
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                      <div style={labelStyle}>Review Selected Scope</div>
+                      <button onClick={() => setScopeStage(5)} style={{ fontSize: 11, color: t.tx2, background: "none", border: "none", cursor: "pointer", fontFamily: FONT }}>← Back</button>
+                    </div>
+                    <div style={{ fontSize: 12, color: t.tx2, marginBottom: 16 }}>{selectedProcs.size} processes selected across {new Set(selProcs.map(p => p.e2e)).size} E2E streams</div>
+                    {(() => {
+                      const byE2E = {};
+                      selProcs.forEach(p => { if (!byE2E[p.e2e]) byE2E[p.e2e] = []; byE2E[p.e2e].push(p); });
+                      return Object.entries(byE2E).map(([e2e, procs]) => (
+                        <div key={e2e} style={{ marginBottom: 16 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: procs[0].l1Color, marginBottom: 6 }}>{procs[0].l1Icon} {e2e} ({procs.length})</div>
+                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                            <thead><tr>
+                              {["APQC", "Process", "KPIs", "SAP Module"].map((h, i) => (
+                                <th key={i} style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontWeight: 600, fontSize: 10 }}>{h}</th>
+                              ))}
+                            </tr></thead>
+                            <tbody>
+                              {procs.map(p => (
+                                <tr key={p.id}>
+                                  <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}30`, fontFamily: "monospace", fontSize: 10, color: t.mut }}>{p.l4}</td>
+                                  <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}30`, color: t.tx }}>{p.label}</td>
+                                  <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}30` }}>
+                                    <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: GREEN + "15", color: GREEN, fontWeight: 600 }}>{p.kpis?.length || 0}</span>
+                                  </td>
+                                  <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}30` }}>
+                                    {p.sap?.[0] && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: BLUE + "15", color: BLUE, fontWeight: 600 }}>{p.sap[0].module}</span>}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ));
+                    })()}
+                    <div style={{ textAlign: "right", marginTop: 16 }}>
+                      <button onClick={() => setStep(2)} style={btnPrimary}>Confirm Scope — Baseline Research →</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* BlueprintReconciler Modal */}
+                {showBlueprint && (
+                  <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 16, padding: 24, maxWidth: 700, width: "90%", maxHeight: "80vh", overflowY: "auto" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                        <div style={{ fontSize: 18, fontFamily: SERIF, color: GOLD }}>Blueprint Reconciler</div>
+                        <button onClick={() => setShowBlueprint(false)} style={{ background: "none", border: "none", color: t.mut, cursor: "pointer", fontSize: 20 }}>×</button>
+                      </div>
+                      <Suspense fallback={<div style={{ padding: 20, textAlign: "center", color: t.mut }}>Loading...</div>}>
+                        <BlueprintReconciler
+                          blueprints={BLUEPRINTS[selectedFunction] || []}
+                          apqc={APQC}
+                          selectedFunction={selectedFunction}
+                          onConfirm={(matchedProcIds) => {
+                            setSelectedProcs(prev => { const n = new Set(prev); matchedProcIds.forEach(id => n.add(id)); return n; });
+                            setShowBlueprint(false);
+                          }}
+                          theme={t}
+                        />
+                      </Suspense>
+                    </div>
                   </div>
                 )}
               </div>
@@ -2263,13 +2404,13 @@ export default function PrismL4() {
               ))}
             </div>
 
-            {/* ─── Per-Process Potential Categorization ─── */}
-            <div style={{ ...labelStyle, marginTop: 24 }}>Process Potential Assessment</div>
-            <div style={{ fontSize: 11, color: t.tx2, marginBottom: 10 }}>Categorize each process's improvement potential. Auto-suggested based on gap value. Used in Step 7 calculations.</div>
+            {/* ─── Per-Process Scenario Assessment ─── */}
+            <div style={{ ...labelStyle, marginTop: 24 }}>Per-Process Scenario Assessment</div>
+            <div style={{ fontSize: 11, color: t.tx2, marginBottom: 10 }}>Set addressable % and potential per process. Auto-suggested based on gap value. Used in Step 7 calculations.</div>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 16 }}>
               <thead><tr>
-                {["Process", "Gap Value", "Addressable", "Improvement Range", "Potential"].map((h, i) => (
-                  <th key={i} style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: i === 1 || i === 2 ? "right" : "left", color: t.mut, fontWeight: 600, fontSize: 11 }}>{h}</th>
+                {["Process", "Gap Value", "Addressable %", "Low (35%)", "Medium (65%)", "High (100%)", "Potential"].map((h, i) => (
+                  <th key={i} style={{ padding: "6px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: i >= 1 && i <= 5 ? "right" : "left", color: t.mut, fontWeight: 600, fontSize: 10 }}>{h}</th>
                 ))}
               </tr></thead>
               <tbody>
@@ -2289,29 +2430,40 @@ export default function PrismL4() {
                     }
                   });
                   const autoSuggest = gapVal > 0.5 ? "High" : gapVal > 0.1 ? "Medium" : "Low";
-                  const currentLevel = procScenarios[proc.id] || autoSuggest;
-                  const multipliers = { High: 1.0, Medium: 0.65, Low: 0.35 };
-                  const addressable = gapVal * multipliers[currentLevel];
-                  const lowImprove = gapVal * 0.35;
-                  const highImprove = gapVal * 1.0;
+                  const currentLevel = procScenarios[proc.id]?.potential || autoSuggest;
+                  const addrPct = procScenarios[proc.id]?.addressable ?? 80;
+                  const addrFrac = addrPct / 100;
+                  const lowOut = gapVal * addrFrac * 0.35;
+                  const medOut = gapVal * addrFrac * 0.65;
+                  const highOut = gapVal * addrFrac * 1.0;
 
                   return (
                     <tr key={proc.id}>
-                      <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40` }}>
+                      <td style={{ padding: "6px 8px", borderBottom: `1px solid ${t.bdr}40` }}>
                         <span style={{ fontSize: 10, fontFamily: "monospace", color: t.mut, marginRight: 4 }}>{proc.l4}</span>
                         <span style={{ color: t.tx, fontWeight: 500 }}>{proc.label}</span>
                       </td>
-                      <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: gapVal > 0 ? t.tx : t.sub }}>
+                      <td style={{ padding: "6px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: gapVal > 0 ? t.tx : t.sub }}>
                         {gapVal > 0 ? `$${gapVal.toFixed(1)}M` : "—"}
                       </td>
-                      <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: GREEN }}>
-                        {addressable > 0 ? `$${addressable.toFixed(1)}M` : "—"}
+                      <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right" }}>
+                        <input type="number" min={50} max={100} value={addrPct} onChange={e => {
+                          const v = Math.min(100, Math.max(50, parseInt(e.target.value) || 80));
+                          setProcScenarios(p => ({ ...p, [proc.id]: { ...(p[proc.id] || {}), addressable: v } }));
+                        }} style={{ width: 50, background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 4, padding: "3px 4px", color: t.tx, fontFamily: "monospace", fontSize: 11, textAlign: "right" }} />
+                        <span style={{ fontSize: 10, color: t.mut, marginLeft: 2 }}>%</span>
                       </td>
-                      <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, fontFamily: "monospace", fontSize: 11, color: t.mut }}>
-                        {gapVal > 0 ? `$${lowImprove.toFixed(1)}M – $${highImprove.toFixed(1)}M` : "—"}
+                      <td style={{ padding: "6px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", fontSize: 11, color: ORANGE }}>
+                        {gapVal > 0 ? `$${lowOut.toFixed(1)}M` : "—"}
                       </td>
-                      <td style={{ padding: "4px 10px", borderBottom: `1px solid ${t.bdr}40` }}>
-                        <select value={currentLevel} onChange={e => setProcScenarios(p => ({ ...p, [proc.id]: e.target.value }))}
+                      <td style={{ padding: "6px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", fontSize: 11, color: GOLD }}>
+                        {gapVal > 0 ? `$${medOut.toFixed(1)}M` : "—"}
+                      </td>
+                      <td style={{ padding: "6px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", fontSize: 11, color: GREEN }}>
+                        {gapVal > 0 ? `$${highOut.toFixed(1)}M` : "—"}
+                      </td>
+                      <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40` }}>
+                        <select value={currentLevel} onChange={e => setProcScenarios(p => ({ ...p, [proc.id]: { ...(p[proc.id] || {}), potential: e.target.value } }))}
                           style={{ background: t.bg, border: `1px solid ${currentLevel === "High" ? GREEN : currentLevel === "Medium" ? GOLD : ORANGE}44`,
                             borderRadius: 6, padding: "4px 8px", color: currentLevel === "High" ? GREEN : currentLevel === "Medium" ? GOLD : ORANGE,
                             fontFamily: FONT, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
@@ -2392,9 +2544,11 @@ export default function PrismL4() {
               {SCENARIO_LEVELS.map(lvl => (
                 <button key={lvl} onClick={() => {
                   setScenarioLevel(lvl);
-                  const updated = {};
-                  selProcs.forEach(p => { updated[p.id] = lvl; });
-                  setProcScenarios(prev => ({ ...prev, ...updated }));
+                  setProcScenarios(prev => {
+                    const updated = { ...prev };
+                    selProcs.forEach(p => { updated[p.id] = { ...(updated[p.id] || {}), potential: lvl }; });
+                    return updated;
+                  });
                 }} style={{
                   fontSize: 12, padding: "6px 16px", borderRadius: 8,
                   background: scenarioLevel === lvl ? (lvl === "High" ? GREEN + "20" : lvl === "Medium" ? GOLD + "20" : ORANGE + "20") : "none",
