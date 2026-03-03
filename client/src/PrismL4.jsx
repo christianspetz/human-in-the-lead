@@ -3,7 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   AreaChart, CartesianGrid
 } from "recharts";
-import pptxgen from "pptxgenjs";
+import generatePPTX from "./generatePPTX";
 
 /* Lazy-loaded companion components (graceful fallback if not yet created) */
 const BlueprintReconciler = React.lazy(() => import("./BlueprintReconciler").catch(() => ({ default: () => null })));
@@ -3389,6 +3389,9 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
               <div style={{ fontSize: 12, color: t.tx2, marginBottom: 12 }}>Compiles scope, questionnaire responses, process mining data, benchmarks, SAP mappings, AI agent scenarios, and value calculations into a downloadable HTML report.</div>
               <button onClick={generatePhase0Report} style={{ ...btnPrimary, padding: "10px 32px", fontSize: 14 }}>
                 ↓ Download Phase 0 Report
+              </button>
+              <button onClick={() => generatePPTX({ baseline, selProcs, valResult, scenarioLevel, procValues, procBenchmarks, agentResults, baselineData, selectedFunction, totalKPIs, FUNCTIONS, PROC_MAP, getQuartile })} style={{ ...btnPrimary, padding: "10px 32px", fontSize: 14, marginLeft: 8, background: "#7BA7CC" }}>
+                ↓ Download PPTX
               </button>
               <button onClick={exportSessionJSON} style={{ ...btnSecondary, padding: "10px 32px", fontSize: 14, marginLeft: 8 }}>
                 ↓ Export Data (JSON)
