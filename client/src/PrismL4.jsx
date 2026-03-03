@@ -16,6 +16,49 @@ const TH = {
 };
 
 /* ═══════════════════════════════════════════════════════
+   BLUEPRINTS — EY-style blueprint areas → APQC L2 mapping
+   ═══════════════════════════════════════════════════════ */
+const BLUEPRINTS = {
+  finance: [
+    { id: "bp-rev", name: "Revenue Management",
+      desc: "Pricing, billing, collections, cash application, credit management",
+      apqcL2s: ["8.1", "8.2", "8.3"],
+      color: "#D4A853" },
+    { id: "bp-close", name: "Financial Close & Reporting",
+      desc: "Period-end close, reconciliations, consolidation, management reporting",
+      apqcL2s: ["9.1", "9.2", "9.3"],
+      color: "#7CB9A8" },
+    { id: "bp-procure", name: "Procurement & Payables",
+      desc: "Requisition, PO management, invoice processing, supplier payments",
+      apqcL2s: ["10.1", "10.2", "10.3"],
+      color: "#7BA7CC" },
+    { id: "bp-treasury", name: "Treasury & Cash Management",
+      desc: "Cash forecasting, bank account management, working capital optimization",
+      apqcL2s: ["8.3", "9.2"],
+      color: "#C4A1D4" },
+    { id: "bp-tax", name: "Tax & Compliance",
+      desc: "Tax provisioning, regulatory reporting, audit readiness",
+      apqcL2s: ["9.3"],
+      color: "#D4A07A" },
+    { id: "bp-planning", name: "Planning & Analysis (xP&A)",
+      desc: "Budgeting, forecasting, variance analysis, driver-based planning",
+      apqcL2s: ["9.1"],
+      color: "#D48A8A" },
+  ]
+};
+
+const FUNCTIONS = [
+  { id: "finance", name: "Finance", icon: "◆", color: GOLD, active: true },
+  { id: "supply-chain", name: "Supply Chain", icon: "◈", color: PURPLE, active: false },
+  { id: "hr", name: "HR", icon: "◉", color: GREEN, active: false },
+  { id: "it", name: "IT", icon: "◎", color: BLUE, active: false },
+  { id: "customer", name: "Customer", icon: "◇", color: RED, active: false },
+  { id: "sales", name: "Sales", icon: "▪", color: ORANGE, active: false },
+  { id: "product", name: "Product", icon: "▫", color: PURPLE, active: false },
+  { id: "risk", name: "Risk", icon: "△", color: RED, active: false },
+];
+
+/* ═══════════════════════════════════════════════════════
    APQC L1→L4 PROCESS HIERARCHY
    O2C: Deep (fully populated ~40 L4s with KPIs, benchmarks, SAP, agents)
    R2R + P2P: Browsable with hierarchy, lighter data
@@ -436,10 +479,17 @@ const APQC = [
 // Flatten all L4 processes for quick lookups
 const ALL_PROCS = [];
 APQC.forEach(l1 => l1.groups.forEach(g => g.subs.forEach(s => s.procs.forEach(p => {
-  ALL_PROCS.push({ ...p, l1Label: l1.l1, l1Color: l1.color, l1Icon: l1.icon, l2: g.l2, l3: s.l3, e2e: l1.e2e });
+  ALL_PROCS.push({ ...p, l1Label: l1.l1, l1id: l1.l1id, l1Color: l1.color, l1Icon: l1.icon, l2: g.l2, l2id: g.l2id, l3: s.l3, l3id: s.l3id, e2e: l1.e2e });
 }))));
 const PROC_MAP = {};
 ALL_PROCS.forEach(p => PROC_MAP[p.id] = p);
+
+// Blueprint → L2 lookup
+const getBlueprintForL2 = (l2id, functionId = "finance") => {
+  const bps = BLUEPRINTS[functionId];
+  if (!bps) return null;
+  return bps.find(bp => bp.apqcL2s.includes(l2id)) || null;
+};
 
 /* ═══════════════════════════════════════════════════════
    DROPDOWN OPTIONS
@@ -490,6 +540,16 @@ export default function PrismL4() {
   const [expandedL3, setExpandedL3] = useState(new Set(["8.2.1"]));
   const [e2eFilter, setE2eFilter] = useState("all");
   const [procSearch, setProcSearch] = useState("");
+
+  // Cascading scope selection
+  const [scopeStage, setScopeStage] = useState(1);
+  const [selectedFunction, setSelectedFunction] = useState(null);
+  const [selectedBlueprints, setSelectedBlueprints] = useState(new Set());
+  const [entryPath, setEntryPath] = useState(null);
+  const [selectedE2Es, setSelectedE2Es] = useState(new Set());
+  const [selectedL2s, setSelectedL2s] = useState(new Set());
+  const [selectedL3s, setSelectedL3s] = useState(new Set());
+  const [scopeView, setScopeView] = useState("guided");
 
   // Baseline data (Step 2)
   const [baseline, setBaseline] = useState(DEF_BL);
@@ -827,6 +887,19 @@ export default function PrismL4() {
       <div class="kpi-box"><div class="value" style="color:#C4A1D4">${scenarioLevel}</div><div class="label">Scenario</div></div>
     </div>
 
+    ${(() => {
+      const bpAreas = entryPath === "blueprint" ? (BLUEPRINTS[selectedFunction] || []).filter(bp => selectedBlueprints.has(bp.id)) : [];
+      if (bpAreas.length === 0) return "";
+      return `<h2>1b. Blueprint Scope</h2>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0">
+        ${bpAreas.map(bp => `<div style="padding:12px;border-radius:8px;border-left:3px solid ${bp.color};background:${bp.color}10">
+          <div style="font-size:14px;font-weight:600;color:${bp.color}">${bp.name}</div>
+          <div style="font-size:11px;color:#888;margin-top:4px">${bp.desc}</div>
+          <div style="font-size:10px;color:#aaa;margin-top:6px">APQC: ${bp.apqcL2s.join(", ")}</div>
+        </div>`).join("")}
+      </div>`;
+    })()}
+
     <h2>2. Company Baseline</h2>
     <table>
       <tr><th>Metric</th><th style="text-align:right">Value</th></tr>
@@ -888,6 +961,9 @@ export default function PrismL4() {
         exportDate: new Date().toISOString(),
         scenarioLevel,
         processCount: selProcs.length,
+        businessFunction: selectedFunction,
+        functionName: FUNCTIONS.find(f => f.id === selectedFunction)?.name || null,
+        blueprintAreas: entryPath === "blueprint" ? (BLUEPRINTS[selectedFunction] || []).filter(bp => selectedBlueprints.has(bp.id)).map(bp => ({ id: bp.id, name: bp.name, apqcL2s: bp.apqcL2s })) : [],
       },
       baseline,
       processes: selProcs.map(proc => {
@@ -1131,6 +1207,310 @@ export default function PrismL4() {
             {stepHeader(1, "Process Scope Selection")}
             <div style={{ fontSize: 13, color: t.tx2, marginBottom: 16 }}>Browse the APQC hierarchy and select L4 processes to include in scope. {viewMode === "consultant" ? "Configure with client." : "Review selected scope."}</div>
 
+            {/* Scope View Toggle */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div style={{ display: "flex", gap: 4 }}>
+                <button onClick={() => setScopeView("guided")} style={{ fontSize: 11, padding: "5px 14px", borderRadius: 6, background: scopeView === "guided" ? GOLD + "20" : "none", border: `1px solid ${scopeView === "guided" ? GOLD + "44" : t.bdr}`, color: scopeView === "guided" ? GOLD : t.tx2, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>Guided Flow</button>
+                <button onClick={() => setScopeView("tree")} style={{ fontSize: 11, padding: "5px 14px", borderRadius: 6, background: scopeView === "tree" ? GOLD + "20" : "none", border: `1px solid ${scopeView === "tree" ? GOLD + "44" : t.bdr}`, color: scopeView === "tree" ? GOLD : t.tx2, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>Tree View</button>
+              </div>
+              {selectedProcs.size > 0 && <span style={{ fontSize: 11, color: GREEN, fontWeight: 600 }}>{selectedProcs.size} processes selected</span>}
+            </div>
+
+            {/* ─── GUIDED SCOPE FLOW ─── */}
+            {scopeView === "guided" && (
+              <div>
+                {/* Breadcrumb */}
+                <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 20, flexWrap: "wrap" }}>
+                  {[
+                    { s: 1, l: "Function" },
+                    { s: 2, l: entryPath === "blueprint" ? "Blueprint" : "E2E" },
+                    ...(entryPath !== "blueprint" ? [{ s: 3, l: "L2 Groups" }] : []),
+                    { s: 4, l: "L3 Subs" },
+                    { s: 5, l: "L4 Processes" },
+                  ].map((bc, i) => (
+                    <span key={bc.s} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      {i > 0 && <span style={{ color: t.sub, fontSize: 11 }}>›</span>}
+                      <span onClick={() => bc.s < scopeStage && setScopeStage(bc.s)} style={{
+                        fontSize: 11, padding: "3px 10px", borderRadius: 6,
+                        background: scopeStage === bc.s ? GOLD + "20" : scopeStage > bc.s ? GREEN + "10" : "none",
+                        border: `1px solid ${scopeStage === bc.s ? GOLD + "44" : scopeStage > bc.s ? GREEN + "22" : t.bdr}`,
+                        color: scopeStage === bc.s ? GOLD : scopeStage > bc.s ? GREEN : t.sub,
+                        cursor: bc.s < scopeStage ? "pointer" : "default",
+                        fontWeight: scopeStage === bc.s ? 700 : 500, fontFamily: FONT,
+                      }}>{bc.l}</span>
+                    </span>
+                  ))}
+                </div>
+
+                {/* Stage 1 — Function */}
+                {scopeStage === 1 && (
+                  <div>
+                    <div style={labelStyle}>Select Business Function</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+                      {FUNCTIONS.map(fn => (
+                        <div key={fn.id} onClick={() => { if (fn.active) { setSelectedFunction(fn.id); setScopeStage(2); } }} style={{
+                          ...cardStyle, textAlign: "center", padding: "20px 14px",
+                          cursor: fn.active ? "pointer" : "default", opacity: fn.active ? 1 : 0.4,
+                          border: `1px solid ${fn.active ? fn.color + "33" : t.bdr}`, transition: "all 0.15s",
+                        }}>
+                          <div style={{ fontSize: 24, marginBottom: 6 }}>{fn.icon}</div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: fn.active ? fn.color : t.sub }}>{fn.name}</div>
+                          {!fn.active && <div style={{ fontSize: 10, color: t.sub, marginTop: 4 }}>Coming Soon</div>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Stage 2 — Entry Point */}
+                {scopeStage === 2 && (
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                      <div style={labelStyle}>Choose Entry Point</div>
+                      <button onClick={() => { setScopeStage(1); setEntryPath(null); setSelectedE2Es(new Set()); setSelectedBlueprints(new Set()); }} style={{ fontSize: 11, color: t.tx2, background: "none", border: "none", cursor: "pointer", fontFamily: FONT }}>← Back</button>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                      <button onClick={() => setEntryPath("e2e")} style={{
+                        flex: 1, padding: "14px 16px", borderRadius: 10, textAlign: "left",
+                        background: entryPath === "e2e" ? BLUE + "10" : t.card,
+                        border: `1px solid ${entryPath === "e2e" ? BLUE + "44" : t.bdr}`,
+                        cursor: "pointer", fontFamily: FONT,
+                      }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: entryPath === "e2e" ? BLUE : t.tx }}>Browse by E2E Process</div>
+                        <div style={{ fontSize: 11, color: t.tx2, marginTop: 4 }}>Select end-to-end processes, then drill into L2 groups</div>
+                      </button>
+                      <button onClick={() => setEntryPath("blueprint")} style={{
+                        flex: 1, padding: "14px 16px", borderRadius: 10, textAlign: "left",
+                        background: entryPath === "blueprint" ? GOLD + "10" : t.card,
+                        border: `1px solid ${entryPath === "blueprint" ? GOLD + "44" : t.bdr}`,
+                        cursor: "pointer", fontFamily: FONT,
+                      }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: entryPath === "blueprint" ? GOLD : t.tx }}>Start from Blueprint</div>
+                        <div style={{ fontSize: 11, color: t.tx2, marginTop: 4 }}>Select blueprint areas that auto-map to APQC groups</div>
+                      </button>
+                    </div>
+
+                    {/* E2E Path */}
+                    {entryPath === "e2e" && (
+                      <div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 16 }}>
+                          {APQC.map(l1 => {
+                            const sel = selectedE2Es.has(l1.e2e);
+                            return (
+                              <div key={l1.e2e} onClick={() => toggleSet(setSelectedE2Es, l1.e2e)} style={{
+                                ...cardStyle, padding: "14px 16px", cursor: "pointer",
+                                background: sel ? l1.color + "10" : t.card,
+                                border: `1px solid ${sel ? l1.color + "44" : t.bdr}`,
+                              }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                  <span style={{ fontSize: 20, color: l1.color }}>{l1.icon}</span>
+                                  <div>
+                                    <div style={{ fontSize: 14, fontWeight: 600, color: sel ? l1.color : t.tx }}>{l1.e2e}</div>
+                                    <div style={{ fontSize: 11, color: t.mut }}>{l1.groups.length} L2 groups · {l1.groups.reduce((s, g) => s + g.subs.reduce((ss, sub) => ss + sub.procs.length, 0), 0)} processes</div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {selectedE2Es.size > 0 && <div style={{ textAlign: "right" }}><button onClick={() => setScopeStage(3)} style={btnPrimary}>Next — Select L2 Groups →</button></div>}
+                      </div>
+                    )}
+
+                    {/* Blueprint Path */}
+                    {entryPath === "blueprint" && (
+                      <div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, marginBottom: 16 }}>
+                          {(BLUEPRINTS[selectedFunction] || []).map(bp => {
+                            const sel = selectedBlueprints.has(bp.id);
+                            return (
+                              <div key={bp.id} onClick={() => toggleSet(setSelectedBlueprints, bp.id)} style={{
+                                ...cardStyle, padding: "14px 16px", cursor: "pointer",
+                                background: sel ? bp.color + "10" : t.card,
+                                border: `1px solid ${sel ? bp.color + "44" : t.bdr}`,
+                                borderLeft: `3px solid ${bp.color}`,
+                              }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                  <div style={{ width: 20, height: 20, borderRadius: 5, background: sel ? bp.color : "transparent", border: sel ? "none" : `1px solid ${t.bdr}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: sel ? "#111" : t.mut, fontWeight: 700, flexShrink: 0 }}>{sel ? "✓" : ""}</div>
+                                  <div>
+                                    <div style={{ fontSize: 14, fontWeight: 600, color: sel ? bp.color : t.tx }}>{bp.name}</div>
+                                    <div style={{ fontSize: 11, color: t.tx2, marginTop: 2 }}>{bp.desc}</div>
+                                    <div style={{ fontSize: 10, color: t.mut, marginTop: 4 }}>Maps to: {bp.apqcL2s.join(", ")}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {selectedBlueprints.size > 0 && <div style={{ textAlign: "right" }}><button onClick={() => {
+                          const bps = BLUEPRINTS[selectedFunction] || [];
+                          const l2Set = new Set();
+                          bps.filter(bp => selectedBlueprints.has(bp.id)).forEach(bp => bp.apqcL2s.forEach(id => l2Set.add(id)));
+                          setSelectedL2s(l2Set);
+                          setScopeStage(4);
+                        }} style={btnPrimary}>Next — Select L3 Sub-Groups →</button></div>}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Stage 3 — L2 Groups */}
+                {scopeStage === 3 && (
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                      <div style={labelStyle}>Select L2 Process Groups</div>
+                      <button onClick={() => setScopeStage(2)} style={{ fontSize: 11, color: t.tx2, background: "none", border: "none", cursor: "pointer", fontFamily: FONT }}>← Back</button>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, marginBottom: 16 }}>
+                      {(() => {
+                        const items = [];
+                        APQC.forEach(l1 => {
+                          if (!selectedE2Es.has(l1.e2e)) return;
+                          l1.groups.forEach(g => {
+                            const l3Count = g.subs.length;
+                            const l4Count = g.subs.reduce((s, sub) => s + sub.procs.length, 0);
+                            const bp = getBlueprintForL2(g.l2id, selectedFunction);
+                            const sel = selectedL2s.has(g.l2id);
+                            items.push(
+                              <div key={g.l2id} onClick={() => toggleSet(setSelectedL2s, g.l2id)} style={{
+                                ...cardStyle, padding: "14px 16px", cursor: "pointer",
+                                background: sel ? l1.color + "10" : t.card,
+                                border: `1px solid ${sel ? l1.color + "44" : t.bdr}`,
+                              }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                  <div style={{ width: 20, height: 20, borderRadius: 5, background: sel ? l1.color : "transparent", border: sel ? "none" : `1px solid ${t.bdr}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: sel ? "#111" : t.mut, fontWeight: 700, flexShrink: 0 }}>{sel ? "✓" : ""}</div>
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: 13, fontWeight: 600, color: sel ? l1.color : t.tx }}>{g.l2}</div>
+                                    <div style={{ fontSize: 11, color: t.mut }}>{l3Count} L3 subs · {l4Count} processes</div>
+                                  </div>
+                                  {bp && <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, background: bp.color + "20", color: bp.color }}>{bp.name}</span>}
+                                </div>
+                              </div>
+                            );
+                          });
+                        });
+                        return items;
+                      })()}
+                    </div>
+                    {selectedL2s.size > 0 && <div style={{ textAlign: "right" }}><button onClick={() => setScopeStage(4)} style={btnPrimary}>Next — Select L3 Sub-Groups →</button></div>}
+                  </div>
+                )}
+
+                {/* Stage 4 — L3 Sub-Groups */}
+                {scopeStage === 4 && (
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                      <div style={labelStyle}>Select L3 Sub-Groups</div>
+                      <button onClick={() => setScopeStage(entryPath === "blueprint" ? 2 : 3)} style={{ fontSize: 11, color: t.tx2, background: "none", border: "none", cursor: "pointer", fontFamily: FONT }}>← Back</button>
+                    </div>
+                    <div style={{ display: "grid", gap: 6, marginBottom: 16 }}>
+                      {(() => {
+                        const items = [];
+                        APQC.forEach(l1 => {
+                          l1.groups.forEach(g => {
+                            if (!selectedL2s.has(g.l2id)) return;
+                            const allInGroup = g.subs.map(s => s.l3id);
+                            const allGroupSel = allInGroup.every(id => selectedL3s.has(id));
+                            items.push(
+                              <div key={g.l2id + "-hdr"} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: items.length > 0 ? 12 : 0, marginBottom: 4 }}>
+                                <span style={{ fontSize: 12, fontWeight: 700, color: l1.color }}>{g.l2}</span>
+                                <button onClick={() => {
+                                  setSelectedL3s(prev => {
+                                    const n = new Set(prev);
+                                    if (allGroupSel) allInGroup.forEach(id => n.delete(id));
+                                    else allInGroup.forEach(id => n.add(id));
+                                    return n;
+                                  });
+                                }} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: allGroupSel ? GREEN + "20" : "none", border: `1px solid ${allGroupSel ? GREEN + "44" : t.bdr}`, color: allGroupSel ? GREEN : t.mut, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
+                                  {allGroupSel ? "Deselect All" : "Select All"}
+                                </button>
+                              </div>
+                            );
+                            g.subs.forEach(sub => {
+                              const sel = selectedL3s.has(sub.l3id);
+                              items.push(
+                                <div key={sub.l3id} onClick={() => toggleSet(setSelectedL3s, sub.l3id)} style={{
+                                  ...cardStyle, padding: "10px 14px", cursor: "pointer",
+                                  background: sel ? l1.color + "08" : t.card,
+                                  border: `1px solid ${sel ? l1.color + "33" : t.bdr}`,
+                                  borderLeft: `3px solid ${sel ? l1.color : "transparent"}`,
+                                }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <div style={{ width: 18, height: 18, borderRadius: 4, background: sel ? l1.color : "transparent", border: sel ? "none" : `1px solid ${t.bdr}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: sel ? "#111" : t.mut, fontWeight: 700, flexShrink: 0 }}>{sel ? "✓" : ""}</div>
+                                    <span style={{ fontSize: 12, fontWeight: 500, color: sel ? t.tx : t.tx2, flex: 1 }}>{sub.l3}</span>
+                                    <span style={{ fontSize: 10, color: t.mut }}>{sub.procs.length} processes</span>
+                                  </div>
+                                </div>
+                              );
+                            });
+                          });
+                        });
+                        return items;
+                      })()}
+                    </div>
+                    {selectedL3s.size > 0 && <div style={{ textAlign: "right" }}><button onClick={() => setScopeStage(5)} style={btnPrimary}>Next — Select L4 Processes →</button></div>}
+                  </div>
+                )}
+
+                {/* Stage 5 — L4 Processes */}
+                {scopeStage === 5 && (
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                      <div style={labelStyle}>Select L4 Processes</div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <button onClick={() => {
+                          const ids = [];
+                          APQC.forEach(l1 => l1.groups.forEach(g => g.subs.forEach(sub => {
+                            if (!selectedL3s.has(sub.l3id)) return;
+                            sub.procs.forEach(p => ids.push(p.id));
+                          })));
+                          setSelectedProcs(prev => { const n = new Set(prev); ids.forEach(id => n.add(id)); return n; });
+                        }} style={{ fontSize: 10, padding: "4px 12px", borderRadius: 6, background: GREEN + "15", border: `1px solid ${GREEN}33`, color: GREEN, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>Select All</button>
+                        <button onClick={() => setScopeStage(4)} style={{ fontSize: 11, color: t.tx2, background: "none", border: "none", cursor: "pointer", fontFamily: FONT }}>← Back</button>
+                      </div>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8, marginBottom: 16 }}>
+                      {(() => {
+                        const items = [];
+                        APQC.forEach(l1 => l1.groups.forEach(g => g.subs.forEach(sub => {
+                          if (!selectedL3s.has(sub.l3id)) return;
+                          sub.procs.forEach(proc => {
+                            const sel = selectedProcs.has(proc.id);
+                            const bp = getBlueprintForL2(g.l2id, selectedFunction);
+                            items.push(
+                              <div key={proc.id} onClick={() => viewMode === "consultant" && toggleSet(setSelectedProcs, proc.id)} style={{
+                                ...cardStyle, padding: "12px 14px",
+                                cursor: viewMode === "consultant" ? "pointer" : "default",
+                                background: sel ? l1.color + "08" : t.card,
+                                border: `1px solid ${sel ? l1.color + "44" : t.bdr}`,
+                                borderLeft: `3px solid ${sel ? l1.color : "transparent"}`,
+                              }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                                  <div style={{ width: 20, height: 20, borderRadius: 5, background: sel ? l1.color : "transparent", border: sel ? "none" : `1px solid ${t.bdr}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: sel ? "#111" : t.mut, fontWeight: 700, flexShrink: 0 }}>{sel ? "✓" : ""}</div>
+                                  <span style={{ fontSize: 10, fontFamily: "monospace", color: t.mut }}>{proc.l4}</span>
+                                  <span style={{ fontSize: 13, fontWeight: 600, color: sel ? t.tx : t.tx2, flex: 1 }}>{proc.label}</span>
+                                </div>
+                                <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginLeft: 28 }}>
+                                  {proc.kpis?.length > 0 && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: GREEN + "15", color: GREEN, fontWeight: 600 }}>{proc.kpis.length} KPIs</span>}
+                                  {proc.sap?.[0] && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: BLUE + "15", color: BLUE, fontWeight: 600 }}>{proc.sap[0].module}</span>}
+                                  {proc.valLevers?.[0] && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: ORANGE + "15", color: ORANGE }}>{proc.valLevers[0].vclass}</span>}
+                                  {bp && <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, background: bp.color + "20", color: bp.color }}>{bp.name}</span>}
+                                </div>
+                              </div>
+                            );
+                          });
+                        })));
+                        return items;
+                      })()}
+                    </div>
+                    {selectedProcs.size > 0 && <div style={{ textAlign: "right" }}><button onClick={() => setStep(2)} style={btnPrimary}>Confirm Scope — Baseline Research →</button></div>}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ─── TREE VIEW ─── */}
+            {scopeView === "tree" && <>
             {/* E2E Filter */}
             <div style={{ display: "flex", gap: 4, marginBottom: 12, flexWrap: "wrap" }}>
               <button onClick={() => setE2eFilter("all")} style={{ fontSize: 11, padding: "4px 12px", borderRadius: 6, background: e2eFilter === "all" ? GOLD + "20" : "none", border: `1px solid ${e2eFilter === "all" ? GOLD + "44" : t.bdr}`, color: e2eFilter === "all" ? GOLD : t.tx2, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>All</button>
@@ -1260,6 +1640,7 @@ export default function PrismL4() {
                 );
               });
             })()}
+            </>}
 
             <div style={{ textAlign: "right", marginTop: 20 }}>
               <button onClick={() => setStep(2)} disabled={selectedProcs.size === 0} style={{ ...btnPrimary, opacity: selectedProcs.size > 0 ? 1 : 0.4 }}>Baseline Research →</button>
@@ -1319,6 +1700,7 @@ export default function PrismL4() {
                           <div>
                             <span style={{ fontSize: 10, fontFamily: "monospace", color: t.mut, marginRight: 6 }}>{proc.l4}</span>
                             <span style={{ fontSize: 13, fontWeight: 500, color: t.tx }}>{proc.label}</span>
+                            {(() => { const _bp = getBlueprintForL2(proc.l2id); return _bp && <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, background: _bp.color + "20", color: _bp.color, marginLeft: 4 }}>{_bp.name}</span>; })()}
                           </div>
                           <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                             {answered > 0 && <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: GREEN + "20", color: GREEN, fontWeight: 600 }}>{answered} answers</span>}
@@ -1449,6 +1831,7 @@ export default function PrismL4() {
                         <span style={{ fontSize: 14, fontWeight: 600, color: t.tx }}>{proc.label}</span>
                       </div>
                       <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, background: proc.l1Color + "15", color: proc.l1Color, fontWeight: 600 }}>{proc.e2e}</span>
+                      {(() => { const _bp = getBlueprintForL2(proc.l2id); return _bp && <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, background: _bp.color + "20", color: _bp.color }}>{_bp.name}</span>; })()}
                     </div>
 
                     {/* Value Levers */}
@@ -1518,6 +1901,7 @@ export default function PrismL4() {
                       <div>
                         <span style={{ fontSize: 10, fontFamily: "monospace", color: t.mut, marginRight: 6 }}>{proc.l4}</span>
                         <span style={{ fontSize: 14, fontWeight: 600, color: t.tx }}>{proc.label}</span>
+                        {(() => { const _bp = getBlueprintForL2(proc.l2id); return _bp && <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, background: _bp.color + "20", color: _bp.color, marginLeft: 4 }}>{_bp.name}</span>; })()}
                       </div>
                       <button onClick={() => callCatalyst(proc.id,
                         `You are a benchmarking expert for ${baseline.industry} companies. For the process "${proc.label}" (APQC ${proc.l4}), provide TWO sections:\n\nSECTION 1 — TRADITIONAL BENCHMARKS\nProvide 3-5 specific benchmark suggestions from published sources. Include: KPI name, benchmark value with unit, source/year, and brief calculation methodology. Focus on APQC, Hackett, Gartner, and industry benchmarks.\n\nSECTION 2 — AI AGENT IMPACT BENCHMARKS\nFor this same process, what efficiency gains have AI agents achieved in published case studies? Include: agent type, % efficiency improvement, source/case study, and sample size or company type. Look for Deloitte, McKinsey, Gartner, Forrester, and vendor case studies (e.g., Celonis, HighRadius, Esker, BlackLine).\n\nBe specific and quantitative. Format as concise bullet points with numbers.`,
@@ -1609,6 +1993,7 @@ export default function PrismL4() {
                   <div style={{ marginBottom: 8 }}>
                     <span style={{ fontSize: 10, fontFamily: "monospace", color: t.mut, marginRight: 6 }}>{proc.l4}</span>
                     <span style={{ fontSize: 14, fontWeight: 600, color: t.tx }}>{proc.label}</span>
+                    {(() => { const _bp = getBlueprintForL2(proc.l2id); return _bp && <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, background: _bp.color + "20", color: _bp.color, marginLeft: 4 }}>{_bp.name}</span>; })()}
                   </div>
                   {(proc.sap || []).map((sap, si) => (
                     <div key={si} style={{ padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${BLUE}15`, marginBottom: 4 }}>
@@ -1645,6 +2030,7 @@ export default function PrismL4() {
                     <div>
                       <span style={{ fontSize: 10, fontFamily: "monospace", color: t.mut, marginRight: 6 }}>{proc.l4}</span>
                       <span style={{ fontSize: 14, fontWeight: 600, color: t.tx }}>{proc.label}</span>
+                      {(() => { const _bp = getBlueprintForL2(proc.l2id); return _bp && <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, background: _bp.color + "20", color: _bp.color, marginLeft: 4 }}>{_bp.name}</span>; })()}
                     </div>
                     <button onClick={() => callCatalyst(proc.id,
                       `You are an AI transformation consultant for ${baseline.industry} companies. For the process "${proc.label}" (APQC ${proc.l4}), provide a detailed AI agent assessment:\n\n1. AGENT NAME & TYPE — Give it a specific name and classify (e.g., autonomous, copilot, predictive, generative)\n\n2. WHAT IT DOES — Specific actions this agent performs in this process (not generic). Reference actual inputs/outputs.\n\n3. QUANTITATIVE IMPACT — Be very specific with numbers:\n   - Labor efficiency gain: X-Y% (cite source)\n   - Cycle time reduction: X-Y% (cite source)\n   - Error/rework reduction: X-Y% (cite source)\n   - Cost per transaction reduction: $X → $Y (cite source)\n\n4. PUBLISHED CASE STUDIES — Find 2-3 real deployments:\n   - Company/industry, agent/tool used, measured outcome, year\n   - Example sources: Gartner, Forrester, McKinsey, Deloitte, vendor case studies (HighRadius, Celonis, BlackLine, Esker, Coupa, SAP)\n\n5. IMPLEMENTATION — Complexity (Low/Medium/High), typical timeline, prerequisites\n\nBe specific and quantitative. Every claim needs a number and a source. If uncertain, say "estimated" and explain basis.`,
