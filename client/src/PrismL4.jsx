@@ -1558,7 +1558,23 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
         `<div style="margin:4px 0;padding:6px 8px;background:#f0f4ff;border-radius:4px;font-size:12px"><strong style="color:#7BA7CC">${s.module}</strong> — ${s.desc}${s.scenario ? `<br/><em>${s.scenario}</em>` : ""}</div>`
       ).join("");
       const agentHtml = agentResults[proc.id] ? `<div style="margin:8px 0;padding:10px;background:#fdf8ef;border:1px solid #D4A85322;border-radius:8px;font-size:12px;white-space:pre-wrap"><strong style="color:#D4A853">AI Agent Scenario</strong><br/>${agentResults[proc.id]}</div>` : "";
-      const impact = valResult.impacts.find(i => i.id === proc.id);
+
+      const specObj = AGENT_SPECS[proc.id];
+      const specHtml = specObj ? '<div style="margin:8px 0;padding:12px;background:#f8f6ff;border:1px solid #C4A1D422;border-radius:8px;font-size:12px">' +
+        '<strong style="color:#C4A1D4">Implementation Specification</strong>' +
+        '<div style="margin:6px 0;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">' +
+        '<div><span style="color:#888;font-size:10px">Type:</span> <strong>' + specObj.agentType + '</strong></div>' +
+        '<div><span style="color:#888;font-size:10px">Effort:</span> <strong>' + specObj.effort + '</strong></div>' +
+        '<div><span style="color:#888;font-size:10px">Feasibility:</span> <strong style="color:' + (specObj.feasibility >= 80 ? '#7CB9A8' : specObj.feasibility >= 60 ? '#D4A853' : '#D4A07A') + '">' + specObj.feasibility + '/100</strong></div>' +
+        '<div><span style="color:#888;font-size:10px">Timeline:</span> <strong>' + specObj.implMonths + ' months</strong></div>' +
+        '<div><span style="color:#888;font-size:10px">Cost:</span> <strong>$' + specObj.implCost + 'K</strong></div>' +
+        '<div><span style="color:#888;font-size:10px">Payback:</span> <strong>' + specObj.paybackMonths + ' months</strong></div>' +
+        '</div>' +
+        '<div style="font-size:11px;color:#555;margin:4px 0">' + specObj.description + '</div>' +
+        '<div style="margin-top:6px"><span style="color:#888;font-size:10px">Prerequisites:</span> ' + specObj.prerequisites.join(' · ') + '</div>' +
+        '<div style="margin-top:4px"><span style="color:#888;font-size:10px">Risk Factors:</span> ' + specObj.riskFactors.join(' · ') + '</div>' +
+        '<div style="margin-top:4px"><span style="color:#888;font-size:10px">Tech Stack:</span> ' + specObj.techStack.join(' · ') + '</div>' +
+        '</div>' : "";      const impact = valResult.impacts.find(i => i.id === proc.id);
       // Build baseline analysis HTML
       const pid = proc.id;
       const effParts = [];
@@ -1586,6 +1602,7 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
         ${benchmarks ? `<table style="width:100%;border-collapse:collapse;margin:8px 0"><tr style="background:#f5f5f5"><th style="text-align:left;padding:4px 8px;font-size:11px">KPI</th><th style="text-align:center;padding:4px 8px;font-size:11px">Current</th><th style="text-align:center;padding:4px 8px;font-size:11px">ERP Benchmark</th><th style="text-align:center;padding:4px 8px;font-size:11px">Agent Benchmark</th><th style="text-align:center;padding:4px 8px;font-size:11px">Source</th><th style="text-align:center;padding:4px 8px;font-size:11px">Quartile</th></tr>${benchmarks}</table>` : ""}
         ${sapHtml}
         ${agentHtml}
+        ${specHtml}
       </div>`;
     }).join("");
     const { revImpact, cogsImpact, sgaImpact } = valResult.pnl;
@@ -1760,6 +1777,7 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
           },
           catalystBenchmarks: catalystResults[proc.id] || null,
           aiAgent: agentResults[proc.id] || null,
+          agentSpec: AGENT_SPECS[proc.id] || null,
         };
       }),
       valuation: {
@@ -3653,6 +3671,72 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
                 })}
               </tbody>
             </table>
+
+
+            {/* Implementation Roadmap */}
+            {(() => {
+              const roadmapData = selProcs
+                .filter(p => AGENT_SPECS[p.id])
+                .map(p => {
+                  const spec = AGENT_SPECS[p.id];
+                  const impact = valResult.impacts.find(i => i.id === p.id);
+                  const agentVal = impact?.agentValue || 0;
+                  const roi = spec.implCost > 0 && agentVal > 0 ? Math.round((agentVal * 1000 / spec.implCost) * 100) : 0;
+                  return { id: p.id, label: p.label, l4: p.l4, e2e: p.e2e, color: p.l1Color, ...spec, agentVal, roi };
+                })
+                .sort((a, b) => b.roi - a.roi);
+              if (roadmapData.length === 0) return null;
+              const totalCost = roadmapData.reduce((s, r) => s + r.implCost, 0);
+              const avgPayback = Math.round(roadmapData.reduce((s, r) => s + r.paybackMonths, 0) / roadmapData.length);
+              const totalAgentVal = roadmapData.reduce((s, r) => s + r.agentVal, 0);
+              const avgFeasibility = Math.round(roadmapData.reduce((s, r) => s + r.feasibility, 0) / roadmapData.length);
+              const portfolioROI = totalCost > 0 && totalAgentVal > 0 ? Math.round((totalAgentVal * 1000 / totalCost) * 100) : 0;
+              return (
+                <div style={{ marginTop: 24 }}>
+                  <div style={{ fontSize: 11, color: t.mut, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginBottom: 6 }}>AI Agent Implementation Roadmap</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 16 }}>
+                    {[
+                      { l: "Total Impl. Cost", v: "$" + (totalCost >= 1000 ? (totalCost / 1000).toFixed(1) + "M" : totalCost + "K"), c: PURPLE },
+                      { l: "Avg Payback", v: avgPayback + " months", c: GOLD },
+                      { l: "Total Agent Value", v: totalAgentVal > 0 ? "$" + totalAgentVal.toFixed(1) + "M/yr" : "TBD", c: GREEN },
+                      { l: "Portfolio ROI", v: portfolioROI > 0 ? portfolioROI + "%" : "TBD", c: portfolioROI > 200 ? GREEN : portfolioROI > 100 ? GOLD : ORANGE },
+                    ].map(k => (
+                      <div key={k.l} style={{ background: k.c + "0C", border: "1px solid " + k.c + "22", borderRadius: 10, padding: "10px 14px", textAlign: "center" }}>
+                        <div style={{ fontSize: 10, color: k.c, textTransform: "uppercase", letterSpacing: ".5px", fontWeight: 600, marginBottom: 2 }}>{k.l}</div>
+                        <div style={{ fontSize: 18, fontFamily: "'Playfair Display',Georgia,serif", color: k.c, fontWeight: 600 }}>{k.v}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 8 }}>
+                    <thead><tr>
+                      {["Process", "Type", "Effort", "Months", "Cost", "Feasibility", "Payback", "Agent Value", "ROI"].map((h, i) => (
+                        <th key={i} style={{ padding: "5px 8px", borderBottom: "2px solid " + t.bdr, textAlign: i >= 4 ? "right" : "left", color: t.mut, fontWeight: 600, fontSize: 10, textTransform: "uppercase", letterSpacing: ".5px" }}>{h}</th>
+                      ))}
+                    </tr></thead>
+                    <tbody>
+                      {roadmapData.slice(0, 15).map((r, idx) => {
+                        const fC = r.feasibility >= 80 ? GREEN : r.feasibility >= 60 ? GOLD : ORANGE;
+                        const rC = r.roi > 200 ? GREEN : r.roi > 100 ? GOLD : ORANGE;
+                        return (
+                          <tr key={idx}>
+                            <td style={{ padding: "4px 8px", borderBottom: "1px solid " + t.bdr + "40", color: t.tx, fontSize: 11 }}>{r.label.length > 35 ? r.label.slice(0, 35) + "..." : r.label}</td>
+                            <td style={{ padding: "4px 8px", borderBottom: "1px solid " + t.bdr + "40" }}><span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: (r.agentType === "Autonomous" ? GREEN : r.agentType === "Hybrid" ? GOLD : BLUE) + "15", color: r.agentType === "Autonomous" ? GREEN : r.agentType === "Hybrid" ? GOLD : BLUE, fontWeight: 600 }}>{r.agentType}</span></td>
+                            <td style={{ padding: "4px 8px", borderBottom: "1px solid " + t.bdr + "40" }}><span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: (r.effort === "Low" ? GREEN : r.effort === "Medium" ? GOLD : RED) + "15", color: r.effort === "Low" ? GREEN : r.effort === "Medium" ? GOLD : RED, fontWeight: 600 }}>{r.effort}</span></td>
+                            <td style={{ padding: "4px 8px", borderBottom: "1px solid " + t.bdr + "40", textAlign: "right", fontFamily: "monospace", color: t.tx2 }}>{r.implMonths}</td>
+                            <td style={{ padding: "4px 8px", borderBottom: "1px solid " + t.bdr + "40", textAlign: "right", fontFamily: "monospace", color: PURPLE }}>{"$"}{r.implCost}K</td>
+                            <td style={{ padding: "4px 8px", borderBottom: "1px solid " + t.bdr + "40", textAlign: "right" }}><span style={{ fontSize: 10, fontFamily: "monospace", fontWeight: 600, color: fC }}>{r.feasibility}</span></td>
+                            <td style={{ padding: "4px 8px", borderBottom: "1px solid " + t.bdr + "40", textAlign: "right", fontFamily: "monospace", color: GOLD }}>{r.paybackMonths}mo</td>
+                            <td style={{ padding: "4px 8px", borderBottom: "1px solid " + t.bdr + "40", textAlign: "right", fontFamily: "monospace", color: GREEN, fontWeight: 600 }}>{r.agentVal > 0 ? "$" + r.agentVal.toFixed(1) + "M" : "—"}</td>
+                            <td style={{ padding: "4px 8px", borderBottom: "1px solid " + t.bdr + "40", textAlign: "right", fontFamily: "monospace", fontWeight: 700, color: rC }}>{r.roi > 0 ? r.roi + "%" : "—"}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  <div style={{ fontSize: 10, color: t.sub, fontStyle: "italic" }}>Sorted by ROI (highest first) · Avg feasibility: {avgFeasibility}/100</div>
+                </div>
+              );
+            })()}
 
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
               <button onClick={() => setStep(4)} style={btnSecondary}>← Benchmark</button>
