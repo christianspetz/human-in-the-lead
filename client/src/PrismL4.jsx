@@ -946,13 +946,12 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
   // Step completion indicators
   const stepStatus = useMemo(() => ({
     1: selectedProcs.size > 0,
-    2: Object.keys(questAnswers).length > 0 || Object.keys(uploadedMining).length > 0,
+    2: Object.keys(questAnswers).length > 0 || Object.keys(uploadedMining).length > 0 || Object.keys(baselineData).length > 0,
     3: Object.keys(procValues).length > 0,
-    4: Object.keys(procBenchmarks).length > 0 || Object.keys(catalystResults).length > 0,
-    5: selectedProcs.size > 0,
-    6: Object.keys(agentResults).length > 0,
-    7: valResult.total > 0,
-  }), [selectedProcs, questAnswers, uploadedMining, procValues, procBenchmarks, catalystResults, agentResults, valResult]);
+    4: Object.keys(procBenchmarks).length > 0 || Object.keys(catalystResults).length > 0 || Object.keys(agentResults).length > 0,
+    5: valResult.total > 0,
+    6: valResult.total > 0,
+  }), [selectedProcs, questAnswers, uploadedMining, baselineData, procValues, procBenchmarks, catalystResults, agentResults, valResult]);
 
   // Catalyst API call — tries server proxy first, falls back to browser-side key
   const callCatalyst = async (procId, prompt, resultSetter, loadingSetter) => {
@@ -1650,7 +1649,7 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
   const labelStyle = { fontSize: 11, color: t.mut, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginBottom: 6 };
   const stepHeader = (num, title) => (
     <div style={{ marginBottom: 20 }}>
-      <div style={labelStyle}>Step {num} of 7</div>
+      <div style={labelStyle}>Step {num} of 6</div>
       <div style={{ fontSize: 26, fontFamily: SERIF, color: t.tx }}>{title}</div>
     </div>
   );
@@ -1730,8 +1729,8 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
   // WORKSPACE
   // ═══════════════════════════════════════════════════
   const steps = [
-    { n: 1, l: "Scope" }, { n: 2, l: "Baseline" }, { n: 3, l: "Value" },
-    { n: 4, l: "Benchmarks" }, { n: 5, l: "ERP" }, { n: 6, l: "AI Agents" }, { n: 7, l: "Calculations" }
+    { n: 1, l: "Input" }, { n: 2, l: "Baseline" }, { n: 3, l: "Value Setting" },
+    { n: 4, l: "Benchmark" }, { n: 5, l: "Value Calc" }, { n: 6, l: "Action Plan" }
   ];
 
   return (
@@ -2483,39 +2482,17 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
         )}
 
         {/* ═══════════════════════════════════════════════
-            STEP 2 — Baseline Research
+            STEP 2 — Baseline Research (Guided Sub-Flow)
            ═══════════════════════════════════════════════ */}
         {step === 2 && (
           <div>
             {stepHeader(2, "Baseline Research")}
-            <div style={{ fontSize: 13, color: t.tx2, marginBottom: 12 }}>
+            <div style={{ fontSize: 13, color: t.tx2, marginBottom: 20 }}>
               {viewMode === "consultant"
-                ? "Build questionnaires for process owners. Export the questionnaire, send to process owners, and upload completed responses to trigger process mining."
+                ? "Collect baseline data from process owners through questionnaires, manual entry, and process mining evidence."
                 : "Review baseline data collected from questionnaires and process mining."
               }
             </div>
-
-            {/* Export / Upload Controls */}
-            {viewMode === "consultant" && selProcs.length > 0 && (
-              <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
-                <button onClick={generateQuestionnaireDoc} style={{ fontSize: 11, padding: "6px 16px", borderRadius: 8, background: GREEN + "15", border: `1px solid ${GREEN}33`, color: GREEN, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
-                  ↓ Download Questionnaire
-                </button>
-                <label style={{ fontSize: 11, padding: "6px 16px", borderRadius: 8, background: PURPLE + "15", border: `1px solid ${PURPLE}33`, color: PURPLE, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
-                  ↑ Upload Responses (CSV)
-                  <input type="file" accept=".csv" onChange={handleQuestionnaireUpload} style={{ display: "none" }} />
-                </label>
-                <button onClick={() => setShowPasteModal(true)} style={{ fontSize: 11, padding: "6px 16px", borderRadius: 8, background: BLUE + "15", border: `1px solid ${BLUE}33`, color: BLUE, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
-                  ⎘ Paste Responses
-                </button>
-                {Object.keys(uploadedMining).length > 0 && (
-                  <span style={{ fontSize: 10, padding: "3px 8px", borderRadius: 4, background: PURPLE + "20", color: PURPLE, fontWeight: 600 }}>
-                    {Object.keys(uploadedMining).length} processes with mining data
-                  </span>
-                )}
-                <span style={{ fontSize: 10, color: t.mut, fontStyle: "italic" }}>Download → send to process owners → upload or paste their responses</span>
-              </div>
-            )}
 
             {/* Paste Responses Modal */}
             {showPasteModal && (
@@ -2529,7 +2506,7 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
                     <button onClick={() => setShowPasteModal(false)} style={{ background: "none", border: "none", color: t.mut, cursor: "pointer", fontSize: 20 }}>×</button>
                   </div>
                   <div style={{ fontSize: 10, color: t.mut, marginBottom: 8, padding: "8px 12px", background: BLUE + "08", border: `1px solid ${BLUE}22`, borderRadius: 8 }}>
-                    <strong style={{ color: BLUE }}>Expected format:</strong> Each process section should start with its APQC code (e.g. 8.2.1.1). Use tab or pipe (|) to separate question and answer on each line. Section headers like "Section A" or "Section B" help the parser identify which track the answers belong to.
+                    <strong style={{ color: BLUE }}>Expected format:</strong> Each process section should start with its APQC code (e.g. 8.2.1.1). Use tab or pipe (|) to separate question and answer on each line.
                   </div>
                   <textarea value={pasteText} onChange={e => setPasteText(e.target.value)} placeholder={"8.2.1.1 — Manage Accounts Payable\nSection A — Process Efficiency\nFTEs on this process\t12\nRework %\t8\n...\nSection B — Data-Driven Leakage\nReporting granularity (1-5)\t3\n..."} style={{ flex: 1, minHeight: 300, padding: 12, borderRadius: 10, border: `1px solid ${t.bdr}`, background: t.bg, color: t.tx, fontFamily: "monospace", fontSize: 12, resize: "vertical" }} />
                   <div style={{ display: "flex", gap: 8, marginTop: 12, justifyContent: "flex-end" }}>
@@ -2540,222 +2517,306 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
               </div>
             )}
 
-            <div style={{ display: "grid", gridTemplateColumns: focusProc ? "1fr 1fr" : "1fr", gap: 16 }}>
-              {/* Process list */}
-              <div>
-                <div style={labelStyle}>Selected Processes ({selProcs.length})</div>
-                <div style={{ display: "grid", gap: 4 }}>
-                  {selProcs.map(proc => {
-                    const isFocused = focusProc === proc.id;
-                    const answered = Object.keys(questAnswers).filter(k => k.startsWith(proc.id)).length;
-                    return (
-                      <div key={proc.id} onClick={() => setFocusProc(isFocused ? null : proc.id)} style={{
-                        ...cardStyle, padding: "10px 14px", cursor: "pointer",
-                        borderLeft: `3px solid ${proc.l1Color}`,
-                        background: isFocused ? proc.l1Color + "08" : t.card,
-                        border: `1px solid ${isFocused ? proc.l1Color + "44" : t.bdr}`,
-                        borderLeftWidth: 3, borderLeftColor: proc.l1Color, borderLeftStyle: "solid"
-                      }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <div>
-                            <span style={{ fontSize: 10, fontFamily: "monospace", color: t.mut, marginRight: 6 }}>{proc.l4}</span>
-                            <span style={{ fontSize: 13, fontWeight: 500, color: t.tx }}>{proc.label}</span>
-                            {(() => { const _bp = getBlueprintForL2(proc.l2id); return _bp && <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, background: _bp.color + "20", color: _bp.color, marginLeft: 4 }}>{_bp.name}</span>; })()}
-                          </div>
-                          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                            {answered > 0 && <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: GREEN + "20", color: GREEN, fontWeight: 600 }}>{answered} answers</span>}
-                            <span style={{ fontSize: 11, color: t.mut }}>{isFocused ? "▾" : "▸"}</span>
-                          </div>
-                        </div>
+            {/* ─── Sub-step ① — Download Questionnaire ─── */}
+            {(() => {
+              const questDownloaded = sessionStorage.getItem("quest_downloaded") === "true";
+              const e2eNames = [...new Set(selProcs.map(p => p.e2e))].join(", ");
+              return (
+                <div style={{ marginBottom: 16, padding: 20, background: t.card, border: `1px solid ${questDownloaded ? GREEN + "44" : GREEN + "22"}`, borderLeft: `4px solid ${GREEN}`, borderRadius: 12, opacity: questDownloaded ? 0.85 : 1 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+                    <div style={{ fontSize: 28, fontFamily: SERIF, color: GREEN, fontWeight: 700, lineHeight: 1 }}>①</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: t.tx, marginBottom: 4 }}>Download Questionnaire</div>
+                      <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.6, marginBottom: 10 }}>Professional questionnaire with Process Efficiency and Data-Driven Leakage questions for each selected process. Send to your L2/L3 process owners.</div>
+                      <div style={{ fontSize: 11, color: t.mut, marginBottom: 10 }}>Covers <strong style={{ color: GREEN }}>{selProcs.length}</strong> processes across <strong style={{ color: GREEN }}>{e2eNames}</strong></div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <button onClick={() => { generateQuestionnaireDoc(); sessionStorage.setItem("quest_downloaded", "true"); }} style={{ fontSize: 13, padding: "8px 20px", borderRadius: 8, background: GREEN, border: "none", color: "#111", cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
+                          ↓ Download Questionnaire
+                        </button>
+                        {questDownloaded && <span style={{ fontSize: 11, color: GREEN, fontWeight: 600 }}>✓ Downloaded</span>}
                       </div>
-                    );
-                  })}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              );
+            })()}
 
-              {/* Detail panel */}
-              {focusProc && PROC_MAP[focusProc] && (
-                <div style={{ ...cardStyle, maxHeight: 600, overflowY: "auto" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                    <div>
-                      <div style={{ fontSize: 10, fontFamily: "monospace", color: t.mut }}>{PROC_MAP[focusProc].l4}</div>
-                      <div style={{ fontSize: 16, fontWeight: 600, color: t.tx }}>{PROC_MAP[focusProc].label}</div>
+            {/* ─── Sub-step ② — Upload / Enter Responses ─── */}
+            {(() => {
+              const procsWithBaseline = selProcs.filter(p => Object.keys(baselineData).some(k => k.startsWith(p.id))).length;
+              const procsWithAnswers = selProcs.filter(p => Object.keys(questAnswers).some(k => k.startsWith(p.id))).length;
+              const dataCount = procsWithBaseline + procsWithAnswers;
+              const hasData = dataCount > 0;
+              return (
+                <div style={{ marginBottom: 16, padding: 20, background: t.card, border: `1px solid ${hasData ? GOLD + "44" : GOLD + "22"}`, borderLeft: `4px solid ${GOLD}`, borderRadius: 12, opacity: hasData ? 0.85 : 1 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+                    <div style={{ fontSize: 28, fontFamily: SERIF, color: GOLD, fontWeight: 700, lineHeight: 1 }}>②</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: t.tx, marginBottom: 4 }}>Collect & Upload Responses</div>
+                      <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.6, marginBottom: 10 }}>When process owners return the completed questionnaire, upload their responses here. You can also enter data manually per process below.</div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}>
+                        <label style={{ fontSize: 12, padding: "8px 16px", borderRadius: 8, background: GOLD + "15", border: `1px solid ${GOLD}33`, color: GOLD, cursor: "pointer", fontFamily: FONT, fontWeight: 600, display: "inline-block" }}>
+                          ↑ Upload Responses (CSV)
+                          <input type="file" accept=".csv" onChange={handleQuestionnaireUpload} style={{ display: "none" }} />
+                        </label>
+                        <button onClick={() => setShowPasteModal(true)} style={{ fontSize: 12, padding: "8px 16px", borderRadius: 8, background: BLUE + "15", border: `1px solid ${BLUE}33`, color: BLUE, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
+                          ⎘ Paste Responses
+                        </button>
+                        <button onClick={() => setFocusProc(focusProc ? null : selProcs[0]?.id || null)} style={{ fontSize: 12, padding: "8px 16px", borderRadius: 8, background: t.bg, border: `1px solid ${t.bdr}`, color: t.tx2, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
+                          ⌨ Enter Manually
+                        </button>
+                        <span onClick={() => setStep(3)} style={{ fontSize: 11, color: t.mut, fontStyle: "italic", cursor: "pointer", marginLeft: 4 }}>Skip for now →</span>
+                      </div>
+                      {hasData && <span style={{ fontSize: 11, color: GREEN, fontWeight: 600 }}>✓ Data received for {dataCount} processes</span>}
                     </div>
-                    <button onClick={() => setFocusProc(null)} style={{ background: "none", border: "none", color: t.mut, cursor: "pointer", fontSize: 16 }}>×</button>
                   </div>
 
-                  {/* ─── Panel A: Process Efficiency (green border) ─── */}
-                  <div style={{ padding: 12, background: GREEN + "08", border: `1px solid ${GREEN}22`, borderLeft: `3px solid ${GREEN}`, borderRadius: 10, marginBottom: 12 }}>
-                    <div style={{ fontSize: 11, color: GREEN, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 10 }}>A — Process Efficiency</div>
-                    {[
-                      { key: "ftes", q: "FTEs on this process", type: "number", placeholder: "e.g. 12" },
-                      { key: "rework", q: "Rework/corrections %", type: "number", placeholder: "e.g. 15", unit: "%" },
-                      { key: "cycleTime", q: "Average cycle time", type: "numberWithUnit", placeholder: "e.g. 5", unitKey: "cycleTimeUnit", unitOpts: ["days", "hours"] },
-                      { key: "automation", q: "Automation level %", type: "number", placeholder: "e.g. 30", unit: "%" },
-                      { key: "errorRate", q: "Error/exception rate %", type: "number", placeholder: "e.g. 8", unit: "%" },
-                      { key: "bottleneck", q: "Primary bottleneck", type: "select", opts: ["Manual data entry", "Approvals", "System integration", "Reconciliation", "Other"] },
-                      { key: "volume", q: "Volume per period", type: "numberWithUnit", placeholder: "e.g. 5000", unitKey: "volumePeriod", unitOpts: ["daily", "weekly", "monthly"] },
-                    ].map(item => (
-                      <div key={item.key} style={{ marginBottom: 8 }}>
-                        <div style={{ fontSize: 11, color: t.tx2, marginBottom: 3 }}>{item.q}</div>
-                        {item.type === "select" ? (
-                          <select value={baselineData[`${focusProc}_a_${item.key}`] || ""} onChange={e => setBaselineData(p => ({ ...p, [`${focusProc}_a_${item.key}`]: e.target.value }))}
-                            style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, boxSizing: "border-box" }}>
-                            <option value="">Select...</option>
-                            {item.opts.map(o => <option key={o} value={o}>{o}</option>)}
-                          </select>
-                        ) : item.type === "numberWithUnit" ? (
-                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                            <input type="number" value={baselineData[`${focusProc}_a_${item.key}`] || ""} onChange={e => setBaselineData(p => ({ ...p, [`${focusProc}_a_${item.key}`]: e.target.value }))}
-                              placeholder={item.placeholder}
-                              style={{ flex: 1, background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, boxSizing: "border-box" }} />
-                            <select value={baselineData[`${focusProc}_a_${item.unitKey}`] || item.unitOpts[0]} onChange={e => setBaselineData(p => ({ ...p, [`${focusProc}_a_${item.unitKey}`]: e.target.value }))}
-                              style={{ background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 8px", color: t.tx, fontFamily: FONT, fontSize: 11 }}>
-                              {item.unitOpts.map(o => <option key={o} value={o}>{o}</option>)}
-                            </select>
-                          </div>
-                        ) : (
-                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                            <input type="number" value={baselineData[`${focusProc}_a_${item.key}`] || ""} onChange={e => setBaselineData(p => ({ ...p, [`${focusProc}_a_${item.key}`]: e.target.value }))}
-                              placeholder={item.placeholder}
-                              style={{ flex: 1, background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, boxSizing: "border-box" }} />
-                            {item.unit && <span style={{ fontSize: 10, color: t.mut }}>{item.unit}</span>}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* ─── Panel B: Data-Driven Leakage (gold border) ─── */}
-                  <div style={{ padding: 12, background: GOLD + "08", border: `1px solid ${GOLD}22`, borderLeft: `3px solid ${GOLD}`, borderRadius: 10, marginBottom: 12 }}>
-                    <div style={{ fontSize: 11, color: GOLD, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 10 }}>B — Data-Driven Leakage</div>
-                    {[
-                      { key: "granularity", q: "Data granularity sufficient?", type: "select", opts: ["Yes", "Partially", "No"] },
-                      { key: "reportFreq", q: "Reporting frequency", type: "select", opts: ["Real-time", "Daily", "Weekly", "Monthly", "Quarterly"] },
-                      { key: "dataQuality", q: "Data quality issues", type: "select", opts: ["None", "Minor", "Significant", "Critical"] },
-                      { key: "manualPct", q: "Manual data gathering %", type: "number", placeholder: "e.g. 60", unit: "%" },
-                      { key: "ssot", q: "Single source of truth?", type: "select", opts: ["Yes", "Partially", "No"] },
-                      { key: "leakage", q: "Estimated leakage", type: "select", opts: ["None", "<1%", "1-3%", "3-5%", ">5%"] },
-                    ].map(item => (
-                      <div key={item.key} style={{ marginBottom: 8 }}>
-                        <div style={{ fontSize: 11, color: t.tx2, marginBottom: 3 }}>{item.q}</div>
-                        {item.type === "select" ? (
-                          <select value={baselineData[`${focusProc}_b_${item.key}`] || ""} onChange={e => setBaselineData(p => ({ ...p, [`${focusProc}_b_${item.key}`]: e.target.value }))}
-                            style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, boxSizing: "border-box" }}>
-                            <option value="">Select...</option>
-                            {item.opts.map(o => <option key={o} value={o}>{o}</option>)}
-                          </select>
-                        ) : (
-                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                            <input type="number" value={baselineData[`${focusProc}_b_${item.key}`] || ""} onChange={e => setBaselineData(p => ({ ...p, [`${focusProc}_b_${item.key}`]: e.target.value }))}
-                              placeholder={item.placeholder}
-                              style={{ flex: 1, background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, boxSizing: "border-box" }} />
-                            {item.unit && <span style={{ fontSize: 10, color: t.mut }}>{item.unit}</span>}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* ─── MiningLinker: shows when both mining + efficiency data exist ─── */}
-                  {uploadedMining[focusProc] && baselineData[`${focusProc}_a_ftes`] && (
-                    <Suspense fallback={null}>
-                      <MiningLinker
-                        procId={focusProc}
-                        proc={PROC_MAP[focusProc]}
-                        miningData={uploadedMining[focusProc]}
-                        baselineData={baselineData}
-                        theme={t}
-                      />
-                    </Suspense>
-                  )}
-
-                  {/* ─── Additional Notes (collapsed Q_TEMPLATES) ─── */}
-                  <details style={{ marginBottom: 12 }}>
-                    <summary style={{ ...labelStyle, cursor: "pointer", userSelect: "none" }}>Additional Notes (Questionnaire)</summary>
-                    <div style={{ marginTop: 8 }}>
-                      {Q_TEMPLATES.map((qt, qi) => (
-                        <div key={qi} style={{ marginBottom: 10 }}>
-                          <div style={{ fontSize: 12, color: t.tx2, marginBottom: 4 }}>{qt.q}</div>
-                          {qt.type === "text" ? (
-                            <textarea value={questAnswers[`${focusProc}_q${qi}`] || ""} onChange={e => setQuestAnswers(p => ({ ...p, [`${focusProc}_q${qi}`]: e.target.value }))}
-                              placeholder="Enter response..." rows={2}
-                              style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, resize: "vertical", boxSizing: "border-box" }} />
-                          ) : qt.type === "select" ? (
-                            <select value={questAnswers[`${focusProc}_q${qi}`] || ""} onChange={e => setQuestAnswers(p => ({ ...p, [`${focusProc}_q${qi}`]: e.target.value }))}
-                              style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, boxSizing: "border-box" }}>
-                              <option value="">Select...</option>
-                              {qt.opts.map(o => <option key={o} value={o}>{o}</option>)}
-                            </select>
-                          ) : (
-                            <input type="number" value={questAnswers[`${focusProc}_q${qi}`] || ""} onChange={e => setQuestAnswers(p => ({ ...p, [`${focusProc}_q${qi}`]: e.target.value }))}
-                              placeholder="0" style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, boxSizing: "border-box" }} />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </details>
-
-                  {/* Process Mining Evidence */}
-                  <div style={{ ...labelStyle, marginTop: 16 }}>Process Mining Evidence</div>
-                  {uploadedMining[focusProc] ? (
-                    <div style={{ background: t.bg, border: `1px solid ${GREEN}33`, borderRadius: 10, padding: 14, marginBottom: 10 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                        <div style={{ fontSize: 12, color: GREEN, fontWeight: 600 }}>Process Mining — {PROC_MAP[focusProc].label}</div>
-                        <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, background: GREEN + "20", color: GREEN, fontWeight: 600 }}>UPLOADED</span>
-                      </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
-                        {[
-                          { l: "Variants Discovered", v: uploadedMining[focusProc].variants },
-                          { l: "Conformance Rate", v: uploadedMining[focusProc].conformance != null ? `${uploadedMining[focusProc].conformance}%` : null },
-                          { l: "Avg Cycle Time", v: uploadedMining[focusProc].cycleTime != null ? `${uploadedMining[focusProc].cycleTime} days` : null },
-                          { l: "Rework Loops", v: uploadedMining[focusProc].rework != null ? `${uploadedMining[focusProc].rework}%` : null },
-                        ].filter(m => m.v != null).map(m => (
-                          <div key={m.l} style={{ padding: "6px 10px", background: t.card, borderRadius: 6, border: `1px solid ${t.bdr}` }}>
-                            <div style={{ fontSize: 10, color: t.mut }}>{m.l}</div>
-                            <div style={{ fontSize: 16, fontFamily: SERIF, color: GREEN }}>{m.v}</div>
-                          </div>
+                  {/* Inline manual entry — process selector + panels */}
+                  {focusProc && (
+                    <div style={{ marginTop: 16, paddingLeft: 44 }}>
+                      <div style={{ display: "flex", gap: 4, marginBottom: 12, flexWrap: "wrap" }}>
+                        {selProcs.map(proc => (
+                          <button key={proc.id} onClick={() => setFocusProc(proc.id)} style={{
+                            fontSize: 10, padding: "4px 10px", borderRadius: 6,
+                            background: focusProc === proc.id ? proc.l1Color + "20" : "transparent",
+                            border: `1px solid ${focusProc === proc.id ? proc.l1Color + "44" : t.bdr}`,
+                            color: focusProc === proc.id ? proc.l1Color : t.tx2,
+                            cursor: "pointer", fontFamily: FONT, fontWeight: focusProc === proc.id ? 700 : 400,
+                          }}>
+                            {proc.l4} {proc.label.length > 25 ? proc.label.slice(0, 25) + "…" : proc.label}
+                            {Object.keys(baselineData).some(k => k.startsWith(proc.id)) && <span style={{ marginLeft: 4, color: GREEN }}>✓</span>}
+                          </button>
                         ))}
                       </div>
-                      <div style={{ fontSize: 11, color: GREEN, fontStyle: "italic" }}>Data from uploaded questionnaire</div>
-                    </div>
-                  ) : (
-                    <>
-                      <div onClick={() => setSignavioView(focusProc)} style={{ padding: 16, border: `2px dashed ${PURPLE}44`, borderRadius: 10, textAlign: "center", cursor: "pointer", marginBottom: 10 }}>
-                        <div style={{ fontSize: 13, color: PURPLE, fontWeight: 600 }}>◉ Signavio Process Intelligence</div>
-                        <div style={{ fontSize: 11, color: t.mut, marginTop: 4 }}>Click to view mock process mining data</div>
-                      </div>
-                      {signavioView === focusProc && (
-                        <div style={{ background: t.bg, border: `1px solid ${PURPLE}33`, borderRadius: 10, padding: 14, marginBottom: 10 }}>
-                          <div style={{ fontSize: 12, color: PURPLE, fontWeight: 600, marginBottom: 8 }}>Process Mining — {PROC_MAP[focusProc].label}</div>
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
-                            {(() => {
-                              const seed = focusProc.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-                              const s = n => ((seed * (n + 1) * 9301 + 49297) % 233280) / 233280;
-                              return [
-                                { l: "Variants Discovered", v: Math.floor(s(1) * 30 + 5) },
-                                { l: "Conformance Rate", v: `${Math.floor(s(2) * 30 + 65)}%` },
-                                { l: "Avg Cycle Time", v: `${(s(3) * 8 + 1).toFixed(1)} days` },
-                                { l: "Rework Loops", v: `${Math.floor(s(4) * 15 + 2)}%` },
-                              ];
-                            })().map(m => (
-                              <div key={m.l} style={{ padding: "6px 10px", background: t.card, borderRadius: 6, border: `1px solid ${t.bdr}` }}>
-                                <div style={{ fontSize: 10, color: t.mut }}>{m.l}</div>
-                                <div style={{ fontSize: 16, fontFamily: SERIF, color: PURPLE }}>{m.v}</div>
+                      <div style={{ fontSize: 10, color: t.mut, marginBottom: 8 }}>{selProcs.filter(p => Object.keys(baselineData).some(k => k.startsWith(p.id))).length} of {selProcs.length} processes have baseline data</div>
+
+                      {PROC_MAP[focusProc] && (
+                        <div style={{ ...cardStyle, maxHeight: 500, overflowY: "auto" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                            <div>
+                              <div style={{ fontSize: 10, fontFamily: "monospace", color: t.mut }}>{PROC_MAP[focusProc].l4}</div>
+                              <div style={{ fontSize: 16, fontWeight: 600, color: t.tx }}>{PROC_MAP[focusProc].label}</div>
+                            </div>
+                            <button onClick={() => setFocusProc(null)} style={{ background: "none", border: "none", color: t.mut, cursor: "pointer", fontSize: 16 }}>×</button>
+                          </div>
+
+                          {/* Panel A: Process Efficiency */}
+                          <div style={{ padding: 12, background: GREEN + "08", border: `1px solid ${GREEN}22`, borderLeft: `3px solid ${GREEN}`, borderRadius: 10, marginBottom: 12 }}>
+                            <div style={{ fontSize: 11, color: GREEN, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 10 }}>A — Process Efficiency</div>
+                            {[
+                              { key: "ftes", q: "FTEs on this process", type: "number", placeholder: "e.g. 12" },
+                              { key: "rework", q: "Rework/corrections %", type: "number", placeholder: "e.g. 15", unit: "%" },
+                              { key: "cycleTime", q: "Average cycle time", type: "numberWithUnit", placeholder: "e.g. 5", unitKey: "cycleTimeUnit", unitOpts: ["days", "hours"] },
+                              { key: "automation", q: "Automation level %", type: "number", placeholder: "e.g. 30", unit: "%" },
+                              { key: "errorRate", q: "Error/exception rate %", type: "number", placeholder: "e.g. 8", unit: "%" },
+                              { key: "bottleneck", q: "Primary bottleneck", type: "select", opts: ["Manual data entry", "Approvals", "System integration", "Reconciliation", "Other"] },
+                              { key: "volume", q: "Volume per period", type: "numberWithUnit", placeholder: "e.g. 5000", unitKey: "volumePeriod", unitOpts: ["daily", "weekly", "monthly"] },
+                            ].map(item => (
+                              <div key={item.key} style={{ marginBottom: 8 }}>
+                                <div style={{ fontSize: 11, color: t.tx2, marginBottom: 3 }}>{item.q}</div>
+                                {item.type === "select" ? (
+                                  <select value={baselineData[`${focusProc}_a_${item.key}`] || ""} onChange={e => setBaselineData(p => ({ ...p, [`${focusProc}_a_${item.key}`]: e.target.value }))}
+                                    style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, boxSizing: "border-box" }}>
+                                    <option value="">Select...</option>
+                                    {item.opts.map(o => <option key={o} value={o}>{o}</option>)}
+                                  </select>
+                                ) : item.type === "numberWithUnit" ? (
+                                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                    <input type="number" value={baselineData[`${focusProc}_a_${item.key}`] || ""} onChange={e => setBaselineData(p => ({ ...p, [`${focusProc}_a_${item.key}`]: e.target.value }))}
+                                      placeholder={item.placeholder}
+                                      style={{ flex: 1, background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, boxSizing: "border-box" }} />
+                                    <select value={baselineData[`${focusProc}_a_${item.unitKey}`] || item.unitOpts[0]} onChange={e => setBaselineData(p => ({ ...p, [`${focusProc}_a_${item.unitKey}`]: e.target.value }))}
+                                      style={{ background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 8px", color: t.tx, fontFamily: FONT, fontSize: 11 }}>
+                                      {item.unitOpts.map(o => <option key={o} value={o}>{o}</option>)}
+                                    </select>
+                                  </div>
+                                ) : (
+                                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                    <input type="number" value={baselineData[`${focusProc}_a_${item.key}`] || ""} onChange={e => setBaselineData(p => ({ ...p, [`${focusProc}_a_${item.key}`]: e.target.value }))}
+                                      placeholder={item.placeholder}
+                                      style={{ flex: 1, background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, boxSizing: "border-box" }} />
+                                    {item.unit && <span style={{ fontSize: 10, color: t.mut }}>{item.unit}</span>}
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>
-                          <div style={{ fontSize: 11, color: t.mut, fontStyle: "italic" }}>Mock data — upload completed questionnaire for real process mining data</div>
+
+                          {/* Panel B: Data-Driven Leakage */}
+                          <div style={{ padding: 12, background: GOLD + "08", border: `1px solid ${GOLD}22`, borderLeft: `3px solid ${GOLD}`, borderRadius: 10, marginBottom: 12 }}>
+                            <div style={{ fontSize: 11, color: GOLD, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 10 }}>B — Data-Driven Leakage</div>
+                            {[
+                              { key: "granularity", q: "Data granularity sufficient?", type: "select", opts: ["Yes", "Partially", "No"] },
+                              { key: "reportFreq", q: "Reporting frequency", type: "select", opts: ["Real-time", "Daily", "Weekly", "Monthly", "Quarterly"] },
+                              { key: "dataQuality", q: "Data quality issues", type: "select", opts: ["None", "Minor", "Significant", "Critical"] },
+                              { key: "manualPct", q: "Manual data gathering %", type: "number", placeholder: "e.g. 60", unit: "%" },
+                              { key: "ssot", q: "Single source of truth?", type: "select", opts: ["Yes", "Partially", "No"] },
+                              { key: "leakage", q: "Estimated leakage", type: "select", opts: ["None", "<1%", "1-3%", "3-5%", ">5%"] },
+                            ].map(item => (
+                              <div key={item.key} style={{ marginBottom: 8 }}>
+                                <div style={{ fontSize: 11, color: t.tx2, marginBottom: 3 }}>{item.q}</div>
+                                {item.type === "select" ? (
+                                  <select value={baselineData[`${focusProc}_b_${item.key}`] || ""} onChange={e => setBaselineData(p => ({ ...p, [`${focusProc}_b_${item.key}`]: e.target.value }))}
+                                    style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, boxSizing: "border-box" }}>
+                                    <option value="">Select...</option>
+                                    {item.opts.map(o => <option key={o} value={o}>{o}</option>)}
+                                  </select>
+                                ) : (
+                                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                    <input type="number" value={baselineData[`${focusProc}_b_${item.key}`] || ""} onChange={e => setBaselineData(p => ({ ...p, [`${focusProc}_b_${item.key}`]: e.target.value }))}
+                                      placeholder={item.placeholder}
+                                      style={{ flex: 1, background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, boxSizing: "border-box" }} />
+                                    {item.unit && <span style={{ fontSize: 10, color: t.mut }}>{item.unit}</span>}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* MiningLinker */}
+                          {uploadedMining[focusProc] && baselineData[`${focusProc}_a_ftes`] && (
+                            <Suspense fallback={null}>
+                              <MiningLinker procId={focusProc} proc={PROC_MAP[focusProc]} miningData={uploadedMining[focusProc]} baselineData={baselineData} theme={t} />
+                            </Suspense>
+                          )}
+
+                          {/* Additional Notes */}
+                          <details style={{ marginBottom: 12 }}>
+                            <summary style={{ ...labelStyle, cursor: "pointer", userSelect: "none" }}>Additional Notes (Questionnaire)</summary>
+                            <div style={{ marginTop: 8 }}>
+                              {Q_TEMPLATES.map((qt, qi) => (
+                                <div key={qi} style={{ marginBottom: 10 }}>
+                                  <div style={{ fontSize: 12, color: t.tx2, marginBottom: 4 }}>{qt.q}</div>
+                                  {qt.type === "text" ? (
+                                    <textarea value={questAnswers[`${focusProc}_q${qi}`] || ""} onChange={e => setQuestAnswers(p => ({ ...p, [`${focusProc}_q${qi}`]: e.target.value }))}
+                                      placeholder="Enter response..." rows={2}
+                                      style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, resize: "vertical", boxSizing: "border-box" }} />
+                                  ) : qt.type === "select" ? (
+                                    <select value={questAnswers[`${focusProc}_q${qi}`] || ""} onChange={e => setQuestAnswers(p => ({ ...p, [`${focusProc}_q${qi}`]: e.target.value }))}
+                                      style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, boxSizing: "border-box" }}>
+                                      <option value="">Select...</option>
+                                      {qt.opts.map(o => <option key={o} value={o}>{o}</option>)}
+                                    </select>
+                                  ) : (
+                                    <input type="number" value={questAnswers[`${focusProc}_q${qi}`] || ""} onChange={e => setQuestAnswers(p => ({ ...p, [`${focusProc}_q${qi}`]: e.target.value }))}
+                                      placeholder="0" style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, boxSizing: "border-box" }} />
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </details>
                         </div>
                       )}
-                    </>
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
+              );
+            })()}
+
+            {/* ─── Sub-step ③ — Process Mining Evidence ─── */}
+            {(() => {
+              const miningCount = Object.keys(uploadedMining).filter(k => selProcs.some(p => p.id === k)).length;
+              const hasMining = miningCount > 0;
+              return (
+                <div style={{ marginBottom: 16, padding: 20, background: t.card, border: `1px solid ${hasMining ? PURPLE + "44" : PURPLE + "22"}`, borderLeft: `4px solid ${PURPLE}`, borderRadius: 12, opacity: hasMining ? 0.85 : 1 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+                    <div style={{ fontSize: 28, fontFamily: SERIF, color: PURPLE, fontWeight: 700, lineHeight: 1 }}>③</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: t.tx, marginBottom: 4 }}>Process Mining Evidence</div>
+                      <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.6, marginBottom: 10 }}>Connect Signavio process mining data to reinforce baseline findings. Mining evidence validates reported inefficiencies.</div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}>
+                        <label style={{ fontSize: 12, padding: "8px 16px", borderRadius: 8, background: PURPLE + "15", border: `1px solid ${PURPLE}33`, color: PURPLE, cursor: "pointer", fontFamily: FONT, fontWeight: 600, display: "inline-block" }}>
+                          ↑ Upload Mining Data (CSV)
+                          <input type="file" accept=".csv" onChange={(e) => {
+                            const file = e.target.files[0]; if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = (evt) => {
+                              const lines = evt.target.result.split("\n").map(l => l.trim()).filter(Boolean);
+                              const header = lines[0].toLowerCase();
+                              if (!header.includes("process")) return;
+                              const newMining = { ...uploadedMining };
+                              lines.slice(1).forEach(line => {
+                                const cols = line.split(",");
+                                const procCode = cols[0]?.trim();
+                                const proc = selProcs.find(p => p.l4 === procCode || p.id === procCode);
+                                if (proc) {
+                                  newMining[proc.id] = {
+                                    variants: parseInt(cols[1]) || null,
+                                    conformance: parseFloat(cols[2]) || null,
+                                    cycleTime: parseFloat(cols[3]) || null,
+                                    rework: parseFloat(cols[4]) || null,
+                                  };
+                                }
+                              });
+                              setUploadedMining(newMining);
+                            };
+                            reader.readAsText(file);
+                          }} style={{ display: "none" }} />
+                        </label>
+                        <button onClick={() => setSignavioView(signavioView ? null : selProcs[0]?.id || null)} style={{ fontSize: 12, padding: "8px 16px", borderRadius: 8, background: t.bg, border: `1px solid ${t.bdr}`, color: t.tx2, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
+                          ⌨ Enter Mining Data
+                        </button>
+                        <span onClick={() => setStep(3)} style={{ fontSize: 11, color: t.mut, fontStyle: "italic", cursor: "pointer", marginLeft: 4 }}>Skip for now →</span>
+                      </div>
+                      {hasMining && <span style={{ fontSize: 11, color: GREEN, fontWeight: 600 }}>✓ Mining data for {miningCount} processes</span>}
+                    </div>
+                  </div>
+
+                  {/* Inline mining entry */}
+                  {signavioView && (
+                    <div style={{ marginTop: 16, paddingLeft: 44 }}>
+                      <div style={{ display: "flex", gap: 4, marginBottom: 12, flexWrap: "wrap" }}>
+                        {selProcs.map(proc => (
+                          <button key={proc.id} onClick={() => setSignavioView(proc.id)} style={{
+                            fontSize: 10, padding: "4px 10px", borderRadius: 6,
+                            background: signavioView === proc.id ? PURPLE + "20" : "transparent",
+                            border: `1px solid ${signavioView === proc.id ? PURPLE + "44" : t.bdr}`,
+                            color: signavioView === proc.id ? PURPLE : t.tx2,
+                            cursor: "pointer", fontFamily: FONT, fontWeight: signavioView === proc.id ? 700 : 400,
+                          }}>
+                            {proc.l4}
+                            {uploadedMining[proc.id] && <span style={{ marginLeft: 4, color: GREEN }}>✓</span>}
+                          </button>
+                        ))}
+                      </div>
+                      {PROC_MAP[signavioView] && (
+                        <div style={{ ...cardStyle }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: t.tx, marginBottom: 12 }}>{PROC_MAP[signavioView]?.label}</div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                            {[
+                              { key: "variants", label: "Variants Discovered", type: "number", placeholder: "e.g. 15" },
+                              { key: "conformance", label: "Conformance Rate (%)", type: "number", placeholder: "e.g. 78" },
+                              { key: "cycleTime", label: "Avg Cycle Time (days)", type: "number", placeholder: "e.g. 4.5" },
+                              { key: "rework", label: "Rework Loops (%)", type: "number", placeholder: "e.g. 12" },
+                            ].map(f => (
+                              <div key={f.key}>
+                                <div style={{ fontSize: 10, color: t.mut, marginBottom: 2 }}>{f.label}</div>
+                                <input type="number" value={uploadedMining[signavioView]?.[f.key] ?? ""} onChange={e => {
+                                  const v = parseFloat(e.target.value) || null;
+                                  setUploadedMining(p => ({ ...p, [signavioView]: { ...(p[signavioView] || {}), [f.key]: v } }));
+                                }} placeholder={f.placeholder}
+                                  style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: "monospace", fontSize: 12, boxSizing: "border-box" }} />
+                              </div>
+                            ))}
+                          </div>
+                          {/* MiningLinker comparison */}
+                          {uploadedMining[signavioView] && baselineData[`${signavioView}_a_ftes`] && (
+                            <div style={{ marginTop: 12 }}>
+                              <Suspense fallback={null}>
+                                <MiningLinker procId={signavioView} proc={PROC_MAP[signavioView]} miningData={uploadedMining[signavioView]} baselineData={baselineData} theme={t} />
+                              </Suspense>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
-              <button onClick={() => setStep(1)} style={btnSecondary}>← Scope</button>
+              <button onClick={() => setStep(1)} style={btnSecondary}>← Input</button>
               <button onClick={() => setStep(3)} style={btnPrimary}>Value Setting →</button>
             </div>
           </div>
@@ -2828,264 +2889,40 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
 
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
               <button onClick={() => setStep(2)} style={btnSecondary}>← Baseline</button>
-              <button onClick={() => setStep(4)} style={btnPrimary}>Benchmarks →</button>
+              <button onClick={() => setStep(4)} style={btnPrimary}>Benchmark →</button>
             </div>
           </div>
         )}
 
         {/* ═══════════════════════════════════════════════
-            STEP 4 — Benchmark KPIs
+            STEP 4 — Benchmark (Merged: KPIs + SAP + AI Agents)
            ═══════════════════════════════════════════════ */}
         {step === 4 && (
           <div>
-            {stepHeader(4, "Benchmark KPIs")}
-            <div style={{ fontSize: 13, color: t.tx2, marginBottom: 20 }}>Pre-loaded APQC/Hackett benchmarks. Use Catalyst (Claude API) to suggest industry-specific benchmarks.</div>
+            {stepHeader(4, "Benchmark & Assessment")}
+            <div style={{ fontSize: 13, color: t.tx2, marginBottom: 16 }}>Multi-source benchmarks, SAP S/4HANA module mappings, and AI agent assessments per process.</div>
 
-            <div style={{ display: "grid", gap: 8 }}>
-              {selProcs.map(proc => {
-                const bmarks = procBenchmarks[proc.id] || {};
-                const setBmark = (key, val) => setProcBenchmarks(prev => ({ ...prev, [proc.id]: { ...(prev[proc.id] || {}), [key]: val } }));
-                return (
-                  <div key={proc.id} style={{ ...cardStyle, borderLeft: `3px solid ${proc.l1Color}` }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                      <div>
-                        <span style={{ fontSize: 10, fontFamily: "monospace", color: t.mut, marginRight: 6 }}>{proc.l4}</span>
-                        <span style={{ fontSize: 14, fontWeight: 600, color: t.tx }}>{proc.label}</span>
-                        {(() => { const _bp = getBlueprintForL2(proc.l2id); return _bp && <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, background: _bp.color + "20", color: _bp.color, marginLeft: 4 }}>{_bp.name}</span>; })()}
-                      </div>
-                      <button onClick={() => callCatalyst(proc.id,
-                        `You are a benchmarking expert for ${baseline.industry} companies. For the process "${proc.label}" (APQC ${proc.l4}), provide TWO sections:\n\nSECTION 1 — TRADITIONAL BENCHMARKS\nProvide 3-5 specific benchmark suggestions from published sources. Include: KPI name, benchmark value with unit, source/year, and brief calculation methodology. Focus on APQC, Hackett, Gartner, and industry benchmarks.\n\nSECTION 2 — AI AGENT IMPACT BENCHMARKS\nFor this same process, what efficiency gains have AI agents achieved in published case studies? Include: agent type, % efficiency improvement, source/case study, and sample size or company type. Look for Deloitte, McKinsey, Gartner, Forrester, and vendor case studies (e.g., Celonis, HighRadius, Esker, BlackLine).\n\nBe specific and quantitative. Format as concise bullet points with numbers.`,
-                        setCatalystResults, setCatalystLoading
-                      )} disabled={catalystLoading[proc.id]}
-                        style={{ fontSize: 10, padding: "4px 12px", borderRadius: 6, background: GOLD + "15", border: `1px solid ${GOLD}33`, color: GOLD, cursor: catalystLoading[proc.id] ? "wait" : "pointer", fontFamily: FONT, fontWeight: 600 }}>
-                        {catalystLoading[proc.id] ? "⟳ Loading..." : "⚡ Catalyst"}
-                      </button>
-                    </div>
-
-                    <div style={{ display: "grid", gap: 10 }}>
-                      {(proc.kpis || []).map((kpi, ki) => {
-                        const currentVal = procValues[proc.id]?.[`kpi_current_${ki}`] ?? kpi.current;
-                        const selectedSource = bmarks[`src_${ki}`] || "primary";
-                        const seed = (proc.id + ki).split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-                        const jitter = (n) => +(((seed * (n + 1) * 9301 + 49297) % 233280) / 233280 * 0.3 + 0.85).toFixed(1);
-                        const sources = [
-                          { key: "primary", label: kpi.src || "APQC", value: kpi.benchmark },
-                          { key: "sapvlm", label: "SAP VLM", value: kpi.benchmark ? +(kpi.benchmark * jitter(1)).toFixed(1) : null },
-                          { key: "hackett", label: "Hackett", value: kpi.benchmark ? +(kpi.benchmark * jitter(2)).toFixed(1) : null },
-                          { key: "custom", label: "Custom", value: bmarks[`bench_custom_${ki}`] ?? null },
-                        ];
-                        const activeBench = selectedSource === "custom" ? (bmarks[`bench_custom_${ki}`] ?? null) : sources.find(s => s.key === selectedSource)?.value ?? kpi.benchmark;
-                        const gap = currentVal != null && activeBench != null ? Math.abs(currentVal - activeBench) : null;
-                        const quartile = getQuartile(currentVal, activeBench, kpi);
-
-                        return (
-                          <div key={ki} style={{ padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                              <div>
-                                <div style={{ fontSize: 13, color: t.tx, fontWeight: 500 }}>{kpi.name} <span style={{ fontSize: 10, color: t.mut }}>({kpi.unit})</span></div>
-                                <div style={{ fontSize: 10, color: t.mut }}>{kpi.method || ""}</div>
-                              </div>
-                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                {gap != null && <span style={{ fontSize: 14, fontFamily: "monospace", color: gap > 0 ? RED : GREEN, fontWeight: 700 }}>Gap: {gap.toFixed(1)}</span>}
-                                {quartile && <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: quartile.color + "20", color: quartile.color, fontWeight: 700 }}>{quartile.icon} {quartile.label}</span>}
-                              </div>
-                            </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                              <span style={{ fontSize: 10, color: t.mut, minWidth: 50 }}>Current:</span>
-                              <span style={{ fontSize: 14, fontFamily: "monospace", color: currentVal != null ? t.tx : t.sub }}>{currentVal ?? "—"} <span style={{ fontSize: 9, color: t.mut }}>{kpi.unit}</span></span>
-                            </div>
-                            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
-                              <thead><tr>
-                                {["", "Source", "Value", "Unit"].map((h, i) => (
-                                  <th key={i} style={{ padding: "3px 6px", borderBottom: `1px solid ${t.bdr}40`, textAlign: i === 2 ? "right" : "left", color: t.mut, fontWeight: 600, fontSize: 10 }}>{h}</th>
-                                ))}
-                              </tr></thead>
-                              <tbody>
-                                {sources.map(src => (
-                                  <tr key={src.key} style={{ background: selectedSource === src.key ? (src.key === "primary" ? GREEN : GOLD) + "08" : "transparent" }}>
-                                    <td style={{ padding: "4px 6px", borderBottom: `1px solid ${t.bdr}20`, width: 30 }}>
-                                      <input type="radio" name={`src_${proc.id}_${ki}`} checked={selectedSource === src.key}
-                                        onChange={() => {
-                                          setBmark(`src_${ki}`, src.key);
-                                          const val = src.key === "custom" ? (bmarks[`bench_custom_${ki}`] ?? null) : src.value;
-                                          if (val != null) setBmark(`bench_${ki}`, val);
-                                        }}
-                                        style={{ accentColor: GREEN, cursor: "pointer" }} />
-                                    </td>
-                                    <td style={{ padding: "4px 6px", borderBottom: `1px solid ${t.bdr}20`, color: selectedSource === src.key ? t.tx : t.tx2, fontWeight: selectedSource === src.key ? 600 : 400 }}>{src.label}</td>
-                                    <td style={{ padding: "4px 6px", borderBottom: `1px solid ${t.bdr}20`, textAlign: "right", fontFamily: "monospace" }}>
-                                      {src.key === "custom" ? (
-                                        <input type="number" value={bmarks[`bench_custom_${ki}`] ?? ""} onChange={e => { const v = parseFloat(e.target.value) || null; setBmark(`bench_custom_${ki}`, v); if (selectedSource === "custom") setBmark(`bench_${ki}`, v); }}
-                                          placeholder="—" style={{ width: 60, background: t.card, border: `1px solid ${GOLD}33`, borderRadius: 4, padding: "2px 4px", color: GOLD, fontFamily: "monospace", fontSize: 12, textAlign: "center" }} />
-                                      ) : (
-                                        <span style={{ color: selectedSource === src.key ? GREEN : t.mut }}>{src.value ?? "—"}</span>
-                                      )}
-                                    </td>
-                                    <td style={{ padding: "4px 6px", borderBottom: `1px solid ${t.bdr}20`, color: t.mut, fontSize: 10 }}>{kpi.unit}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Catalyst results */}
-                    {catalystResults[proc.id] && (
-                      <div style={{ marginTop: 10, padding: 12, background: GOLD + "08", border: `1px solid ${GOLD}22`, borderRadius: 8 }}>
-                        <div style={{ fontSize: 10, color: GOLD, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>⚡ Catalyst — Benchmarks & Agent Impact</div>
-                        <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{catalystResults[proc.id]}</div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
-              <button onClick={() => setStep(3)} style={btnSecondary}>← Value Setting</button>
-              <button onClick={() => setStep(5)} style={btnPrimary}>ERP Impact →</button>
-            </div>
-          </div>
-        )}
-
-        {/* ═══════════════════════════════════════════════
-            STEP 5 — ERP Impact (SAP S/4HANA)
-           ═══════════════════════════════════════════════ */}
-        {step === 5 && (
-          <div>
-            {stepHeader(5, "ERP Impact — SAP S/4HANA")}
-            <div style={{ fontSize: 13, color: t.tx2, marginBottom: 20 }}>SAP module mappings with scenario descriptions for each in-scope L4 process.</div>
-
-            {/* Module summary */}
+            {/* Module summary badges */}
             {(() => {
               const modules = {};
               selProcs.forEach(p => (p.sap || []).forEach(s => { if (!modules[s.module]) modules[s.module] = []; modules[s.module].push(p.label); }));
-              return (
+              return Object.keys(modules).length > 0 ? (
                 <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
                   {Object.entries(modules).map(([mod, procs]) => (
-                    <div key={mod} style={{ padding: "6px 12px", background: BLUE + "10", border: `1px solid ${BLUE}22`, borderRadius: 8 }}>
-                      <div style={{ fontSize: 13, color: BLUE, fontWeight: 700 }}>{mod}</div>
-                      <div style={{ fontSize: 10, color: t.mut }}>{procs.length} processes</div>
+                    <div key={mod} style={{ padding: "4px 10px", background: BLUE + "10", border: `1px solid ${BLUE}22`, borderRadius: 6 }}>
+                      <span style={{ fontSize: 11, color: BLUE, fontWeight: 700 }}>{mod}</span>
+                      <span style={{ fontSize: 9, color: t.mut, marginLeft: 4 }}>{procs.length}</span>
                     </div>
                   ))}
                 </div>
-              );
+              ) : null;
             })()}
-
-            <div style={{ display: "grid", gap: 8 }}>
-              {selProcs.map(proc => (
-                <div key={proc.id} style={{ ...cardStyle, borderLeft: `3px solid ${BLUE}` }}>
-                  <div style={{ marginBottom: 8 }}>
-                    <span style={{ fontSize: 10, fontFamily: "monospace", color: t.mut, marginRight: 6 }}>{proc.l4}</span>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: t.tx }}>{proc.label}</span>
-                    {(() => { const _bp = getBlueprintForL2(proc.l2id); return _bp && <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, background: _bp.color + "20", color: _bp.color, marginLeft: 4 }}>{_bp.name}</span>; })()}
-                  </div>
-                  {(proc.sap || []).map((sap, si) => (
-                    <div key={si} style={{ padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${BLUE}15`, marginBottom: 4 }}>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
-                        <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, background: BLUE + "18", color: BLUE, fontWeight: 700 }}>{sap.module}</span>
-                        <span style={{ fontSize: 12, color: t.tx2 }}>{sap.desc}</span>
-                      </div>
-                      {sap.scenario && <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.5, fontStyle: "italic" }}>{sap.scenario}</div>}
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-
-            {/* ─── Per-Process Scenario Assessment ─── */}
-            <div style={{ ...labelStyle, marginTop: 24 }}>Per-Process Scenario Assessment</div>
-            <div style={{ fontSize: 11, color: t.tx2, marginBottom: 10 }}>Set addressable % and potential per process. Auto-suggested based on gap value. Used in Step 7 calculations.</div>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 16 }}>
-              <thead><tr>
-                {["Process", "Gap Value", "Addressable %", "Low (35%)", "Medium (65%)", "High (100%)", "Potential"].map((h, i) => (
-                  <th key={i} style={{ padding: "6px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: i >= 1 && i <= 5 ? "right" : "left", color: t.mut, fontWeight: 600, fontSize: 10 }}>{h}</th>
-                ))}
-              </tr></thead>
-              <tbody>
-                {selProcs.map(proc => {
-                  const vals = procValues[proc.id] || {};
-                  const bmarks = procBenchmarks[proc.id] || {};
-                  let gapVal = 0;
-                  (proc.kpis || []).forEach((kpi, ki) => {
-                    const current = vals[`kpi_current_${ki}`] ?? kpi.current;
-                    const bench = bmarks[`bench_${ki}`] ?? kpi.benchmark;
-                    if (current != null && bench != null && bench !== 0) {
-                      const gap = Math.abs(current - bench);
-                      const lever = proc.valLevers?.[0];
-                      const baseAmt = lever?.fintype === "Revenue" ? baseline.revenue : lever?.fintype === "COGS" ? baseline.cogs : baseline.sga;
-                      if (kpi.unit === "%") gapVal += (gap / 100) * baseAmt * 0.01;
-                      else gapVal += (bench !== 0 ? (gap / Math.abs(bench)) : 0) * baseAmt * 0.01;
-                    }
-                  });
-                  const autoSuggest = gapVal > 0.5 ? "High" : gapVal > 0.1 ? "Medium" : "Low";
-                  const currentLevel = procScenarios[proc.id]?.potential || autoSuggest;
-                  const addrPct = procScenarios[proc.id]?.addressable ?? 80;
-                  const addrFrac = addrPct / 100;
-                  const lowOut = gapVal * addrFrac * 0.35;
-                  const medOut = gapVal * addrFrac * 0.65;
-                  const highOut = gapVal * addrFrac * 1.0;
-
-                  return (
-                    <tr key={proc.id}>
-                      <td style={{ padding: "6px 8px", borderBottom: `1px solid ${t.bdr}40` }}>
-                        <span style={{ fontSize: 10, fontFamily: "monospace", color: t.mut, marginRight: 4 }}>{proc.l4}</span>
-                        <span style={{ color: t.tx, fontWeight: 500 }}>{proc.label}</span>
-                      </td>
-                      <td style={{ padding: "6px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: gapVal > 0 ? t.tx : t.sub }}>
-                        {gapVal > 0 ? `$${gapVal.toFixed(1)}M` : "—"}
-                      </td>
-                      <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right" }}>
-                        <input type="number" min={50} max={100} value={addrPct} onChange={e => {
-                          const v = Math.min(100, Math.max(50, parseInt(e.target.value) || 80));
-                          setProcScenarios(p => ({ ...p, [proc.id]: { ...(p[proc.id] || {}), addressable: v } }));
-                        }} style={{ width: 50, background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 4, padding: "3px 4px", color: t.tx, fontFamily: "monospace", fontSize: 11, textAlign: "right" }} />
-                        <span style={{ fontSize: 10, color: t.mut, marginLeft: 2 }}>%</span>
-                      </td>
-                      <td style={{ padding: "6px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", fontSize: 11, color: ORANGE }}>
-                        {gapVal > 0 ? `$${lowOut.toFixed(1)}M` : "—"}
-                      </td>
-                      <td style={{ padding: "6px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", fontSize: 11, color: GOLD }}>
-                        {gapVal > 0 ? `$${medOut.toFixed(1)}M` : "—"}
-                      </td>
-                      <td style={{ padding: "6px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", fontSize: 11, color: GREEN }}>
-                        {gapVal > 0 ? `$${highOut.toFixed(1)}M` : "—"}
-                      </td>
-                      <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40` }}>
-                        <select value={currentLevel} onChange={e => setProcScenarios(p => ({ ...p, [proc.id]: { ...(p[proc.id] || {}), potential: e.target.value } }))}
-                          style={{ background: t.bg, border: `1px solid ${currentLevel === "High" ? GREEN : currentLevel === "Medium" ? GOLD : ORANGE}44`,
-                            borderRadius: 6, padding: "4px 8px", color: currentLevel === "High" ? GREEN : currentLevel === "Medium" ? GOLD : ORANGE,
-                            fontFamily: FONT, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-                          {SCENARIO_LEVELS.map(lvl => <option key={lvl} value={lvl}>{lvl}</option>)}
-                        </select>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
-              <button onClick={() => setStep(4)} style={btnSecondary}>← Benchmarks</button>
-              <button onClick={() => setStep(6)} style={btnPrimary}>AI Agents →</button>
-            </div>
-          </div>
-        )}
-
-        {/* ═══════════════════════════════════════════════
-            STEP 6 — AI Impact Agents
-           ═══════════════════════════════════════════════ */}
-        {step === 6 && (
-          <div>
-            {stepHeader(6, "AI Impact Agents")}
-            <div style={{ fontSize: 13, color: t.tx2, marginBottom: 20 }}>Three-column KPI comparison: Today vs S/4HANA best practice vs S/4HANA + AI Agent. Catalyst generates detailed agent scenarios below.</div>
 
             <div style={{ display: "grid", gap: 12 }}>
               {selProcs.map(proc => {
-                const vals = procValues[proc.id] || {};
                 const bmarks = procBenchmarks[proc.id] || {};
+                const setBmark = (key, val) => setProcBenchmarks(prev => ({ ...prev, [proc.id]: { ...(prev[proc.id] || {}), [key]: val } }));
+                const vals = procValues[proc.id] || {};
                 const potential = procScenarios[proc.id]?.potential || scenarioLevel;
                 const m = { High: 1.0, Medium: 0.65, Low: 0.35 }[potential] * ((procScenarios[proc.id]?.addressable || 80) / 100);
                 let procErpVal = 0, procAgentVal = 0;
@@ -3109,81 +2946,214 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
                   return { kpi, ki, current, bench, agentBench, erpImpact, agentImpact };
                 });
 
+                // Tab state per process — default "benchmarks"
+                const procTab = procScenarios[proc.id]?._tab || "benchmarks";
+                const setTab = (tab) => setProcScenarios(prev => ({ ...prev, [proc.id]: { ...(prev[proc.id] || {}), _tab: tab } }));
+
                 return (
-                <div key={proc.id} style={{ ...cardStyle, borderLeft: `3px solid ${GREEN}` }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                    <div>
-                      <span style={{ fontSize: 10, fontFamily: "monospace", color: t.mut, marginRight: 6 }}>{proc.l4}</span>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: t.tx }}>{proc.label}</span>
-                      {(() => { const _bp = getBlueprintForL2(proc.l2id); return _bp && <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, background: _bp.color + "20", color: _bp.color, marginLeft: 4 }}>{_bp.name}</span>; })()}
+                  <div key={proc.id} style={{ ...cardStyle, borderLeft: `3px solid ${proc.l1Color}` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                      <div>
+                        <span style={{ fontSize: 10, fontFamily: "monospace", color: t.mut, marginRight: 6 }}>{proc.l4}</span>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: t.tx }}>{proc.label}</span>
+                        {(() => { const _bp = getBlueprintForL2(proc.l2id); return _bp && <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, background: _bp.color + "20", color: _bp.color, marginLeft: 4 }}>{_bp.name}</span>; })()}
+                      </div>
+                      <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, background: proc.l1Color + "15", color: proc.l1Color, fontWeight: 600 }}>{proc.e2e}</span>
                     </div>
-                    <button onClick={() => callCatalyst(proc.id,
-                      `You are an AI transformation consultant for ${baseline.industry} companies. For the process "${proc.label}" (APQC ${proc.l4}), provide a detailed AI agent assessment:\n\n1. AGENT NAME & TYPE — Give it a specific name and classify (e.g., autonomous, copilot, predictive, generative)\n\n2. WHAT IT DOES — Specific actions this agent performs in this process (not generic). Reference actual inputs/outputs.\n\n3. QUANTITATIVE IMPACT — Be very specific with numbers:\n   - Labor efficiency gain: X-Y% (cite source)\n   - Cycle time reduction: X-Y% (cite source)\n   - Error/rework reduction: X-Y% (cite source)\n   - Cost per transaction reduction: $X → $Y (cite source)\n\n4. PUBLISHED CASE STUDIES — Find 2-3 real deployments:\n   - Company/industry, agent/tool used, measured outcome, year\n   - Example sources: Gartner, Forrester, McKinsey, Deloitte, vendor case studies (HighRadius, Celonis, BlackLine, Esker, Coupa, SAP)\n\n5. IMPLEMENTATION — Complexity (Low/Medium/High), typical timeline, prerequisites\n\nBe specific and quantitative. Every claim needs a number and a source. If uncertain, say "estimated" and explain basis.`,
-                      setAgentResults, setAgentLoading
-                    )} disabled={agentLoading[proc.id]}
-                      style={{ fontSize: 11, padding: "6px 16px", borderRadius: 8, background: GOLD, border: "none", color: "#111", cursor: agentLoading[proc.id] ? "wait" : "pointer", fontFamily: FONT, fontWeight: 600 }}>
-                      {agentLoading[proc.id] ? "⟳ Generating..." : "⚡ Generate Agent"}
-                    </button>
-                  </div>
 
-                  {/* Three-column KPI comparison table */}
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 12 }}>
-                    <thead><tr>
-                      {["KPI", "Today", "With S/4HANA", "With S/4 + Agent", "Agent Delta"].map((h, i) => (
-                        <th key={i} style={{ padding: "5px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: i === 0 ? "left" : "right", color: t.mut, fontWeight: 600, fontSize: 10, textTransform: "uppercase", letterSpacing: ".5px" }}>{h}</th>
+                    {/* Section Tabs */}
+                    <div style={{ display: "flex", gap: 2, marginBottom: 12, borderBottom: `1px solid ${t.bdr}` }}>
+                      {[
+                        { key: "benchmarks", label: "Benchmarks", color: GREEN },
+                        { key: "sap", label: "SAP", color: BLUE },
+                        { key: "agents", label: "AI Agents", color: GOLD },
+                      ].map(tab => (
+                        <button key={tab.key} onClick={() => setTab(tab.key)} style={{
+                          fontSize: 11, padding: "6px 14px", fontWeight: procTab === tab.key ? 700 : 500,
+                          background: procTab === tab.key ? tab.color + "12" : "transparent",
+                          borderBottom: procTab === tab.key ? `2px solid ${tab.color}` : "2px solid transparent",
+                          border: "none", borderBottomStyle: "solid", borderBottomWidth: 2,
+                          borderBottomColor: procTab === tab.key ? tab.color : "transparent",
+                          color: procTab === tab.key ? tab.color : t.tx2,
+                          cursor: "pointer", fontFamily: FONT,
+                        }}>{tab.label}</button>
                       ))}
-                    </tr></thead>
-                    <tbody>
-                      {kpiRows.map(({ kpi, ki, current, bench, agentBench, agentImpact }) => {
-                        const todayColor = (current != null && bench != null) ? (Math.abs(current - bench) / Math.abs(bench) > 0.35 ? RED : Math.abs(current - bench) / Math.abs(bench) > 0.1 ? GOLD : GREEN) : t.mut;
-                        return (
-                          <tr key={ki}>
-                            <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx2, fontSize: 11 }}>{kpi.name} <span style={{ color: t.sub, fontSize: 9 }}>({kpi.unit})</span></td>
-                            <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: todayColor, fontWeight: 600 }}>{current != null ? current : "—"}</td>
-                            <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: GOLD }}>{bench != null ? bench : "—"}</td>
-                            <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: GREEN, fontWeight: 600 }}>{agentBench != null ? agentBench : "—"}</td>
-                            <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: agentImpact > 0 ? GREEN : t.sub, fontSize: 11 }}>{agentImpact > 0 ? `+$${agentImpact.toFixed(1)}M` : "—"}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                    </div>
 
-                  {/* Value summary row */}
-                  <div style={{ display: "flex", gap: 16, padding: "8px 0", borderTop: `1px solid ${t.bdr}`, marginBottom: 10 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600 }}><span style={{ color: GOLD }}>ERP Value:</span> <span style={{ fontFamily: "monospace", color: GOLD }}>{procErpVal > 0 ? `$${procErpVal.toFixed(1)}M` : "—"}</span></span>
-                    <span style={{ fontSize: 12, fontWeight: 600 }}><span style={{ color: GREEN }}>Agent Uplift:</span> <span style={{ fontFamily: "monospace", color: GREEN }}>{procAgentVal > 0 ? `$${procAgentVal.toFixed(1)}M` : "—"}</span></span>
-                    <span style={{ fontSize: 12, fontWeight: 700 }}><span style={{ color: t.tx }}>Total:</span> <span style={{ fontFamily: "monospace", color: t.tx }}>{(procErpVal + procAgentVal) > 0 ? `$${(procErpVal + procAgentVal).toFixed(1)}M` : "—"}</span></span>
+                    {/* Section A: Benchmarks & Quartile Scoring */}
+                    {procTab === "benchmarks" && (
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+                          <button onClick={() => callCatalyst(proc.id,
+                            `You are a benchmarking expert for ${baseline.industry} companies. For the process "${proc.label}" (APQC ${proc.l4}), provide TWO sections:\n\nSECTION 1 — TRADITIONAL BENCHMARKS\nProvide 3-5 specific benchmark suggestions from published sources. Include: KPI name, benchmark value with unit, source/year, and brief calculation methodology.\n\nSECTION 2 — AI AGENT IMPACT BENCHMARKS\nFor this same process, what efficiency gains have AI agents achieved? Include: agent type, % efficiency improvement, source/case study. Be specific and quantitative.`,
+                            setCatalystResults, setCatalystLoading
+                          )} disabled={catalystLoading[proc.id]}
+                            style={{ fontSize: 10, padding: "4px 12px", borderRadius: 6, background: GOLD + "15", border: `1px solid ${GOLD}33`, color: GOLD, cursor: catalystLoading[proc.id] ? "wait" : "pointer", fontFamily: FONT, fontWeight: 600 }}>
+                            {catalystLoading[proc.id] ? "⟳ Loading..." : "⚡ Catalyst"}
+                          </button>
+                        </div>
+                        <div style={{ display: "grid", gap: 10 }}>
+                          {(proc.kpis || []).map((kpi, ki) => {
+                            const currentVal = vals[`kpi_current_${ki}`] ?? kpi.current;
+                            const selectedSource = bmarks[`src_${ki}`] || "primary";
+                            const seed = (proc.id + ki).split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+                            const jitter = (n) => +(((seed * (n + 1) * 9301 + 49297) % 233280) / 233280 * 0.3 + 0.85).toFixed(1);
+                            const sources = [
+                              { key: "primary", label: kpi.src || "APQC", value: kpi.benchmark },
+                              { key: "sapvlm", label: "SAP VLM", value: kpi.benchmark ? +(kpi.benchmark * jitter(1)).toFixed(1) : null },
+                              { key: "hackett", label: "Hackett", value: kpi.benchmark ? +(kpi.benchmark * jitter(2)).toFixed(1) : null },
+                              { key: "custom", label: "Custom", value: bmarks[`bench_custom_${ki}`] ?? null },
+                            ];
+                            const activeBench = selectedSource === "custom" ? (bmarks[`bench_custom_${ki}`] ?? null) : sources.find(s => s.key === selectedSource)?.value ?? kpi.benchmark;
+                            const gap = currentVal != null && activeBench != null ? Math.abs(currentVal - activeBench) : null;
+                            const quartile = getQuartile(currentVal, activeBench, kpi);
+                            return (
+                              <div key={ki} style={{ padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                                  <div>
+                                    <div style={{ fontSize: 13, color: t.tx, fontWeight: 500 }}>{kpi.name} <span style={{ fontSize: 10, color: t.mut }}>({kpi.unit})</span></div>
+                                    <div style={{ fontSize: 10, color: t.mut }}>{kpi.method || ""}</div>
+                                  </div>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    {gap != null && <span style={{ fontSize: 14, fontFamily: "monospace", color: gap > 0 ? RED : GREEN, fontWeight: 700 }}>Gap: {gap.toFixed(1)}</span>}
+                                    {quartile && <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: quartile.color + "20", color: quartile.color, fontWeight: 700 }}>{quartile.icon} {quartile.label}</span>}
+                                  </div>
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                                  <span style={{ fontSize: 10, color: t.mut, minWidth: 50 }}>Current:</span>
+                                  <span style={{ fontSize: 14, fontFamily: "monospace", color: currentVal != null ? t.tx : t.sub }}>{currentVal ?? "—"} <span style={{ fontSize: 9, color: t.mut }}>{kpi.unit}</span></span>
+                                </div>
+                                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                                  <thead><tr>
+                                    {["", "Source", "Value", "Unit"].map((h, i) => (
+                                      <th key={i} style={{ padding: "3px 6px", borderBottom: `1px solid ${t.bdr}40`, textAlign: i === 2 ? "right" : "left", color: t.mut, fontWeight: 600, fontSize: 10 }}>{h}</th>
+                                    ))}
+                                  </tr></thead>
+                                  <tbody>
+                                    {sources.map(src => (
+                                      <tr key={src.key} style={{ background: selectedSource === src.key ? (src.key === "primary" ? GREEN : GOLD) + "08" : "transparent" }}>
+                                        <td style={{ padding: "4px 6px", borderBottom: `1px solid ${t.bdr}20`, width: 30 }}>
+                                          <input type="radio" name={`src_${proc.id}_${ki}`} checked={selectedSource === src.key}
+                                            onChange={() => { setBmark(`src_${ki}`, src.key); const val = src.key === "custom" ? (bmarks[`bench_custom_${ki}`] ?? null) : src.value; if (val != null) setBmark(`bench_${ki}`, val); }}
+                                            style={{ accentColor: GREEN, cursor: "pointer" }} />
+                                        </td>
+                                        <td style={{ padding: "4px 6px", borderBottom: `1px solid ${t.bdr}20`, color: selectedSource === src.key ? t.tx : t.tx2, fontWeight: selectedSource === src.key ? 600 : 400 }}>{src.label}</td>
+                                        <td style={{ padding: "4px 6px", borderBottom: `1px solid ${t.bdr}20`, textAlign: "right", fontFamily: "monospace" }}>
+                                          {src.key === "custom" ? (
+                                            <input type="number" value={bmarks[`bench_custom_${ki}`] ?? ""} onChange={e => { const v = parseFloat(e.target.value) || null; setBmark(`bench_custom_${ki}`, v); if (selectedSource === "custom") setBmark(`bench_${ki}`, v); }}
+                                              placeholder="—" style={{ width: 60, background: t.card, border: `1px solid ${GOLD}33`, borderRadius: 4, padding: "2px 4px", color: GOLD, fontFamily: "monospace", fontSize: 12, textAlign: "center" }} />
+                                          ) : (
+                                            <span style={{ color: selectedSource === src.key ? GREEN : t.mut }}>{src.value ?? "—"}</span>
+                                          )}
+                                        </td>
+                                        <td style={{ padding: "4px 6px", borderBottom: `1px solid ${t.bdr}20`, color: t.mut, fontSize: 10 }}>{kpi.unit}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {catalystResults[proc.id] && (
+                          <div style={{ marginTop: 10, padding: 12, background: GOLD + "08", border: `1px solid ${GOLD}22`, borderRadius: 8 }}>
+                            <div style={{ fontSize: 10, color: GOLD, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>⚡ Catalyst — Benchmarks & Agent Impact</div>
+                            <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{catalystResults[proc.id]}</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Section B: SAP S/4HANA Optimization */}
+                    {procTab === "sap" && (
+                      <div>
+                        {(proc.sap || []).length > 0 ? (proc.sap || []).map((sap, si) => (
+                          <div key={si} style={{ padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${BLUE}15`, marginBottom: 4 }}>
+                            <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
+                              <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, background: BLUE + "18", color: BLUE, fontWeight: 700 }}>{sap.module}</span>
+                              <span style={{ fontSize: 12, color: t.tx2 }}>{sap.desc}</span>
+                            </div>
+                            {sap.scenario && <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.5, fontStyle: "italic" }}>{sap.scenario}</div>}
+                          </div>
+                        )) : (
+                          <div style={{ padding: 20, textAlign: "center", color: t.mut, border: `2px dashed ${t.bdr}`, borderRadius: 10 }}>No SAP modules mapped for this process</div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Section C: AI Agent Assessment */}
+                    {procTab === "agents" && (
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+                          <button onClick={() => callCatalyst(proc.id,
+                            `You are an AI transformation consultant for ${baseline.industry} companies. For the process "${proc.label}" (APQC ${proc.l4}), provide a detailed AI agent assessment:\n\n1. AGENT NAME & TYPE\n2. WHAT IT DOES — Specific actions\n3. QUANTITATIVE IMPACT — Labor efficiency, cycle time, error reduction with numbers\n4. PUBLISHED CASE STUDIES — 2-3 real deployments\n5. IMPLEMENTATION — Complexity, timeline, prerequisites\n\nBe specific and quantitative.`,
+                            setAgentResults, setAgentLoading
+                          )} disabled={agentLoading[proc.id]}
+                            style={{ fontSize: 11, padding: "6px 16px", borderRadius: 8, background: GOLD, border: "none", color: "#111", cursor: agentLoading[proc.id] ? "wait" : "pointer", fontFamily: FONT, fontWeight: 600 }}>
+                            {agentLoading[proc.id] ? "⟳ Generating..." : "⚡ Generate Agent"}
+                          </button>
+                        </div>
+
+                        {/* Three-column KPI comparison */}
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 12 }}>
+                          <thead><tr>
+                            {["KPI", "Today", "With S/4HANA", "With S/4 + Agent", "Agent Delta"].map((h, i) => (
+                              <th key={i} style={{ padding: "5px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: i === 0 ? "left" : "right", color: t.mut, fontWeight: 600, fontSize: 10, textTransform: "uppercase", letterSpacing: ".5px" }}>{h}</th>
+                            ))}
+                          </tr></thead>
+                          <tbody>
+                            {kpiRows.map(({ kpi, ki, current, bench, agentBench, agentImpact }) => {
+                              const todayColor = (current != null && bench != null) ? (Math.abs(current - bench) / Math.abs(bench) > 0.35 ? RED : Math.abs(current - bench) / Math.abs(bench) > 0.1 ? GOLD : GREEN) : t.mut;
+                              return (
+                                <tr key={ki}>
+                                  <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx2, fontSize: 11 }}>{kpi.name} <span style={{ color: t.sub, fontSize: 9 }}>({kpi.unit})</span></td>
+                                  <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: todayColor, fontWeight: 600 }}>{current != null ? current : "—"}</td>
+                                  <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: GOLD }}>{bench != null ? bench : "—"}</td>
+                                  <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: GREEN, fontWeight: 600 }}>{agentBench != null ? agentBench : "—"}</td>
+                                  <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: agentImpact > 0 ? GREEN : t.sub, fontSize: 11 }}>{agentImpact > 0 ? `+$${agentImpact.toFixed(1)}M` : "—"}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+
+                        {/* Value summary */}
+                        <div style={{ display: "flex", gap: 16, padding: "8px 0", borderTop: `1px solid ${t.bdr}`, marginBottom: 10 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600 }}><span style={{ color: GOLD }}>ERP Value:</span> <span style={{ fontFamily: "monospace", color: GOLD }}>{procErpVal > 0 ? `$${procErpVal.toFixed(1)}M` : "—"}</span></span>
+                          <span style={{ fontSize: 12, fontWeight: 600 }}><span style={{ color: GREEN }}>Agent Uplift:</span> <span style={{ fontFamily: "monospace", color: GREEN }}>{procAgentVal > 0 ? `$${procAgentVal.toFixed(1)}M` : "—"}</span></span>
+                          <span style={{ fontSize: 12, fontWeight: 700 }}><span style={{ color: t.tx }}>Total:</span> <span style={{ fontFamily: "monospace", color: t.tx }}>{(procErpVal + procAgentVal) > 0 ? `$${(procErpVal + procAgentVal).toFixed(1)}M` : "—"}</span></span>
+                        </div>
+
+                        {agentResults[proc.id] ? (
+                          <div style={{ padding: 14, background: GOLD + "08", border: `1px solid ${GOLD}22`, borderRadius: 10 }}>
+                            <div style={{ fontSize: 10, color: GOLD, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 8 }}>⚡ AI Agent Scenario</div>
+                            <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{agentResults[proc.id]}</div>
+                          </div>
+                        ) : (
+                          <div style={{ padding: 16, border: `2px dashed ${t.bdr}`, borderRadius: 10, textAlign: "center" }}>
+                            <div style={{ fontSize: 12, color: t.mut }}>Click "Generate Agent" to have Catalyst describe an AI agent for this process</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-
-                  {agentResults[proc.id] ? (
-                    <div style={{ padding: 14, background: GOLD + "08", border: `1px solid ${GOLD}22`, borderRadius: 10 }}>
-                      <div style={{ fontSize: 10, color: GOLD, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 8 }}>⚡ AI Agent Scenario</div>
-                      <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{agentResults[proc.id]}</div>
-                    </div>
-                  ) : (
-                    <div style={{ padding: 16, border: `2px dashed ${t.bdr}`, borderRadius: 10, textAlign: "center" }}>
-                      <div style={{ fontSize: 12, color: t.mut }}>Click "Generate Agent" to have Catalyst describe an AI agent for this process</div>
-                    </div>
-                  )}
-                </div>
                 );
               })}
             </div>
 
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
-              <button onClick={() => setStep(5)} style={btnSecondary}>← ERP Impact</button>
-              <button onClick={() => setStep(7)} style={btnPrimary}>Calculations →</button>
+              <button onClick={() => setStep(3)} style={btnSecondary}>← Value Setting</button>
+              <button onClick={() => setStep(5)} style={btnPrimary}>Value Calculation →</button>
             </div>
           </div>
         )}
 
         {/* ═══════════════════════════════════════════════
-            STEP 7 — Value Calculations
+            STEP 5 — Value Calculation
            ═══════════════════════════════════════════════ */}
-        {step === 7 && (
+        {step === 5 && (
           <div>
-            {stepHeader(7, "Value Calculations")}
+            {stepHeader(5, "Value Calculation")}
             <div style={{ fontSize: 13, color: t.tx2, marginBottom: 20 }}>Baseline vs benchmark gap → addressable value → scenario rollup.</div>
 
             {/* Scenario selector — "Set All" convenience */}
@@ -3366,6 +3336,122 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
               </tbody>
             </table>
 
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
+              <button onClick={() => setStep(4)} style={btnSecondary}>← Benchmark</button>
+              <button onClick={() => setStep(6)} style={btnPrimary}>Action Plan →</button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            STEP 6 — Phase 0 Action Plan
+           ═══════════════════════════════════════════════ */}
+        {step === 6 && (
+          <div>
+            {stepHeader(6, "Phase 0 Action Plan")}
+            <div style={{ fontSize: 13, color: t.tx2, marginBottom: 20 }}>Assessment complete. Download deliverables, share with stakeholders, and define next steps.</div>
+
+            {/* Hero Stats */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 10, marginBottom: 28 }}>
+              {[
+                { l: "Combined Value", v: fd(valResult.combined), c: "#FFFFFF", large: true },
+                { l: "ERP Value", v: fd(valResult.total), c: GOLD },
+                { l: "Agent Uplift", v: fd(valResult.agentTotal), c: GREEN },
+                { l: "Processes", v: selProcs.length, c: BLUE },
+                { l: "KPIs Assessed", v: totalKPIs, c: PURPLE },
+              ].map(k => (
+                <div key={k.l} style={{ background: `${k.c}0C`, border: `1px solid ${k.c}22`, borderRadius: 10, padding: "14px 16px", textAlign: "center" }}>
+                  <div style={{ fontSize: 10, color: k.c, textTransform: "uppercase", letterSpacing: ".5px", fontWeight: 600, marginBottom: 4 }}>{k.l}</div>
+                  <div style={{ fontSize: k.large ? 28 : 22, fontFamily: SERIF, color: k.c, fontWeight: k.large ? 700 : 400 }}>{k.v}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Downloads — Three Cards */}
+            <div style={labelStyle}>Deliverables</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 28 }}>
+              <div style={{ ...cardStyle, textAlign: "center", padding: 24 }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>📋</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: t.tx, marginBottom: 6 }}>Phase 0 Report</div>
+                <div style={{ fontSize: 11, color: t.tx2, lineHeight: 1.5, marginBottom: 14 }}>Comprehensive assessment report with baseline analysis, benchmarks, and value calculations</div>
+                <button onClick={generatePhase0Report} style={{ ...btnPrimary, padding: "10px 24px", fontSize: 13, width: "100%" }}>
+                  ↓ Download Report
+                </button>
+              </div>
+              <div style={{ ...cardStyle, textAlign: "center", padding: 24 }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>📊</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: t.tx, marginBottom: 6 }}>Executive Deck</div>
+                <div style={{ fontSize: 11, color: t.tx2, lineHeight: 1.5, marginBottom: 14 }}>Board-ready presentation with ERP vs Agent value split and process deep dives</div>
+                <button onClick={() => generatePPTX({ baseline, selProcs, valResult, scenarioLevel, procValues, procBenchmarks, agentResults, baselineData, selectedFunction, totalKPIs, FUNCTIONS, PROC_MAP, getQuartile })} style={{ ...btnPrimary, padding: "10px 24px", fontSize: 13, width: "100%", background: BLUE }}>
+                  ↓ Download PPTX
+                </button>
+              </div>
+              <div style={{ ...cardStyle, textAlign: "center", padding: 24 }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>📦</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: t.tx, marginBottom: 6 }}>Data Export</div>
+                <div style={{ fontSize: 11, color: t.tx2, lineHeight: 1.5, marginBottom: 14 }}>Raw assessment data for further analysis or integration with other tools</div>
+                <button onClick={exportSessionJSON} style={{ ...btnSecondary, padding: "10px 24px", fontSize: 13, width: "100%" }}>
+                  ↓ Export JSON
+                </button>
+              </div>
+            </div>
+
+            {/* Share Section */}
+            {assessmentId && isOwner && (
+              <>
+                <div style={labelStyle}>Share Assessment</div>
+                <div style={{ ...cardStyle, marginBottom: 24, padding: 20 }}>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                    <input value={shareEmail} onChange={e => setShareEmail(e.target.value)} placeholder="email@example.com"
+                      onKeyDown={e => e.key === "Enter" && handleShare()}
+                      style={{ flex: 1, padding: "10px 12px", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 8, color: t.tx, fontFamily: FONT, fontSize: 13, outline: "none" }} />
+                    <select value={shareRole} onChange={e => setShareRole(e.target.value)}
+                      style={{ padding: "10px", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 8, color: t.tx, fontFamily: FONT, fontSize: 12 }}>
+                      <option value="viewer">Viewer</option>
+                      <option value="editor">Editor</option>
+                    </select>
+                    <button onClick={handleShare} disabled={shareLoading || !shareEmail.trim()}
+                      style={{ padding: "10px 20px", borderRadius: 8, background: PURPLE, border: "none", color: "#fff", fontFamily: FONT, fontWeight: 600, fontSize: 13, cursor: shareLoading ? "wait" : "pointer", opacity: shareEmail.trim() ? 1 : 0.4 }}>
+                      Share
+                    </button>
+                  </div>
+                  <button onClick={() => { navigator.clipboard.writeText(window.location.href); }}
+                    style={{ padding: "8px 16px", borderRadius: 6, background: t.bg, border: `1px solid ${t.bdr}`, color: t.tx2, fontFamily: FONT, fontSize: 11, cursor: "pointer" }}>
+                    Copy Assessment Link
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Next Steps — Auto-generated */}
+            <div style={labelStyle}>Recommended Next Steps</div>
+            <div style={{ ...cardStyle, padding: 20, marginBottom: 24 }}>
+              {(() => {
+                const topE2E = (() => { const e2eVals = {}; valResult.impacts.forEach(i => { e2eVals[i.e2e] = (e2eVals[i.e2e] || 0) + i.value; }); const sorted = Object.entries(e2eVals).sort((a, b) => b[1] - a[1]); return sorted[0]; })();
+                const topAgent = valResult.impacts.filter(i => (i.agentValue || 0) > 0).sort((a, b) => (b.agentValue || 0) - (a.agentValue || 0))[0];
+                const bottomQuartile = (() => { let count = 0; selProcs.forEach(p => { (p.kpis || []).forEach((kpi, ki) => { const current = procValues[p.id]?.[`kpi_current_${ki}`] ?? kpi.current; const bench = procBenchmarks[p.id]?.[`bench_${ki}`] ?? kpi.benchmark; const q = getQuartile(current, bench, kpi); if (q && q.score < 1.5) count++; }); }); return count; })();
+                const leastData = selProcs.filter(p => !Object.keys(baselineData).some(k => k.startsWith(p.id))).length;
+
+                const steps = [];
+                if (topE2E) steps.push({ n: 1, text: `Prioritize ${topE2E[0]} — $${topE2E[1].toFixed(1)}M addressable value`, c: GOLD });
+                if (topAgent) steps.push({ n: steps.length + 1, text: `Deploy AI agents for ${topAgent.label} — $${topAgent.agentValue.toFixed(1)}M incremental uplift`, c: GREEN });
+                if (bottomQuartile > 0) steps.push({ n: steps.length + 1, text: `Address ${bottomQuartile} Bottom Quartile KPIs to close performance gaps`, c: RED });
+                if (leastData > 0) steps.push({ n: steps.length + 1, text: `Deep-dive baseline for ${leastData} processes with missing data`, c: PURPLE });
+                steps.push({ n: steps.length + 1, text: "Initiate Phase 1 detailed design and implementation roadmap", c: BLUE });
+
+                return (
+                  <div style={{ display: "grid", gap: 8 }}>
+                    {steps.map(s => (
+                      <div key={s.n} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: s.c + "08", border: `1px solid ${s.c}22`, borderRadius: 8 }}>
+                        <span style={{ fontSize: 16, fontFamily: SERIF, color: s.c, fontWeight: 700, minWidth: 24 }}>{s.n}.</span>
+                        <span style={{ fontSize: 13, color: t.tx, lineHeight: 1.5 }}>{s.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+
             {/* Saved Scenarios */}
             {savedScenarios.length > 0 && (
               <>
@@ -3382,24 +3468,8 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
               </>
             )}
 
-            {/* Phase 0 Report */}
-            <div style={{ marginTop: 24, padding: 20, background: GOLD + "08", border: `1px solid ${GOLD}22`, borderRadius: 12, textAlign: "center" }}>
-              <div style={{ fontSize: 11, color: GOLD, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Phase 0 Deliverable</div>
-              <div style={{ fontSize: 14, color: t.tx, marginBottom: 4 }}>Generate a comprehensive Phase 0 Report</div>
-              <div style={{ fontSize: 12, color: t.tx2, marginBottom: 12 }}>Compiles scope, questionnaire responses, process mining data, benchmarks, SAP mappings, AI agent scenarios, and value calculations into a downloadable HTML report.</div>
-              <button onClick={generatePhase0Report} style={{ ...btnPrimary, padding: "10px 32px", fontSize: 14 }}>
-                ↓ Download Phase 0 Report
-              </button>
-              <button onClick={() => generatePPTX({ baseline, selProcs, valResult, scenarioLevel, procValues, procBenchmarks, agentResults, baselineData, selectedFunction, totalKPIs, FUNCTIONS, PROC_MAP, getQuartile })} style={{ ...btnPrimary, padding: "10px 32px", fontSize: 14, marginLeft: 8, background: "#7BA7CC" }}>
-                ↓ Download PPTX
-              </button>
-              <button onClick={exportSessionJSON} style={{ ...btnSecondary, padding: "10px 32px", fontSize: 14, marginLeft: 8 }}>
-                ↓ Export Data (JSON)
-              </button>
-            </div>
-
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
-              <button onClick={() => setStep(6)} style={btnSecondary}>← AI Agents</button>
+              <button onClick={() => setStep(5)} style={btnSecondary}>← Value Calculation</button>
             </div>
           </div>
         )}
