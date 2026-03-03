@@ -48,14 +48,24 @@ const BLUEPRINTS = {
 };
 
 const FUNCTIONS = [
-  { id: "finance", name: "Finance", icon: "◆", color: GOLD, active: true },
-  { id: "supply-chain", name: "Supply Chain", icon: "◈", color: PURPLE, active: false },
-  { id: "hr", name: "HR", icon: "◉", color: GREEN, active: false },
-  { id: "it", name: "IT", icon: "◎", color: BLUE, active: false },
-  { id: "customer", name: "Customer", icon: "◇", color: RED, active: false },
-  { id: "sales", name: "Sales", icon: "▪", color: ORANGE, active: false },
-  { id: "product", name: "Product", icon: "▫", color: PURPLE, active: false },
-  { id: "risk", name: "Risk", icon: "△", color: RED, active: false },
+  { id: "finance", name: "Finance", icon: "◆", color: GOLD, active: true,
+    desc: "Order to Cash, Record to Report, Procure to Pay",
+    apqcL1s: ["8.0", "9.0", "10.0"], status: "Live" },
+  { id: "supply-chain", name: "Supply Chain", icon: "◈", color: PURPLE, active: false,
+    desc: "Plan, Source, Make, Deliver, Return",
+    apqcL1s: ["4.0", "5.0", "6.0"], status: "Coming Soon" },
+  { id: "hr", name: "HR", icon: "◉", color: GREEN, active: false,
+    desc: "Hire to Retire, Talent Management, Payroll",
+    apqcL1s: ["7.0"], status: "Coming Soon" },
+  { id: "it", name: "IT", icon: "◎", color: BLUE, active: false,
+    desc: "IT Service Management, Infrastructure, Security",
+    apqcL1s: ["11.0"], status: "Coming Soon" },
+  { id: "customer", name: "Customer", icon: "◇", color: RED, active: false,
+    desc: "Marketing, Sales, Service, Experience",
+    apqcL1s: ["3.0"], status: "Coming Soon" },
+  { id: "sales", name: "Sales", icon: "▪", color: ORANGE, active: false,
+    desc: "Lead to Cash, Pipeline Management, Forecasting",
+    apqcL1s: ["3.0", "8.0"], status: "Coming Soon" },
 ];
 
 /* ═══════════════════════════════════════════════════════
@@ -491,6 +501,15 @@ const getBlueprintForL2 = (l2id, functionId = "finance") => {
   return bps.find(bp => bp.apqcL2s.includes(l2id)) || null;
 };
 
+// Quartile scoring: compares current value to benchmark
+const getQuartile = (current, benchmark) => {
+  if (current == null || benchmark == null || benchmark === 0) return null;
+  const gapPct = Math.abs(current - benchmark) / Math.abs(benchmark);
+  if (gapPct <= 0.1) return { label: "Top", color: GREEN, score: 3 };
+  if (gapPct <= 0.35) return { label: "Average", color: GOLD, score: 2 };
+  return { label: "Bottom", color: RED, score: 1 };
+};
+
 /* ═══════════════════════════════════════════════════════
    DROPDOWN OPTIONS
    ═══════════════════════════════════════════════════════ */
@@ -573,6 +592,12 @@ export default function PrismL4() {
   const [scenarioLevel, setScenarioLevel] = useState("Medium");
   const [savedScenarios, setSavedScenarios] = useState([]);
 
+  // Two-track baseline data (Step 2)
+  const [baselineData, setBaselineData] = useState({});
+
+  // Per-process potential categorization (Step 5 / Step 7)
+  const [procScenarios, setProcScenarios] = useState({});
+
   // Focus
   const [focusProc, setFocusProc] = useState(null);
   const [showBaselineEditor, setShowBaselineEditor] = useState(false);
@@ -601,7 +626,6 @@ export default function PrismL4() {
   // Value computation for Step 7
   const computeValue = useCallback(() => {
     const multipliers = { High: 1.0, Medium: 0.65, Low: 0.35 };
-    const m = multipliers[scenarioLevel];
     let totalValue = 0;
     let revImpact = 0, cogsImpact = 0, sgaImpact = 0;
     const procImpacts = [];
@@ -609,6 +633,8 @@ export default function PrismL4() {
     selProcs.forEach(proc => {
       const vals = procValues[proc.id] || {};
       const bmarks = procBenchmarks[proc.id] || {};
+      const procLevel = procScenarios[proc.id] || scenarioLevel;
+      const m = multipliers[procLevel];
       let procVal = 0;
 
       (proc.kpis || []).forEach((kpi, ki) => {
@@ -635,7 +661,7 @@ export default function PrismL4() {
         }
       });
 
-      procImpacts.push({ id: proc.id, label: proc.label, l4: proc.l4, value: procVal, e2e: proc.e2e, color: proc.l1Color });
+      procImpacts.push({ id: proc.id, label: proc.label, l4: proc.l4, value: procVal, e2e: proc.e2e, color: proc.l1Color, scenario: procLevel });
       totalValue += procVal;
     });
 
@@ -647,6 +673,8 @@ export default function PrismL4() {
     selProcs.forEach(proc => {
       const vals = procValues[proc.id] || {};
       const bmarks = procBenchmarks[proc.id] || {};
+      const wcLevel = procScenarios[proc.id] || scenarioLevel;
+      const wcM = multipliers[wcLevel];
 
       (proc.kpis || []).forEach((kpi, ki) => {
         const current = vals[`kpi_current_${ki}`] ?? kpi.current;
@@ -654,7 +682,7 @@ export default function PrismL4() {
         const lever = proc.valLevers?.[0];
 
         if (current != null && bench != null && lever?.stmt === "Balance Sheet" && lever?.vclass === "Working Capital") {
-          const gap = Math.abs(current - bench) * m;
+          const gap = Math.abs(current - bench) * wcM;
           const kpiLower = kpi.name.toLowerCase();
 
           if (kpiLower.includes("dso") || kpiLower.includes("days sales outstanding") ||
@@ -695,7 +723,7 @@ export default function PrismL4() {
       balanceSheet: { receivablesImpact, payablesImpact, inventoryImpact,
         totalWorkingCapital: receivablesImpact + payablesImpact + inventoryImpact }
     };
-  }, [selProcs, procValues, procBenchmarks, scenarioLevel, baseline]);
+  }, [selProcs, procValues, procBenchmarks, scenarioLevel, procScenarios, baseline]);
 
   const valResult = useMemo(() => computeValue(), [computeValue]);
 
@@ -1062,6 +1090,26 @@ export default function PrismL4() {
           ))}
         </div>
 
+        {/* Function Card Grid */}
+        <div style={{ fontSize: 11, color: t.mut, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, textAlign: "center", marginTop: 20, marginBottom: 10 }}>Select Function</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 24, maxWidth: 440, margin: "0 auto 24px" }}>
+          {FUNCTIONS.map(fn => (
+            <div key={fn.id} onClick={() => fn.active && setSelectedFunction(fn.id)} style={{
+              ...cardStyle, textAlign: "center", padding: "14px 10px", cursor: fn.active ? "pointer" : "default",
+              opacity: fn.active ? 1 : 0.45,
+              border: `1px solid ${selectedFunction === fn.id ? fn.color : t.bdr}`,
+              background: selectedFunction === fn.id ? fn.color + "08" : t.card,
+              transition: "all 0.2s",
+            }}>
+              <div style={{ fontSize: 20, marginBottom: 4 }}>{fn.icon}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: fn.active ? fn.color : t.mut }}>{fn.name}</div>
+              <div style={{ fontSize: 9, color: t.mut, marginTop: 2 }}>{fn.desc}</div>
+              {!fn.active && <div style={{ fontSize: 8, color: t.sub, marginTop: 4, fontStyle: "italic" }}>Coming Soon</div>}
+              {fn.active && <div style={{ fontSize: 8, color: GREEN, marginTop: 4, fontWeight: 600 }}>{fn.status}</div>}
+            </div>
+          ))}
+        </div>
+
         <div style={{ display: "flex", gap: 10, justifyContent: "center", marginBottom: 24, marginTop: 24 }}>
           <button onClick={() => { setPage("work"); setStep(1); setViewMode("consultant"); }} style={btnPrimary}>
             Consultant Mode
@@ -1098,6 +1146,13 @@ export default function PrismL4() {
           <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: viewMode === "consultant" ? GOLD + "20" : BLUE + "20", color: viewMode === "consultant" ? GOLD : BLUE, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px" }}>
             {viewMode}
           </span>
+          {selectedFunction && (() => {
+            const fn = FUNCTIONS.find(f => f.id === selectedFunction);
+            return fn ? <>
+              <div style={{ height: 14, width: 1, background: t.bdr }} />
+              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: fn.color + "15", color: fn.color, fontWeight: 700 }}>{fn.icon} {fn.name}</span>
+            </> : null;
+          })()}
           <div style={{ height: 14, width: 1, background: t.bdr }} />
           <span onClick={() => setShowBaselineEditor(!showBaselineEditor)} style={{ fontSize: 13, color: t.tx2, fontWeight: 500, cursor: "pointer" }}>{baseline.company} ✎</span>
         </div>
@@ -1724,27 +1779,92 @@ export default function PrismL4() {
                     <button onClick={() => setFocusProc(null)} style={{ background: "none", border: "none", color: t.mut, cursor: "pointer", fontSize: 16 }}>×</button>
                   </div>
 
-                  {/* Questionnaire */}
-                  <div style={labelStyle}>Questionnaire</div>
-                  {Q_TEMPLATES.map((qt, qi) => (
-                    <div key={qi} style={{ marginBottom: 10 }}>
-                      <div style={{ fontSize: 12, color: t.tx2, marginBottom: 4 }}>{qt.q}</div>
-                      {qt.type === "text" ? (
-                        <textarea value={questAnswers[`${focusProc}_q${qi}`] || ""} onChange={e => setQuestAnswers(p => ({ ...p, [`${focusProc}_q${qi}`]: e.target.value }))}
-                          placeholder="Enter response..." rows={2}
-                          style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, resize: "vertical" }} />
-                      ) : qt.type === "select" ? (
-                        <select value={questAnswers[`${focusProc}_q${qi}`] || ""} onChange={e => setQuestAnswers(p => ({ ...p, [`${focusProc}_q${qi}`]: e.target.value }))}
-                          style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12 }}>
-                          <option value="">Select...</option>
-                          {qt.opts.map(o => <option key={o} value={o}>{o}</option>)}
-                        </select>
-                      ) : (
-                        <input type="number" value={questAnswers[`${focusProc}_q${qi}`] || ""} onChange={e => setQuestAnswers(p => ({ ...p, [`${focusProc}_q${qi}`]: e.target.value }))}
-                          placeholder="0" style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12 }} />
-                      )}
+                  {/* ─── Panel A: Process Efficiency Gap ─── */}
+                  <div style={{ padding: 12, background: BLUE + "08", border: `1px solid ${BLUE}22`, borderRadius: 10, marginBottom: 12 }}>
+                    <div style={{ fontSize: 11, color: BLUE, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 10 }}>A — Process Efficiency Gap</div>
+                    {[
+                      { key: "ftes", q: "How many FTEs are dedicated to this process?", type: "number", placeholder: "e.g. 12" },
+                      { key: "rework", q: "Estimated % of rework in this process", type: "number", placeholder: "e.g. 15", unit: "%" },
+                      { key: "cycleTime", q: "Current cycle time (days)", type: "number", placeholder: "e.g. 5", unit: "days" },
+                      { key: "automation", q: "% of process that is automated", type: "number", placeholder: "e.g. 30", unit: "%" },
+                      { key: "errorRate", q: "Error rate (%)", type: "number", placeholder: "e.g. 8", unit: "%" },
+                      { key: "bottleneck", q: "Describe the primary bottleneck", type: "text" },
+                      { key: "volume", q: "Monthly transaction volume", type: "number", placeholder: "e.g. 5000" },
+                    ].map(item => (
+                      <div key={item.key} style={{ marginBottom: 8 }}>
+                        <div style={{ fontSize: 11, color: t.tx2, marginBottom: 3 }}>{item.q}</div>
+                        {item.type === "text" ? (
+                          <textarea value={baselineData[`${focusProc}_a_${item.key}`] || ""} onChange={e => setBaselineData(p => ({ ...p, [`${focusProc}_a_${item.key}`]: e.target.value }))}
+                            placeholder="Describe..." rows={2}
+                            style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, resize: "vertical", boxSizing: "border-box" }} />
+                        ) : (
+                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                            <input type="number" value={baselineData[`${focusProc}_a_${item.key}`] || ""} onChange={e => setBaselineData(p => ({ ...p, [`${focusProc}_a_${item.key}`]: e.target.value }))}
+                              placeholder={item.placeholder}
+                              style={{ flex: 1, background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, boxSizing: "border-box" }} />
+                            {item.unit && <span style={{ fontSize: 10, color: t.mut }}>{item.unit}</span>}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* ─── Panel B: Data-Driven Leakage ─── */}
+                  <div style={{ padding: 12, background: PURPLE + "08", border: `1px solid ${PURPLE}22`, borderRadius: 10, marginBottom: 12 }}>
+                    <div style={{ fontSize: 11, color: PURPLE, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 10 }}>B — Data-Driven Leakage</div>
+                    {[
+                      { key: "granularity", q: "Data granularity level", type: "select", opts: ["Transaction-level", "Summary-level", "Limited / Aggregate only"] },
+                      { key: "reportFreq", q: "Reporting frequency", type: "select", opts: ["Real-time", "Daily", "Weekly", "Monthly", "Quarterly"] },
+                      { key: "dataQuality", q: "Rate data quality (1 = poor, 5 = excellent)", type: "number", placeholder: "1-5" },
+                      { key: "manualPct", q: "% of decisions that are manual", type: "number", placeholder: "e.g. 60", unit: "%" },
+                      { key: "ssot", q: "Single source of truth exists?", type: "select", opts: ["Yes — fully integrated", "Partial — some systems integrated", "No — siloed data"] },
+                      { key: "leakage", q: "Estimated annual leakage ($K)", type: "number", placeholder: "e.g. 250" },
+                    ].map(item => (
+                      <div key={item.key} style={{ marginBottom: 8 }}>
+                        <div style={{ fontSize: 11, color: t.tx2, marginBottom: 3 }}>{item.q}</div>
+                        {item.type === "select" ? (
+                          <select value={baselineData[`${focusProc}_b_${item.key}`] || ""} onChange={e => setBaselineData(p => ({ ...p, [`${focusProc}_b_${item.key}`]: e.target.value }))}
+                            style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, boxSizing: "border-box" }}>
+                            <option value="">Select...</option>
+                            {item.opts.map(o => <option key={o} value={o}>{o}</option>)}
+                          </select>
+                        ) : (
+                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                            <input type="number" value={baselineData[`${focusProc}_b_${item.key}`] || ""} onChange={e => setBaselineData(p => ({ ...p, [`${focusProc}_b_${item.key}`]: e.target.value }))}
+                              placeholder={item.placeholder}
+                              style={{ flex: 1, background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, boxSizing: "border-box" }} />
+                            {item.unit && <span style={{ fontSize: 10, color: t.mut }}>{item.unit}</span>}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* ─── Additional Notes (collapsed Q_TEMPLATES) ─── */}
+                  <details style={{ marginBottom: 12 }}>
+                    <summary style={{ ...labelStyle, cursor: "pointer", userSelect: "none" }}>Additional Notes (Questionnaire)</summary>
+                    <div style={{ marginTop: 8 }}>
+                      {Q_TEMPLATES.map((qt, qi) => (
+                        <div key={qi} style={{ marginBottom: 10 }}>
+                          <div style={{ fontSize: 12, color: t.tx2, marginBottom: 4 }}>{qt.q}</div>
+                          {qt.type === "text" ? (
+                            <textarea value={questAnswers[`${focusProc}_q${qi}`] || ""} onChange={e => setQuestAnswers(p => ({ ...p, [`${focusProc}_q${qi}`]: e.target.value }))}
+                              placeholder="Enter response..." rows={2}
+                              style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, resize: "vertical", boxSizing: "border-box" }} />
+                          ) : qt.type === "select" ? (
+                            <select value={questAnswers[`${focusProc}_q${qi}`] || ""} onChange={e => setQuestAnswers(p => ({ ...p, [`${focusProc}_q${qi}`]: e.target.value }))}
+                              style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, boxSizing: "border-box" }}>
+                              <option value="">Select...</option>
+                              {qt.opts.map(o => <option key={o} value={o}>{o}</option>)}
+                            </select>
+                          ) : (
+                            <input type="number" value={questAnswers[`${focusProc}_q${qi}`] || ""} onChange={e => setQuestAnswers(p => ({ ...p, [`${focusProc}_q${qi}`]: e.target.value }))}
+                              placeholder="0" style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, boxSizing: "border-box" }} />
+                          )}
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </details>
 
                   {/* Process Mining Evidence */}
                   <div style={{ ...labelStyle, marginTop: 16 }}>Process Mining Evidence</div>
@@ -1912,33 +2032,66 @@ export default function PrismL4() {
                       </button>
                     </div>
 
-                    <div style={{ display: "grid", gap: 6 }}>
+                    <div style={{ display: "grid", gap: 10 }}>
                       {(proc.kpis || []).map((kpi, ki) => {
                         const currentVal = procValues[proc.id]?.[`kpi_current_${ki}`] ?? kpi.current;
-                        const benchVal = bmarks[`bench_${ki}`] ?? kpi.benchmark;
-                        const gap = currentVal != null && benchVal != null ? Math.abs(currentVal - benchVal) : null;
+                        const selectedSource = bmarks[`src_${ki}`] || "primary";
+                        const seed = (proc.id + ki).split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+                        const jitter = (n) => +(((seed * (n + 1) * 9301 + 49297) % 233280) / 233280 * 0.3 + 0.85).toFixed(1);
+                        const sources = [
+                          { key: "primary", label: kpi.src || "APQC", value: kpi.benchmark },
+                          { key: "sapvlm", label: "SAP VLM", value: kpi.benchmark ? +(kpi.benchmark * jitter(1)).toFixed(1) : null },
+                          { key: "hackett", label: "Hackett", value: kpi.benchmark ? +(kpi.benchmark * jitter(2)).toFixed(1) : null },
+                          { key: "custom", label: "Custom", value: bmarks[`bench_custom_${ki}`] ?? null },
+                        ];
+                        const activeBench = selectedSource === "custom" ? (bmarks[`bench_custom_${ki}`] ?? null) : sources.find(s => s.key === selectedSource)?.value ?? kpi.benchmark;
+                        const gap = currentVal != null && activeBench != null ? Math.abs(currentVal - activeBench) : null;
+                        const quartile = getQuartile(currentVal, activeBench);
+
                         return (
-                          <div key={ki} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: t.bg, borderRadius: 6, border: `1px solid ${t.bdr}` }}>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: 12, color: t.tx, fontWeight: 500 }}>{kpi.name}</div>
-                              <div style={{ fontSize: 10, color: t.mut }}>{kpi.src} · {kpi.method || ""}</div>
-                            </div>
-                            <div style={{ textAlign: "center", minWidth: 70 }}>
-                              <div style={{ fontSize: 9, color: t.mut }}>Current</div>
-                              <div style={{ fontSize: 14, fontFamily: "monospace", color: currentVal != null ? t.tx : t.sub }}>{currentVal ?? "—"}<span style={{ fontSize: 9, color: t.mut }}>{kpi.unit}</span></div>
-                            </div>
-                            <div style={{ textAlign: "center", minWidth: 70 }}>
-                              <div style={{ fontSize: 9, color: t.mut }}>Benchmark</div>
-                              <input type="number" value={bmarks[`bench_${ki}`] ?? kpi.benchmark ?? ""} onChange={e => setBmark(`bench_${ki}`, parseFloat(e.target.value) || null)}
-                                style={{ width: 60, background: t.card, border: `1px solid ${GREEN}33`, borderRadius: 4, padding: "2px 4px", color: GREEN, fontFamily: "monospace", fontSize: 14, textAlign: "center" }} />
-                              <div style={{ fontSize: 8, color: t.mut }}>{kpi.unit}</div>
-                            </div>
-                            {gap != null && (
-                              <div style={{ textAlign: "center", minWidth: 50 }}>
-                                <div style={{ fontSize: 9, color: t.mut }}>Gap</div>
-                                <div style={{ fontSize: 14, fontFamily: "monospace", color: gap > 0 ? RED : GREEN, fontWeight: 700 }}>{gap.toFixed(1)}</div>
+                          <div key={ki} style={{ padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                              <div>
+                                <div style={{ fontSize: 13, color: t.tx, fontWeight: 500 }}>{kpi.name} <span style={{ fontSize: 10, color: t.mut }}>({kpi.unit})</span></div>
+                                <div style={{ fontSize: 10, color: t.mut }}>{kpi.method || ""}</div>
                               </div>
-                            )}
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                {gap != null && <span style={{ fontSize: 14, fontFamily: "monospace", color: gap > 0 ? RED : GREEN, fontWeight: 700 }}>Gap: {gap.toFixed(1)}</span>}
+                                {quartile && <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: quartile.color + "20", color: quartile.color, fontWeight: 700 }}>{quartile.label}</span>}
+                              </div>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                              <span style={{ fontSize: 10, color: t.mut, minWidth: 50 }}>Current:</span>
+                              <span style={{ fontSize: 14, fontFamily: "monospace", color: currentVal != null ? t.tx : t.sub }}>{currentVal ?? "—"} <span style={{ fontSize: 9, color: t.mut }}>{kpi.unit}</span></span>
+                            </div>
+                            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                              <thead><tr>
+                                {["", "Source", "Value", "Unit"].map((h, i) => (
+                                  <th key={i} style={{ padding: "3px 6px", borderBottom: `1px solid ${t.bdr}40`, textAlign: i === 2 ? "right" : "left", color: t.mut, fontWeight: 600, fontSize: 10 }}>{h}</th>
+                                ))}
+                              </tr></thead>
+                              <tbody>
+                                {sources.map(src => (
+                                  <tr key={src.key} style={{ background: selectedSource === src.key ? (src.key === "primary" ? GREEN : GOLD) + "08" : "transparent" }}>
+                                    <td style={{ padding: "4px 6px", borderBottom: `1px solid ${t.bdr}20`, width: 30 }}>
+                                      <input type="radio" name={`src_${proc.id}_${ki}`} checked={selectedSource === src.key}
+                                        onChange={() => setBmark(`src_${ki}`, src.key)}
+                                        style={{ accentColor: GREEN, cursor: "pointer" }} />
+                                    </td>
+                                    <td style={{ padding: "4px 6px", borderBottom: `1px solid ${t.bdr}20`, color: selectedSource === src.key ? t.tx : t.tx2, fontWeight: selectedSource === src.key ? 600 : 400 }}>{src.label}</td>
+                                    <td style={{ padding: "4px 6px", borderBottom: `1px solid ${t.bdr}20`, textAlign: "right", fontFamily: "monospace" }}>
+                                      {src.key === "custom" ? (
+                                        <input type="number" value={bmarks[`bench_custom_${ki}`] ?? ""} onChange={e => setBmark(`bench_custom_${ki}`, parseFloat(e.target.value) || null)}
+                                          placeholder="—" style={{ width: 60, background: t.card, border: `1px solid ${GOLD}33`, borderRadius: 4, padding: "2px 4px", color: GOLD, fontFamily: "monospace", fontSize: 12, textAlign: "center" }} />
+                                      ) : (
+                                        <span style={{ color: selectedSource === src.key ? GREEN : t.mut }}>{src.value ?? "—"}</span>
+                                      )}
+                                    </td>
+                                    <td style={{ padding: "4px 6px", borderBottom: `1px solid ${t.bdr}20`, color: t.mut, fontSize: 10 }}>{kpi.unit}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
                           </div>
                         );
                       })}
@@ -2008,6 +2161,67 @@ export default function PrismL4() {
               ))}
             </div>
 
+            {/* ─── Per-Process Potential Categorization ─── */}
+            <div style={{ ...labelStyle, marginTop: 24 }}>Process Potential Assessment</div>
+            <div style={{ fontSize: 11, color: t.tx2, marginBottom: 10 }}>Categorize each process's improvement potential. Auto-suggested based on gap value. Used in Step 7 calculations.</div>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 16 }}>
+              <thead><tr>
+                {["Process", "Gap Value", "Addressable", "Improvement Range", "Potential"].map((h, i) => (
+                  <th key={i} style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: i === 1 || i === 2 ? "right" : "left", color: t.mut, fontWeight: 600, fontSize: 11 }}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {selProcs.map(proc => {
+                  const vals = procValues[proc.id] || {};
+                  const bmarks = procBenchmarks[proc.id] || {};
+                  let gapVal = 0;
+                  (proc.kpis || []).forEach((kpi, ki) => {
+                    const current = vals[`kpi_current_${ki}`] ?? kpi.current;
+                    const bench = bmarks[`bench_${ki}`] ?? kpi.benchmark;
+                    if (current != null && bench != null && bench !== 0) {
+                      const gap = Math.abs(current - bench);
+                      const lever = proc.valLevers?.[0];
+                      const baseAmt = lever?.fintype === "Revenue" ? baseline.revenue : lever?.fintype === "COGS" ? baseline.cogs : baseline.sga;
+                      if (kpi.unit === "%") gapVal += (gap / 100) * baseAmt * 0.01;
+                      else gapVal += (bench !== 0 ? (gap / Math.abs(bench)) : 0) * baseAmt * 0.01;
+                    }
+                  });
+                  const autoSuggest = gapVal > 0.5 ? "High" : gapVal > 0.1 ? "Medium" : "Low";
+                  const currentLevel = procScenarios[proc.id] || autoSuggest;
+                  const multipliers = { High: 1.0, Medium: 0.65, Low: 0.35 };
+                  const addressable = gapVal * multipliers[currentLevel];
+                  const lowImprove = gapVal * 0.35;
+                  const highImprove = gapVal * 1.0;
+
+                  return (
+                    <tr key={proc.id}>
+                      <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40` }}>
+                        <span style={{ fontSize: 10, fontFamily: "monospace", color: t.mut, marginRight: 4 }}>{proc.l4}</span>
+                        <span style={{ color: t.tx, fontWeight: 500 }}>{proc.label}</span>
+                      </td>
+                      <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: gapVal > 0 ? t.tx : t.sub }}>
+                        {gapVal > 0 ? `$${gapVal.toFixed(1)}M` : "—"}
+                      </td>
+                      <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: GREEN }}>
+                        {addressable > 0 ? `$${addressable.toFixed(1)}M` : "—"}
+                      </td>
+                      <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, fontFamily: "monospace", fontSize: 11, color: t.mut }}>
+                        {gapVal > 0 ? `$${lowImprove.toFixed(1)}M – $${highImprove.toFixed(1)}M` : "—"}
+                      </td>
+                      <td style={{ padding: "4px 10px", borderBottom: `1px solid ${t.bdr}40` }}>
+                        <select value={currentLevel} onChange={e => setProcScenarios(p => ({ ...p, [proc.id]: e.target.value }))}
+                          style={{ background: t.bg, border: `1px solid ${currentLevel === "High" ? GREEN : currentLevel === "Medium" ? GOLD : ORANGE}44`,
+                            borderRadius: 6, padding: "4px 8px", color: currentLevel === "High" ? GREEN : currentLevel === "Medium" ? GOLD : ORANGE,
+                            fontFamily: FONT, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                          {SCENARIO_LEVELS.map(lvl => <option key={lvl} value={lvl}>{lvl}</option>)}
+                        </select>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
               <button onClick={() => setStep(4)} style={btnSecondary}>← Benchmarks</button>
               <button onClick={() => setStep(6)} style={btnPrimary}>AI Agents →</button>
@@ -2070,11 +2284,16 @@ export default function PrismL4() {
             {stepHeader(7, "Value Calculations")}
             <div style={{ fontSize: 13, color: t.tx2, marginBottom: 20 }}>Baseline vs benchmark gap → addressable value → scenario rollup.</div>
 
-            {/* Scenario selector */}
+            {/* Scenario selector — "Set All" convenience */}
             <div style={{ display: "flex", gap: 8, marginBottom: 20, alignItems: "center" }}>
-              <span style={{ fontSize: 12, color: t.mut }}>Scenario:</span>
+              <span style={{ fontSize: 12, color: t.mut }}>Set All:</span>
               {SCENARIO_LEVELS.map(lvl => (
-                <button key={lvl} onClick={() => setScenarioLevel(lvl)} style={{
+                <button key={lvl} onClick={() => {
+                  setScenarioLevel(lvl);
+                  const updated = {};
+                  selProcs.forEach(p => { updated[p.id] = lvl; });
+                  setProcScenarios(prev => ({ ...prev, ...updated }));
+                }} style={{
                   fontSize: 12, padding: "6px 16px", borderRadius: 8,
                   background: scenarioLevel === lvl ? (lvl === "High" ? GREEN + "20" : lvl === "Medium" ? GOLD + "20" : ORANGE + "20") : "none",
                   border: `1px solid ${scenarioLevel === lvl ? (lvl === "High" ? GREEN : lvl === "Medium" ? GOLD : ORANGE) + "44" : t.bdr}`,
@@ -2197,20 +2416,45 @@ export default function PrismL4() {
             {/* Process-level impact table */}
             <div style={labelStyle}>Value by L4 Process</div>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginBottom: 24 }}>
-              <thead><tr>{["APQC L4", "Process", "E2E", "Value ($M)"].map((h, i) => (
-                <th key={i} style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: i === 3 ? "right" : "left", color: t.mut, fontWeight: 600, fontSize: 12 }}>{h}</th>
+              <thead><tr>{["APQC L4", "Process", "E2E", "Scenario", "Score", "Value ($M)"].map((h, i) => (
+                <th key={i} style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: i >= 5 ? "right" : "left", color: t.mut, fontWeight: 600, fontSize: 12 }}>{h}</th>
               ))}</tr></thead>
               <tbody>
-                {valResult.impacts.filter(i => i.value > 0).map((imp, idx) => (
-                  <tr key={idx}>
-                    <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, fontFamily: "monospace", fontSize: 11, color: t.mut }}>{imp.l4}</td>
-                    <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx }}>{imp.label}</td>
-                    <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40` }}>
-                      <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 3, background: imp.color + "15", color: imp.color, fontWeight: 600 }}>{imp.e2e}</span>
-                    </td>
-                    <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: GREEN, fontWeight: 700 }}>{fd(imp.value)}</td>
-                  </tr>
-                ))}
+                {valResult.impacts.filter(i => i.value > 0).map((imp, idx) => {
+                  // Compute average quartile score for this process
+                  const proc = PROC_MAP[imp.id];
+                  const vals = procValues[imp.id] || {};
+                  const bmarks = procBenchmarks[imp.id] || {};
+                  let scoreSum = 0, scoreCount = 0;
+                  (proc?.kpis || []).forEach((kpi, ki) => {
+                    const current = vals[`kpi_current_${ki}`] ?? kpi.current;
+                    const bench = bmarks[`bench_${ki}`] ?? kpi.benchmark;
+                    const q = getQuartile(current, bench);
+                    if (q) { scoreSum += q.score; scoreCount++; }
+                  });
+                  const avgScore = scoreCount > 0 ? scoreSum / scoreCount : null;
+                  const scoreLabel = avgScore ? (avgScore >= 2.5 ? "Top" : avgScore >= 1.5 ? "Avg" : "Low") : null;
+                  const scoreColor = avgScore ? (avgScore >= 2.5 ? GREEN : avgScore >= 1.5 ? GOLD : RED) : t.mut;
+                  const lvl = imp.scenario || scenarioLevel;
+                  const lvlColor = lvl === "High" ? GREEN : lvl === "Medium" ? GOLD : ORANGE;
+
+                  return (
+                    <tr key={idx}>
+                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, fontFamily: "monospace", fontSize: 11, color: t.mut }}>{imp.l4}</td>
+                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx }}>{imp.label}</td>
+                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40` }}>
+                        <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 3, background: imp.color + "15", color: imp.color, fontWeight: 600 }}>{imp.e2e}</span>
+                      </td>
+                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40` }}>
+                        <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 3, background: lvlColor + "15", color: lvlColor, fontWeight: 600 }}>{lvl}</span>
+                      </td>
+                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40` }}>
+                        {scoreLabel ? <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 3, background: scoreColor + "15", color: scoreColor, fontWeight: 600 }}>{scoreLabel}</span> : <span style={{ fontSize: 10, color: t.sub }}>—</span>}
+                      </td>
+                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: GREEN, fontWeight: 700 }}>{fd(imp.value)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
 
