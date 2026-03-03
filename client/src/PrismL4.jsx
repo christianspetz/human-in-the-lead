@@ -3,6 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   AreaChart, CartesianGrid
 } from "recharts";
+import pptxgen from "pptxgenjs";
 
 /* Lazy-loaded companion components (graceful fallback if not yet created) */
 const BlueprintReconciler = React.lazy(() => import("./BlueprintReconciler").catch(() => ({ default: () => null })));
@@ -89,21 +90,21 @@ const APQC = [
             l3: "8.2.1 Process Customer Credit", l3id: "8.2.1",
             procs: [
               { id: "o2c-001", l4: "8.2.1.1", label: "Evaluate customer creditworthiness", jobs: ["Run credit scoring models","Pull external credit reports","Assess customer financial statements","Recommend credit decision"], kpis: [
-                { name: "Credit evaluation cycle time", unit: "days", current: null, benchmark: 2.0, src: "APQC", method: "Avg days from credit request to decision", occurrence: "recurring", capability: "Intelligent Credit Management" },
-                { name: "Auto-approval rate", unit: "%", current: null, benchmark: 70, src: "Hackett", method: "% orders auto-approved without manual review", occurrence: "recurring", capability: "Intelligent Credit Management" },
-                { name: "Bad debt write-off rate", unit: "%", current: null, benchmark: 0.25, src: "APQC", method: "Bad debt expense / net revenue × 100", occurrence: "recurring", capability: "Intelligent Credit Management" },
+                { name: "Credit evaluation cycle time", unit: "days", current: null, benchmark: 2.0, agentBenchmark: 0.5, src: "APQC", method: "Avg days from credit request to decision", occurrence: "recurring", capability: "Intelligent Credit Management" },
+                { name: "Auto-approval rate", unit: "%", current: null, benchmark: 70, agentBenchmark: 92, src: "Hackett", method: "% orders auto-approved without manual review", occurrence: "recurring", capability: "Intelligent Credit Management" },
+                { name: "Bad debt write-off rate", unit: "%", current: null, benchmark: 0.25, agentBenchmark: 0.1, src: "APQC", method: "Bad debt expense / net revenue × 100", occurrence: "recurring", capability: "Intelligent Credit Management" },
               ], sap: [{ module: "FI-AR", desc: "Credit management & scoring in SAP S/4HANA", scenario: "Automated credit scoring with ML-based risk assessment replaces manual review. Real-time credit exposure monitoring." }],
                 valLevers: [{ lever: "Reduce credit evaluation cycle time", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }],
                 },
               { id: "o2c-002", l4: "8.2.1.2", label: "Establish & manage customer credit limits", jobs: ["Set initial credit limit","Review credit limits periodically","Adjust limits based on payment behavior"], kpis: [
-                { name: "Credit limit review frequency", unit: "days", current: null, benchmark: 90, src: "APQC", method: "Avg days between credit limit reviews", occurrence: "recurring", capability: "Intelligent Credit Management" },
-                { name: "Credit limit utilization", unit: "%", current: null, benchmark: 65, src: "Hackett", method: "Avg credit used / credit limit × 100", occurrence: "recurring", capability: "Intelligent Credit Management" },
+                { name: "Credit limit review frequency", unit: "days", current: null, benchmark: 90, agentBenchmark: 7, src: "APQC", method: "Avg days between credit limit reviews", occurrence: "recurring", capability: "Intelligent Credit Management" },
+                { name: "Credit limit utilization", unit: "%", current: null, benchmark: 65, agentBenchmark: 65, src: "Hackett", method: "Avg credit used / credit limit × 100", occurrence: "recurring", capability: "Intelligent Credit Management" },
               ], sap: [{ module: "FI-AR", desc: "Dynamic credit limit management", scenario: "AI-driven dynamic credit limits adjust based on payment behavior, financial health signals, and market conditions." }],
                 valLevers: [{ lever: "Automate credit limit adjustments", vtype: "Tangible", vclass: "Standardization", fintype: "SGA", stmt: "Income Statement" }],
                 },
               { id: "o2c-003", l4: "8.2.1.3", label: "Monitor & resolve customer credit issues", jobs: ["Review credit-blocked orders","Evaluate override requests","Escalate high-risk accounts","Release or reject blocked orders"], kpis: [
-                { name: "Blocked order resolution time", unit: "hours", current: null, benchmark: 4, src: "APQC", method: "Avg hours to resolve credit block", occurrence: "recurring", capability: "Intelligent Credit Management" },
-                { name: "% orders blocked for credit", unit: "%", current: null, benchmark: 5, src: "Hackett", method: "Credit-blocked orders / total orders × 100", occurrence: "recurring", capability: "Intelligent Credit Management" },
+                { name: "Blocked order resolution time", unit: "hours", current: null, benchmark: 4, agentBenchmark: 0.5, src: "APQC", method: "Avg hours to resolve credit block", occurrence: "recurring", capability: "Intelligent Credit Management" },
+                { name: "% orders blocked for credit", unit: "%", current: null, benchmark: 5, agentBenchmark: 2, src: "Hackett", method: "Credit-blocked orders / total orders × 100", occurrence: "recurring", capability: "Intelligent Credit Management" },
               ], sap: [{ module: "FI-AR", desc: "Credit block management & workflow", scenario: "Intelligent credit block resolution with automated escalation, risk-tiered approval workflows, and customer self-service portal." }],
                 valLevers: [{ lever: "Reduce blocked order resolution time", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "Revenue", stmt: "Income Statement" }],
                 },
@@ -113,23 +114,23 @@ const APQC = [
             l3: "8.2.2 Process Customer Billing", l3id: "8.2.2",
             procs: [
               { id: "o2c-004", l4: "8.2.2.1", label: "Generate customer billing data", jobs: ["Generate invoice from sales order","Apply pricing and tax rules","Validate billing data accuracy","Archive billing document"], kpis: [
-                { name: "Invoice accuracy rate", unit: "%", current: null, benchmark: 98.5, src: "APQC", method: "Correct invoices / total invoices × 100", occurrence: "recurring", capability: "Touchless Invoicing" },
-                { name: "Billing cycle time", unit: "days", current: null, benchmark: 1.5, src: "Hackett", method: "Avg days from delivery to invoice", occurrence: "recurring", capability: "Touchless Invoicing" },
-                { name: "Cost per invoice generated", unit: "$", current: null, benchmark: 3.50, src: "APQC", method: "Total billing cost / invoices generated", occurrence: "recurring", capability: "Touchless Invoicing" },
+                { name: "Invoice accuracy rate", unit: "%", current: null, benchmark: 98.5, agentBenchmark: 99.5, src: "APQC", method: "Correct invoices / total invoices × 100", occurrence: "recurring", capability: "Touchless Invoicing" },
+                { name: "Billing cycle time", unit: "days", current: null, benchmark: 1.5, agentBenchmark: 0.1, src: "Hackett", method: "Avg days from delivery to invoice", occurrence: "recurring", capability: "Touchless Invoicing" },
+                { name: "Cost per invoice generated", unit: "$", current: null, benchmark: 3.50, agentBenchmark: 0.5, src: "APQC", method: "Total billing cost / invoices generated", occurrence: "recurring", capability: "Touchless Invoicing" },
               ], sap: [{ module: "SD-BIL", desc: "Billing document creation & output", scenario: "Automated billing triggered by goods issue/delivery confirmation. Self-billing for strategic customers." }],
                 valLevers: [{ lever: "Reduce cost per invoice", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" },
                   { lever: "Improve invoice accuracy", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
                 },
               { id: "o2c-005", l4: "8.2.2.2", label: "Transmit billing data to customers", jobs: ["Format invoice per customer preference","Transmit via EDI/email/portal","Confirm delivery receipt"], kpis: [
-                { name: "E-invoicing adoption rate", unit: "%", current: null, benchmark: 75, src: "Hackett", method: "Electronic invoices / total invoices × 100", occurrence: "recurring", capability: "Touchless Invoicing" },
-                { name: "Invoice delivery success rate", unit: "%", current: null, benchmark: 99, src: "APQC", method: "Successfully delivered / total sent × 100", occurrence: "recurring", capability: "Touchless Invoicing" },
+                { name: "E-invoicing adoption rate", unit: "%", current: null, benchmark: 75, agentBenchmark: 95, src: "Hackett", method: "Electronic invoices / total invoices × 100", occurrence: "recurring", capability: "Touchless Invoicing" },
+                { name: "Invoice delivery success rate", unit: "%", current: null, benchmark: 99, agentBenchmark: 99.8, src: "APQC", method: "Successfully delivered / total sent × 100", occurrence: "recurring", capability: "Touchless Invoicing" },
               ], sap: [{ module: "SD-BIL", desc: "Electronic invoice output & EDI", scenario: "Multi-channel electronic invoicing with automatic format conversion (EDI, XML, PDF) per customer preference." }],
                 valLevers: [{ lever: "Increase e-invoicing adoption", vtype: "Tangible", vclass: "Standardization", fintype: "SGA", stmt: "Income Statement" }],
                 },
               { id: "o2c-006", l4: "8.2.2.3", label: "Manage billing disputes & inquiries", jobs: ["Log and classify dispute","Investigate root cause","Coordinate with internal teams","Resolve and close dispute"], kpis: [
-                { name: "Dispute resolution cycle time", unit: "days", current: null, benchmark: 15, src: "APQC", method: "Avg days from dispute opened to resolved", occurrence: "recurring", capability: "Smart Dispute Resolution" },
-                { name: "Dispute rate", unit: "%", current: null, benchmark: 2.0, src: "Hackett", method: "Disputed invoices / total invoices × 100", occurrence: "recurring", capability: "Smart Dispute Resolution" },
-                { name: "Cost per dispute resolved", unit: "$", current: null, benchmark: 35, src: "APQC", method: "Total dispute cost / disputes resolved", occurrence: "recurring", capability: "Smart Dispute Resolution" },
+                { name: "Dispute resolution cycle time", unit: "days", current: null, benchmark: 15, agentBenchmark: 5, src: "APQC", method: "Avg days from dispute opened to resolved", occurrence: "recurring", capability: "Smart Dispute Resolution" },
+                { name: "Dispute rate", unit: "%", current: null, benchmark: 2.0, agentBenchmark: 1, src: "Hackett", method: "Disputed invoices / total invoices × 100", occurrence: "recurring", capability: "Smart Dispute Resolution" },
+                { name: "Cost per dispute resolved", unit: "$", current: null, benchmark: 35, agentBenchmark: 10, src: "APQC", method: "Total dispute cost / disputes resolved", occurrence: "recurring", capability: "Smart Dispute Resolution" },
               ], sap: [{ module: "FI-AR", desc: "Dispute management & FSCM", scenario: "AI-powered dispute classification and root cause analysis. Automated routing to responsible teams with suggested resolutions." }],
                 valLevers: [{ lever: "Reduce dispute rate & cycle time", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" },
                   { lever: "Reduce revenue leakage from disputes", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
@@ -140,33 +141,33 @@ const APQC = [
             l3: "8.2.3 Process Accounts Receivable", l3id: "8.2.3",
             procs: [
               { id: "o2c-007", l4: "8.2.3.1", label: "Record customer payments & apply to invoices", jobs: ["Import bank remittance data","Match payments to open invoices","Handle partial payments and deductions","Clear applied items"], kpis: [
-                { name: "Cash application automation rate", unit: "%", current: null, benchmark: 85, src: "APQC", method: "Auto-matched payments / total payments × 100", occurrence: "recurring", capability: "Predictive Cash Application" },
-                { name: "Cash application cycle time", unit: "hours", current: null, benchmark: 4, src: "Hackett", method: "Avg hours from payment receipt to application", occurrence: "recurring", capability: "Predictive Cash Application" },
-                { name: "Unapplied cash as % of revenue", unit: "%", current: null, benchmark: 0.5, src: "APQC", method: "Unapplied cash balance / quarterly revenue × 100", occurrence: "recurring", capability: "Predictive Cash Application" },
+                { name: "Cash application automation rate", unit: "%", current: null, benchmark: 85, agentBenchmark: 97, src: "APQC", method: "Auto-matched payments / total payments × 100", occurrence: "recurring", capability: "Predictive Cash Application" },
+                { name: "Cash application cycle time", unit: "hours", current: null, benchmark: 4, agentBenchmark: 0.5, src: "Hackett", method: "Avg hours from payment receipt to application", occurrence: "recurring", capability: "Predictive Cash Application" },
+                { name: "Unapplied cash as % of revenue", unit: "%", current: null, benchmark: 0.5, agentBenchmark: 0.1, src: "APQC", method: "Unapplied cash balance / quarterly revenue × 100", occurrence: "recurring", capability: "Predictive Cash Application" },
               ], sap: [{ module: "FI-AR", desc: "Incoming payment processing & matching", scenario: "ML-powered cash application matches incoming payments to open invoices with 95%+ accuracy. Handles partial payments, deductions, and cross-company remittances." }],
                 valLevers: [{ lever: "Increase auto-match rate", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" },
                   { lever: "Reduce unapplied cash", vtype: "Tangible", vclass: "Working Capital", fintype: "SGA", stmt: "Balance Sheet" }],
                 },
               { id: "o2c-008", l4: "8.2.3.2", label: "Manage & process collections", jobs: ["Generate aging reports","Execute dunning runs","Escalate overdue accounts","Negotiate payment plans"], kpis: [
-                { name: "Days Sales Outstanding (DSO)", unit: "days", current: null, benchmark: 34, src: "APQC", method: "AR balance / (annual revenue / 365)", occurrence: "recurring", capability: "Intelligent Collections" },
-                { name: "Collections effectiveness index", unit: "%", current: null, benchmark: 82, src: "Hackett", method: "(Beginning AR + credit sales - ending AR) / (beginning AR + credit sales) × 100", occurrence: "recurring", capability: "Intelligent Collections" },
-                { name: "Cost per collection contact", unit: "$", current: null, benchmark: 8, src: "APQC", method: "Total collections cost / collection contacts made", occurrence: "recurring", capability: "Intelligent Collections" },
-                { name: "% AR > 90 days past due", unit: "%", current: null, benchmark: 5, src: "Hackett", method: "AR over 90 days / total AR × 100", occurrence: "recurring", capability: "Intelligent Collections" },
+                { name: "Days Sales Outstanding (DSO)", unit: "days", current: null, benchmark: 34, agentBenchmark: 28, src: "APQC", method: "AR balance / (annual revenue / 365)", occurrence: "recurring", capability: "Intelligent Collections" },
+                { name: "Collections effectiveness index", unit: "%", current: null, benchmark: 82, agentBenchmark: 92, src: "Hackett", method: "(Beginning AR + credit sales - ending AR) / (beginning AR + credit sales) × 100", occurrence: "recurring", capability: "Intelligent Collections" },
+                { name: "Cost per collection contact", unit: "$", current: null, benchmark: 8, agentBenchmark: 2, src: "APQC", method: "Total collections cost / collection contacts made", occurrence: "recurring", capability: "Intelligent Collections" },
+                { name: "% AR > 90 days past due", unit: "%", current: null, benchmark: 5, agentBenchmark: 2, src: "Hackett", method: "AR over 90 days / total AR × 100", occurrence: "recurring", capability: "Intelligent Collections" },
               ], sap: [{ module: "FI-AR", desc: "Collections management & dunning", scenario: "AI prioritization engine ranks overdue accounts by likelihood-to-pay, dollar impact, and customer value. Auto-generates personalized dunning communications." }],
                 valLevers: [{ lever: "Reduce DSO", vtype: "Tangible", vclass: "Working Capital", fintype: "SGA", stmt: "Balance Sheet" },
                   { lever: "Improve collections effectiveness", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }],
                 },
               { id: "o2c-009", l4: "8.2.3.3", label: "Manage & process deductions", jobs: ["Classify deduction type","Validate against trade agreements","Research invalid deductions","Process write-off or recovery"], kpis: [
-                { name: "Deduction resolution cycle time", unit: "days", current: null, benchmark: 20, src: "APQC", method: "Avg days from deduction identified to resolved", occurrence: "recurring", capability: "Smart Dispute Resolution" },
-                { name: "Invalid deduction recovery rate", unit: "%", current: null, benchmark: 60, src: "Hackett", method: "Recovered invalid deductions / total invalid deductions × 100", occurrence: "recurring", capability: "Smart Dispute Resolution" },
-                { name: "Deduction backlog value", unit: "$M", current: null, benchmark: null, src: "Internal", method: "Total outstanding deduction value", occurrence: "recurring", capability: "Smart Dispute Resolution" },
+                { name: "Deduction resolution cycle time", unit: "days", current: null, benchmark: 20, agentBenchmark: 7, src: "APQC", method: "Avg days from deduction identified to resolved", occurrence: "recurring", capability: "Smart Dispute Resolution" },
+                { name: "Invalid deduction recovery rate", unit: "%", current: null, benchmark: 60, agentBenchmark: 80, src: "Hackett", method: "Recovered invalid deductions / total invalid deductions × 100", occurrence: "recurring", capability: "Smart Dispute Resolution" },
+                { name: "Deduction backlog value", unit: "$M", current: null, benchmark: null, agentBenchmark: null, src: "Internal", method: "Total outstanding deduction value", occurrence: "recurring", capability: "Smart Dispute Resolution" },
               ], sap: [{ module: "FI-AR", desc: "Deduction & claims management", scenario: "Automated deduction classification using ML. Pattern recognition identifies root causes across trade promotions, logistics claims, and pricing errors." }],
                 valLevers: [{ lever: "Improve invalid deduction recovery", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" },
                   { lever: "Reduce deduction backlog", vtype: "Tangible", vclass: "Working Capital", fintype: "Revenue", stmt: "Balance Sheet" }],
                 },
               { id: "o2c-010", l4: "8.2.3.4", label: "Manage AR aging & write-offs", jobs: ["Review aging buckets","Identify write-off candidates","Process bad debt provisions","Execute approved write-offs"], kpis: [
-                { name: "Write-off as % of revenue", unit: "%", current: null, benchmark: 0.15, src: "APQC", method: "Annual write-offs / annual revenue × 100", occurrence: "recurring", capability: "Intelligent Collections" },
-                { name: "Aging bucket accuracy", unit: "%", current: null, benchmark: 98, src: "Hackett", method: "Correctly aged items / total items × 100", occurrence: "recurring", capability: "Intelligent Collections" },
+                { name: "Write-off as % of revenue", unit: "%", current: null, benchmark: 0.15, agentBenchmark: 0.05, src: "APQC", method: "Annual write-offs / annual revenue × 100", occurrence: "recurring", capability: "Intelligent Collections" },
+                { name: "Aging bucket accuracy", unit: "%", current: null, benchmark: 98, agentBenchmark: 99.5, src: "Hackett", method: "Correctly aged items / total items × 100", occurrence: "recurring", capability: "Intelligent Collections" },
               ], sap: [{ module: "FI-AR", desc: "AR aging analysis & provisioning", scenario: "Predictive models estimate expected credit losses per IFRS 9. Automated provisioning and write-off workflows." }],
                 valLevers: [{ lever: "Reduce bad debt write-offs", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "SGA", stmt: "Income Statement" }],
                 },
@@ -176,8 +177,8 @@ const APQC = [
             l3: "8.2.4 Manage & Process Customer Refunds", l3id: "8.2.4",
             procs: [
               { id: "o2c-011", l4: "8.2.4.1", label: "Process customer refunds & credits", jobs: ["Validate refund request","Create credit memo","Route for approval","Execute refund payment"], kpis: [
-                { name: "Refund processing cycle time", unit: "days", current: null, benchmark: 3, src: "APQC", method: "Avg days from refund request to payment", occurrence: "recurring", capability: "Touchless Invoicing" },
-                { name: "Refund accuracy rate", unit: "%", current: null, benchmark: 99, src: "Hackett", method: "Correct refunds / total refunds × 100", occurrence: "recurring", capability: "Touchless Invoicing" },
+                { name: "Refund processing cycle time", unit: "days", current: null, benchmark: 3, agentBenchmark: 0.5, src: "APQC", method: "Avg days from refund request to payment", occurrence: "recurring", capability: "Touchless Invoicing" },
+                { name: "Refund accuracy rate", unit: "%", current: null, benchmark: 99, agentBenchmark: 99.8, src: "Hackett", method: "Correct refunds / total refunds × 100", occurrence: "recurring", capability: "Touchless Invoicing" },
               ], sap: [{ module: "FI-AR", desc: "Credit memo & refund processing", scenario: "Automated refund workflow with approval routing based on amount thresholds and reason codes." }],
                 valLevers: [{ lever: "Reduce refund processing time", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }],
                 },
@@ -192,28 +193,28 @@ const APQC = [
             l3: "8.3.1 Process Sales Orders", l3id: "8.3.1",
             procs: [
               { id: "o2c-012", l4: "8.3.1.1", label: "Receive & validate sales orders", jobs: ["Capture order from channel","Validate pricing and terms","Check customer credit status","Confirm order to customer"], kpis: [
-                { name: "Order entry cycle time", unit: "minutes", current: null, benchmark: 5, src: "APQC", method: "Avg minutes from order receipt to system entry", occurrence: "recurring", capability: "Intelligent Order Management" },
-                { name: "Touchless order rate", unit: "%", current: null, benchmark: 65, src: "Hackett", method: "Orders requiring zero manual intervention / total orders × 100", occurrence: "recurring", capability: "Intelligent Order Management" },
-                { name: "Order accuracy rate", unit: "%", current: null, benchmark: 99.2, src: "APQC", method: "Error-free orders / total orders × 100", occurrence: "recurring", capability: "Intelligent Order Management" },
+                { name: "Order entry cycle time", unit: "minutes", current: null, benchmark: 5, agentBenchmark: 0.5, src: "APQC", method: "Avg minutes from order receipt to system entry", occurrence: "recurring", capability: "Intelligent Order Management" },
+                { name: "Touchless order rate", unit: "%", current: null, benchmark: 65, agentBenchmark: 90, src: "Hackett", method: "Orders requiring zero manual intervention / total orders × 100", occurrence: "recurring", capability: "Intelligent Order Management" },
+                { name: "Order accuracy rate", unit: "%", current: null, benchmark: 99.2, agentBenchmark: 99.8, src: "APQC", method: "Error-free orders / total orders × 100", occurrence: "recurring", capability: "Intelligent Order Management" },
               ], sap: [{ module: "SD-SLS", desc: "Sales order creation & validation", scenario: "Intelligent order capture from multiple channels (EDI, portal, email) with automated validation against pricing, availability, and credit rules." }],
                 valLevers: [{ lever: "Increase touchless order rate", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" },
                   { lever: "Reduce order errors", vtype: "Tangible", vclass: "Standardization", fintype: "COGS", stmt: "Income Statement" }],
                 },
               { id: "o2c-013", l4: "8.3.1.2", label: "Check product availability & allocate inventory", jobs: ["Run available-to-promise check","Allocate inventory to order","Manage backorder queue","Communicate availability to customer"], kpis: [
-                { name: "Available-to-promise accuracy", unit: "%", current: null, benchmark: 95, src: "APQC", method: "Correct ATP responses / total ATP checks × 100", occurrence: "recurring", capability: "Intelligent Order Management" },
-                { name: "Order fill rate", unit: "%", current: null, benchmark: 97, src: "Hackett", method: "Orders shipped complete / total orders × 100", occurrence: "recurring", capability: "Intelligent Order Management" },
+                { name: "Available-to-promise accuracy", unit: "%", current: null, benchmark: 95, agentBenchmark: 99, src: "APQC", method: "Correct ATP responses / total ATP checks × 100", occurrence: "recurring", capability: "Intelligent Order Management" },
+                { name: "Order fill rate", unit: "%", current: null, benchmark: 97, agentBenchmark: 99, src: "Hackett", method: "Orders shipped complete / total orders × 100", occurrence: "recurring", capability: "Intelligent Order Management" },
               ], sap: [{ module: "SD-SLS / MM-IM", desc: "ATP check & inventory allocation", scenario: "Real-time global ATP with intelligent allocation based on customer priority, margin, and supply constraints." }],
                 valLevers: [{ lever: "Improve order fill rate", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
                 },
               { id: "o2c-014", l4: "8.3.1.3", label: "Determine pricing & apply discounts", jobs: ["Apply pricing condition records","Calculate volume and contract discounts","Validate against margin guardrails"], kpis: [
-                { name: "Pricing accuracy rate", unit: "%", current: null, benchmark: 99, src: "APQC", method: "Correctly priced orders / total orders × 100", occurrence: "recurring", capability: "Dynamic Pricing Intelligence" },
-                { name: "Manual pricing overrides", unit: "%", current: null, benchmark: 3, src: "Hackett", method: "Orders with manual price changes / total orders × 100", occurrence: "recurring", capability: "Dynamic Pricing Intelligence" },
+                { name: "Pricing accuracy rate", unit: "%", current: null, benchmark: 99, agentBenchmark: 99.9, src: "APQC", method: "Correctly priced orders / total orders × 100", occurrence: "recurring", capability: "Dynamic Pricing Intelligence" },
+                { name: "Manual pricing overrides", unit: "%", current: null, benchmark: 3, agentBenchmark: 0.5, src: "Hackett", method: "Orders with manual price changes / total orders × 100", occurrence: "recurring", capability: "Dynamic Pricing Intelligence" },
               ], sap: [{ module: "SD-BF", desc: "Pricing conditions & discount management", scenario: "AI-powered pricing engine with dynamic discounting, customer-specific agreements, and automated rebate calculations." }],
                 valLevers: [{ lever: "Reduce pricing errors & leakage", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
                 },
               { id: "o2c-015", l4: "8.3.1.4", label: "Process order changes & cancellations", jobs: ["Receive change/cancel request","Assess impact on fulfillment","Update order in system","Notify downstream processes"], kpis: [
-                { name: "Order change processing time", unit: "hours", current: null, benchmark: 2, src: "APQC", method: "Avg hours to process order modification", occurrence: "recurring", capability: "Intelligent Order Management" },
-                { name: "Cancellation rate", unit: "%", current: null, benchmark: 3, src: "Hackett", method: "Cancelled orders / total orders × 100", occurrence: "recurring", capability: "Intelligent Order Management" },
+                { name: "Order change processing time", unit: "hours", current: null, benchmark: 2, agentBenchmark: 0.25, src: "APQC", method: "Avg hours to process order modification", occurrence: "recurring", capability: "Intelligent Order Management" },
+                { name: "Cancellation rate", unit: "%", current: null, benchmark: 3, agentBenchmark: 1.5, src: "Hackett", method: "Cancelled orders / total orders × 100", occurrence: "recurring", capability: "Intelligent Order Management" },
               ], sap: [{ module: "SD-SLS", desc: "Order change management", scenario: "Self-service order modification portal with automated impact assessment on delivery, pricing, and production schedule." }],
                 valLevers: [{ lever: "Reduce order cancellation rate", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
                 },
@@ -223,24 +224,24 @@ const APQC = [
             l3: "8.3.2 Manage Order Fulfillment", l3id: "8.3.2",
             procs: [
               { id: "o2c-016", l4: "8.3.2.1", label: "Pick, pack & ship customer orders", jobs: ["Generate pick list","Execute warehouse picking","Pack and label shipment","Create shipping documents"], kpis: [
-                { name: "Perfect order rate", unit: "%", current: null, benchmark: 92, src: "APQC", method: "Orders delivered on time, in full, damage-free, correctly documented / total orders × 100", occurrence: "recurring", capability: "Smart Fulfillment" },
-                { name: "Order-to-ship cycle time", unit: "hours", current: null, benchmark: 24, src: "Hackett", method: "Avg hours from order confirmation to shipment", occurrence: "recurring", capability: "Smart Fulfillment" },
-                { name: "Warehouse cost per order", unit: "$", current: null, benchmark: 4.50, src: "APQC", method: "Total warehouse cost / orders shipped", occurrence: "recurring", capability: "Smart Fulfillment" },
+                { name: "Perfect order rate", unit: "%", current: null, benchmark: 92, agentBenchmark: 97, src: "APQC", method: "Orders delivered on time, in full, damage-free, correctly documented / total orders × 100", occurrence: "recurring", capability: "Smart Fulfillment" },
+                { name: "Order-to-ship cycle time", unit: "hours", current: null, benchmark: 24, agentBenchmark: 8, src: "Hackett", method: "Avg hours from order confirmation to shipment", occurrence: "recurring", capability: "Smart Fulfillment" },
+                { name: "Warehouse cost per order", unit: "$", current: null, benchmark: 4.50, agentBenchmark: 2.5, src: "APQC", method: "Total warehouse cost / orders shipped", occurrence: "recurring", capability: "Smart Fulfillment" },
               ], sap: [{ module: "EWM / SD-SHP", desc: "Warehouse execution & shipping", scenario: "AI-optimized wave planning, pick-path optimization, and automated packing with real-time labor allocation." }],
                 valLevers: [{ lever: "Improve perfect order rate", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" },
                   { lever: "Reduce warehouse cost per order", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "COGS", stmt: "Income Statement" }],
                 },
               { id: "o2c-017", l4: "8.3.2.2", label: "Manage delivery scheduling & logistics", jobs: ["Plan delivery routes","Schedule carrier pickup","Track shipment in transit","Confirm proof of delivery"], kpis: [
-                { name: "On-time delivery rate", unit: "%", current: null, benchmark: 95, src: "APQC", method: "Orders delivered on or before promised date / total orders × 100", occurrence: "recurring", capability: "Smart Fulfillment" },
-                { name: "Freight cost as % of revenue", unit: "%", current: null, benchmark: 4.5, src: "Hackett", method: "Total freight cost / net revenue × 100", occurrence: "recurring", capability: "Smart Fulfillment" },
+                { name: "On-time delivery rate", unit: "%", current: null, benchmark: 95, agentBenchmark: 98, src: "APQC", method: "Orders delivered on or before promised date / total orders × 100", occurrence: "recurring", capability: "Smart Fulfillment" },
+                { name: "Freight cost as % of revenue", unit: "%", current: null, benchmark: 4.5, agentBenchmark: 3, src: "Hackett", method: "Total freight cost / net revenue × 100", occurrence: "recurring", capability: "Smart Fulfillment" },
               ], sap: [{ module: "TM / SD-SHP", desc: "Transportation management & delivery", scenario: "Dynamic route optimization with real-time traffic, capacity, and cost balancing. Predictive ETA for customer visibility." }],
                 valLevers: [{ lever: "Reduce freight cost", vtype: "Tangible", vclass: "Cost Avoidance", fintype: "COGS", stmt: "Income Statement" },
                   { lever: "Improve on-time delivery", vtype: "Intangible", vclass: "Customer Satisfaction", fintype: "Revenue", stmt: "Income Statement" }],
                 },
               { id: "o2c-018", l4: "8.3.2.3", label: "Process returns & reverse logistics", jobs: ["Authorize return request","Receive and inspect returned goods","Update inventory records","Issue credit or replacement"], kpis: [
-                { name: "Return processing cycle time", unit: "days", current: null, benchmark: 5, src: "APQC", method: "Avg days from return initiation to credit/replacement", occurrence: "recurring", capability: "Smart Fulfillment" },
-                { name: "Return rate", unit: "%", current: null, benchmark: 8, src: "Hackett", method: "Returned orders / total orders × 100", occurrence: "recurring", capability: "Smart Fulfillment" },
-                { name: "Return cost per unit", unit: "$", current: null, benchmark: 12, src: "APQC", method: "Total returns cost / units returned", occurrence: "recurring", capability: "Smart Fulfillment" },
+                { name: "Return processing cycle time", unit: "days", current: null, benchmark: 5, agentBenchmark: 1.5, src: "APQC", method: "Avg days from return initiation to credit/replacement", occurrence: "recurring", capability: "Smart Fulfillment" },
+                { name: "Return rate", unit: "%", current: null, benchmark: 8, agentBenchmark: 5, src: "Hackett", method: "Returned orders / total orders × 100", occurrence: "recurring", capability: "Smart Fulfillment" },
+                { name: "Return cost per unit", unit: "$", current: null, benchmark: 12, agentBenchmark: 6, src: "APQC", method: "Total returns cost / units returned", occurrence: "recurring", capability: "Smart Fulfillment" },
               ], sap: [{ module: "SD-SLS / EWM", desc: "Returns & reverse logistics", scenario: "Automated return authorization with AI-powered reason code analysis. Predictive return forecasting for inventory planning." }],
                 valLevers: [{ lever: "Reduce return processing cost", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "COGS", stmt: "Income Statement" },
                   { lever: "Reduce return rate", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
@@ -251,8 +252,8 @@ const APQC = [
             l3: "8.3.3 Manage Revenue Recognition", l3id: "8.3.3",
             procs: [
               { id: "o2c-019", l4: "8.3.3.1", label: "Recognize revenue per accounting standards", jobs: ["Identify performance obligations","Determine transaction price","Allocate price to obligations","Recognize revenue upon satisfaction"], kpis: [
-                { name: "Revenue recognition automation rate", unit: "%", current: null, benchmark: 80, src: "Hackett", method: "Auto-recognized revenue / total revenue × 100", occurrence: "recurring", capability: "Automated Revenue Recognition" },
-                { name: "Revenue adjustments post-close", unit: "count", current: null, benchmark: 5, src: "APQC", method: "Revenue adjustments made after period close", occurrence: "recurring", capability: "Automated Revenue Recognition" },
+                { name: "Revenue recognition automation rate", unit: "%", current: null, benchmark: 80, agentBenchmark: 95, src: "Hackett", method: "Auto-recognized revenue / total revenue × 100", occurrence: "recurring", capability: "Automated Revenue Recognition" },
+                { name: "Revenue adjustments post-close", unit: "count", current: null, benchmark: 5, agentBenchmark: 1, src: "APQC", method: "Revenue adjustments made after period close", occurrence: "recurring", capability: "Automated Revenue Recognition" },
               ], sap: [{ module: "FI-AR / RAR", desc: "Revenue accounting & recognition", scenario: "Automated revenue recognition engine applies ASC 606 / IFRS 15 rules to contracts. Multi-element arrangement handling." }],
                 valLevers: [{ lever: "Automate revenue recognition", vtype: "Tangible", vclass: "Standardization", fintype: "SGA", stmt: "Income Statement" }],
                 },
@@ -267,15 +268,15 @@ const APQC = [
             l3: "8.4.1 Customer Contract Management", l3id: "8.4.1",
             procs: [
               { id: "o2c-020", l4: "8.4.1.1", label: "Create & manage customer contracts", jobs: ["Draft contract from templates","Negotiate terms and conditions","Route for legal and commercial approval","Execute and store contract"], kpis: [
-                { name: "Contract creation cycle time", unit: "days", current: null, benchmark: 5, src: "APQC", method: "Avg days from request to executed contract", occurrence: "recurring", capability: "Contract Intelligence" },
-                { name: "Contract compliance rate", unit: "%", current: null, benchmark: 92, src: "Hackett", method: "Contracts within compliance / total active contracts × 100", occurrence: "recurring", capability: "Contract Intelligence" },
+                { name: "Contract creation cycle time", unit: "days", current: null, benchmark: 5, agentBenchmark: 1.5, src: "APQC", method: "Avg days from request to executed contract", occurrence: "recurring", capability: "Contract Intelligence" },
+                { name: "Contract compliance rate", unit: "%", current: null, benchmark: 92, agentBenchmark: 98, src: "Hackett", method: "Contracts within compliance / total active contracts × 100", occurrence: "recurring", capability: "Contract Intelligence" },
               ], sap: [{ module: "SD-CAS", desc: "Contract & agreement management", scenario: "NLP-powered contract creation from templates with automated compliance checks. Smart clause library with risk scoring." }],
                 valLevers: [{ lever: "Reduce contract cycle time", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }],
                 },
               { id: "o2c-021", l4: "8.4.1.2", label: "Manage rebates & trade promotions", jobs: ["Configure rebate agreements","Track qualifying transactions","Calculate accruals and settlements","Analyze promotion effectiveness"], kpis: [
-                { name: "Rebate accrual accuracy", unit: "%", current: null, benchmark: 95, src: "APQC", method: "Actual rebate vs accrued / total rebates × 100", occurrence: "recurring", capability: "Trade Promotion Optimization" },
-                { name: "Trade promotion ROI", unit: "%", current: null, benchmark: 115, src: "Hackett", method: "Incremental profit from promotion / promotion cost × 100", occurrence: "recurring", capability: "Trade Promotion Optimization" },
-                { name: "Rebate settlement cycle time", unit: "days", current: null, benchmark: 15, src: "APQC", method: "Avg days from period end to rebate settlement", occurrence: "recurring", capability: "Trade Promotion Optimization" },
+                { name: "Rebate accrual accuracy", unit: "%", current: null, benchmark: 95, agentBenchmark: 99, src: "APQC", method: "Actual rebate vs accrued / total rebates × 100", occurrence: "recurring", capability: "Trade Promotion Optimization" },
+                { name: "Trade promotion ROI", unit: "%", current: null, benchmark: 115, agentBenchmark: 140, src: "Hackett", method: "Incremental profit from promotion / promotion cost × 100", occurrence: "recurring", capability: "Trade Promotion Optimization" },
+                { name: "Rebate settlement cycle time", unit: "days", current: null, benchmark: 15, agentBenchmark: 5, src: "APQC", method: "Avg days from period end to rebate settlement", occurrence: "recurring", capability: "Trade Promotion Optimization" },
               ], sap: [{ module: "SD-CAS / FICO", desc: "Rebate & settlement processing", scenario: "Automated rebate calculation, accrual, and settlement. AI-driven promotion effectiveness analysis with predictive ROI scoring." }],
                 valLevers: [{ lever: "Improve rebate accuracy", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" },
                   { lever: "Optimize trade promotion spend", vtype: "Tangible", vclass: "Cost Avoidance", fintype: "SGA", stmt: "Income Statement" }],
@@ -286,14 +287,14 @@ const APQC = [
             l3: "8.4.2 Pricing & Margin Management", l3id: "8.4.2",
             procs: [
               { id: "o2c-022", l4: "8.4.2.1", label: "Manage pricing master data & conditions", jobs: ["Maintain price lists and condition records","Propagate price changes across systems","Validate against margin thresholds"], kpis: [
-                { name: "Pricing master data accuracy", unit: "%", current: null, benchmark: 99, src: "APQC", method: "Correct pricing records / total pricing records × 100", occurrence: "recurring", capability: "Dynamic Pricing Intelligence" },
-                { name: "Price list update cycle time", unit: "hours", current: null, benchmark: 4, src: "Hackett", method: "Avg hours to propagate price changes across systems", occurrence: "recurring", capability: "Dynamic Pricing Intelligence" },
+                { name: "Pricing master data accuracy", unit: "%", current: null, benchmark: 99, agentBenchmark: 99.9, src: "APQC", method: "Correct pricing records / total pricing records × 100", occurrence: "recurring", capability: "Dynamic Pricing Intelligence" },
+                { name: "Price list update cycle time", unit: "hours", current: null, benchmark: 4, agentBenchmark: 0.5, src: "Hackett", method: "Avg hours to propagate price changes across systems", occurrence: "recurring", capability: "Dynamic Pricing Intelligence" },
               ], sap: [{ module: "SD-BF", desc: "Pricing condition maintenance", scenario: "Centralized pricing hub with automated condition record management. AI validates pricing changes against margin guardrails before activation." }],
                 valLevers: [{ lever: "Eliminate pricing data errors", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
                 },
               { id: "o2c-023", l4: "8.4.2.2", label: "Analyze & optimize margin performance", jobs: ["Run margin waterfall analysis","Identify leakage by customer and product","Model pricing scenarios","Recommend pricing actions"], kpis: [
-                { name: "Gross margin by customer", unit: "%", current: null, benchmark: null, src: "Internal", method: "Customer gross profit / customer revenue × 100", occurrence: "recurring", capability: "Dynamic Pricing Intelligence" },
-                { name: "Price realization rate", unit: "%", current: null, benchmark: 97, src: "Hackett", method: "Net realized price / list price × 100", occurrence: "recurring", capability: "Dynamic Pricing Intelligence" },
+                { name: "Gross margin by customer", unit: "%", current: null, benchmark: null, agentBenchmark: null, src: "Internal", method: "Customer gross profit / customer revenue × 100", occurrence: "recurring", capability: "Dynamic Pricing Intelligence" },
+                { name: "Price realization rate", unit: "%", current: null, benchmark: 97, agentBenchmark: 99, src: "Hackett", method: "Net realized price / list price × 100", occurrence: "recurring", capability: "Dynamic Pricing Intelligence" },
               ], sap: [{ module: "CO-PA", desc: "Profitability analysis", scenario: "Real-time margin analytics by customer, product, channel with waterfall decomposition. AI identifies margin leakage patterns." }],
                 valLevers: [{ lever: "Improve price realization", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
                 },
@@ -308,14 +309,14 @@ const APQC = [
             l3: "8.5.1 Cash Forecasting & Management", l3id: "8.5.1",
             procs: [
               { id: "o2c-024", l4: "8.5.1.1", label: "Forecast cash receipts from customers", jobs: ["Gather AR and payment history data","Run cash receipt forecast models","Produce rolling 13-week forecast","Distribute forecast to treasury"], kpis: [
-                { name: "Cash forecast accuracy (30-day)", unit: "%", current: null, benchmark: 90, src: "APQC", method: "1 - |Actual - Forecast| / Actual × 100", occurrence: "recurring", capability: "Predictive Cash Management" },
-                { name: "Cash forecast cycle time", unit: "hours", current: null, benchmark: 2, src: "Hackett", method: "Avg hours to produce weekly cash forecast", occurrence: "recurring", capability: "Predictive Cash Management" },
+                { name: "Cash forecast accuracy (30-day)", unit: "%", current: null, benchmark: 90, agentBenchmark: 96, src: "APQC", method: "1 - |Actual - Forecast| / Actual × 100", occurrence: "recurring", capability: "Predictive Cash Management" },
+                { name: "Cash forecast cycle time", unit: "hours", current: null, benchmark: 2, agentBenchmark: 0.25, src: "Hackett", method: "Avg hours to produce weekly cash forecast", occurrence: "recurring", capability: "Predictive Cash Management" },
               ], sap: [{ module: "TRM", desc: "Cash management & forecasting", scenario: "ML-based cash receipt forecasting using payment history, customer behavior, and macro signals. Daily rolling 13-week forecast." }],
                 valLevers: [{ lever: "Improve cash forecast accuracy", vtype: "Tangible", vclass: "Working Capital", fintype: "SGA", stmt: "Balance Sheet" }],
                 },
               { id: "o2c-025", l4: "8.5.1.2", label: "Manage bank account reconciliation", jobs: ["Import bank statements","Match transactions to GL entries","Investigate unreconciled items","Post reconciliation adjustments"], kpis: [
-                { name: "Bank reconciliation automation rate", unit: "%", current: null, benchmark: 90, src: "APQC", method: "Auto-reconciled items / total items × 100", occurrence: "recurring", capability: "Predictive Cash Management" },
-                { name: "Reconciliation cycle time", unit: "hours", current: null, benchmark: 2, src: "Hackett", method: "Avg hours to complete daily bank reconciliation", occurrence: "recurring", capability: "Predictive Cash Management" },
+                { name: "Bank reconciliation automation rate", unit: "%", current: null, benchmark: 90, agentBenchmark: 98, src: "APQC", method: "Auto-reconciled items / total items × 100", occurrence: "recurring", capability: "Predictive Cash Management" },
+                { name: "Reconciliation cycle time", unit: "hours", current: null, benchmark: 2, agentBenchmark: 0.25, src: "Hackett", method: "Avg hours to complete daily bank reconciliation", occurrence: "recurring", capability: "Predictive Cash Management" },
               ], sap: [{ module: "FI-BL", desc: "Bank statement processing & reconciliation", scenario: "Automated bank statement import and intelligent matching. ML handles complex multi-payment reconciliations." }],
                 valLevers: [{ lever: "Automate bank reconciliation", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }],
                 },
@@ -330,14 +331,14 @@ const APQC = [
             l3: "8.6.1 O2C Analytics & Reporting", l3id: "8.6.1",
             procs: [
               { id: "o2c-026", l4: "8.6.1.1", label: "Monitor O2C KPIs & generate reports", jobs: ["Collect KPI data from source systems","Generate standard O2C dashboards","Highlight exceptions and anomalies","Distribute reports to stakeholders"], kpis: [
-                { name: "Report generation cycle time", unit: "hours", current: null, benchmark: 1, src: "APQC", method: "Avg hours to produce standard O2C report", occurrence: "recurring", capability: "O2C Process Intelligence" },
-                { name: "KPI exception detection time", unit: "hours", current: null, benchmark: 4, src: "Hackett", method: "Avg hours from KPI breach to alert", occurrence: "recurring", capability: "O2C Process Intelligence" },
+                { name: "Report generation cycle time", unit: "hours", current: null, benchmark: 1, agentBenchmark: 0.05, src: "APQC", method: "Avg hours to produce standard O2C report", occurrence: "recurring", capability: "O2C Process Intelligence" },
+                { name: "KPI exception detection time", unit: "hours", current: null, benchmark: 4, agentBenchmark: 0.1, src: "Hackett", method: "Avg hours from KPI breach to alert", occurrence: "recurring", capability: "O2C Process Intelligence" },
               ], sap: [{ module: "BW/4HANA / SAC", desc: "O2C analytics & dashboarding", scenario: "Real-time O2C control tower with anomaly detection, automated root cause analysis, and predictive alerts." }],
                 valLevers: [{ lever: "Reduce reporting effort", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }],
                 },
               { id: "o2c-027", l4: "8.6.1.2", label: "Perform O2C process mining & optimization", jobs: ["Extract process event logs","Run process mining analysis","Identify bottlenecks and deviations","Recommend process improvements"], kpis: [
-                { name: "Process conformance rate", unit: "%", current: null, benchmark: 85, src: "Signavio", method: "Process instances following standard path / total instances × 100", occurrence: "recurring", capability: "O2C Process Intelligence" },
-                { name: "Rework rate", unit: "%", current: null, benchmark: 5, src: "APQC", method: "Process instances requiring rework / total instances × 100", occurrence: "recurring", capability: "O2C Process Intelligence" },
+                { name: "Process conformance rate", unit: "%", current: null, benchmark: 85, agentBenchmark: 95, src: "Signavio", method: "Process instances following standard path / total instances × 100", occurrence: "recurring", capability: "O2C Process Intelligence" },
+                { name: "Rework rate", unit: "%", current: null, benchmark: 5, agentBenchmark: 1.5, src: "APQC", method: "Process instances requiring rework / total instances × 100", occurrence: "recurring", capability: "O2C Process Intelligence" },
               ], sap: [{ module: "Signavio", desc: "Process mining & intelligence", scenario: "Continuous process mining identifies bottlenecks, deviations, and automation opportunities. Digital twin simulates improvement scenarios." }],
                 valLevers: [{ lever: "Reduce process rework rate", vtype: "Tangible", vclass: "Standardization", fintype: "SGA", stmt: "Income Statement" }],
                 },
@@ -357,35 +358,35 @@ const APQC = [
         subs: [
           { l3: "9.1.1 Journal Entry Processing", l3id: "9.1.1", procs: [
             { id: "r2r-001", l4: "9.1.1.1", label: "Process manual & recurring journal entries", jobs: ["Prepare journal entry with supporting docs","Validate account coding and amounts","Post entry to general ledger","Archive journal entry backup"], kpis: [
-              { name: "Journal entry automation rate", unit: "%", current: null, benchmark: 75, src: "APQC", occurrence: "recurring", capability: "Automated Journal Processing" },
-              { name: "JE error rate", unit: "%", current: null, benchmark: 0.5, src: "Hackett", occurrence: "recurring", capability: "Automated Journal Processing" },
+              { name: "Journal entry automation rate", unit: "%", current: null, benchmark: 75, agentBenchmark: 95, src: "APQC", occurrence: "recurring", capability: "Automated Journal Processing" },
+              { name: "JE error rate", unit: "%", current: null, benchmark: 0.5, agentBenchmark: 0.05, src: "Hackett", occurrence: "recurring", capability: "Automated Journal Processing" },
             ], sap: [{ module: "FI-GL", desc: "General ledger postings" }], valLevers: [{ lever: "Automate journal entries", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
             { id: "r2r-002", l4: "9.1.1.2", label: "Manage intercompany transactions & eliminations", jobs: ["Record intercompany transactions","Match intercompany balances","Generate elimination entries","Resolve intercompany discrepancies"], kpis: [
-              { name: "Intercompany matching rate", unit: "%", current: null, benchmark: 95, src: "APQC", occurrence: "recurring", capability: "Automated Journal Processing" },
+              { name: "Intercompany matching rate", unit: "%", current: null, benchmark: 95, agentBenchmark: 99.5, src: "APQC", occurrence: "recurring", capability: "Automated Journal Processing" },
             ], sap: [{ module: "FI-GL / Group Reporting", desc: "Intercompany reconciliation" }], valLevers: [{ lever: "Automate IC eliminations", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
           ]},
           { l3: "9.1.2 Account Reconciliation", l3id: "9.1.2", procs: [
             { id: "r2r-003", l4: "9.1.2.1", label: "Perform account reconciliations", jobs: ["Extract subledger and GL balances","Identify reconciling items","Investigate and resolve differences","Certify account balances"], kpis: [
-              { name: "Reconciliation automation rate", unit: "%", current: null, benchmark: 70, src: "APQC", occurrence: "recurring", capability: "Continuous Account Reconciliation" },
-              { name: "Reconciling items aging (days)", unit: "days", current: null, benchmark: 5, src: "Hackett", occurrence: "recurring", capability: "Continuous Account Reconciliation" },
+              { name: "Reconciliation automation rate", unit: "%", current: null, benchmark: 70, agentBenchmark: 92, src: "APQC", occurrence: "recurring", capability: "Continuous Account Reconciliation" },
+              { name: "Reconciling items aging (days)", unit: "days", current: null, benchmark: 5, agentBenchmark: 1, src: "Hackett", occurrence: "recurring", capability: "Continuous Account Reconciliation" },
             ], sap: [{ module: "FI-GL / ACDOCA", desc: "Account reconciliation & matching" }], valLevers: [{ lever: "Automate reconciliations", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
           ]},
           { l3: "9.1.3 Period-End Close", l3id: "9.1.3", procs: [
             { id: "r2r-004", l4: "9.1.3.1", label: "Execute period-end close activities", jobs: ["Run close task checklist","Execute cut-off procedures","Post closing adjustments","Verify trial balance"], kpis: [
-              { name: "Days to close", unit: "days", current: null, benchmark: 4.8, src: "APQC", occurrence: "recurring", capability: "Advanced Financial Close" },
-              { name: "Close task automation rate", unit: "%", current: null, benchmark: 60, src: "Hackett", occurrence: "recurring", capability: "Advanced Financial Close" },
+              { name: "Days to close", unit: "days", current: null, benchmark: 4.8, agentBenchmark: 2, src: "APQC", occurrence: "recurring", capability: "Advanced Financial Close" },
+              { name: "Close task automation rate", unit: "%", current: null, benchmark: 60, agentBenchmark: 85, src: "Hackett", occurrence: "recurring", capability: "Advanced Financial Close" },
             ], sap: [{ module: "FI-GL / S/4 Close Cockpit", desc: "Financial close management" }], valLevers: [{ lever: "Accelerate close cycle", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
             { id: "r2r-005", l4: "9.1.3.2", label: "Manage accruals & provisions", jobs: ["Estimate accrual amounts","Post accrual journal entries","Reverse prior period accruals","Reconcile accrual balances"], kpis: [
-              { name: "Accrual reversal rate", unit: "%", current: null, benchmark: 5, src: "APQC", occurrence: "recurring", capability: "Advanced Financial Close" },
+              { name: "Accrual reversal rate", unit: "%", current: null, benchmark: 5, agentBenchmark: 1.5, src: "APQC", occurrence: "recurring", capability: "Advanced Financial Close" },
             ], sap: [{ module: "FI-GL", desc: "Accrual engine" }], valLevers: [{ lever: "Improve accrual accuracy", vtype: "Tangible", vclass: "Standardization", fintype: "SGA", stmt: "Income Statement" }] },
           ]},
           { l3: "9.1.4 Financial Reporting & Consolidation", l3id: "9.1.4", procs: [
             { id: "r2r-006", l4: "9.1.4.1", label: "Prepare consolidated financial statements", jobs: ["Collect subsidiary trial balances","Apply consolidation rules","Process currency translation","Generate consolidated reports"], kpis: [
-              { name: "Consolidation cycle time", unit: "days", current: null, benchmark: 3, src: "APQC", occurrence: "recurring", capability: "Intelligent Consolidation & Reporting" },
-              { name: "Manual adjustments in consolidation", unit: "count", current: null, benchmark: 10, src: "Hackett", occurrence: "recurring", capability: "Intelligent Consolidation & Reporting" },
+              { name: "Consolidation cycle time", unit: "days", current: null, benchmark: 3, agentBenchmark: 1, src: "APQC", occurrence: "recurring", capability: "Intelligent Consolidation & Reporting" },
+              { name: "Manual adjustments in consolidation", unit: "count", current: null, benchmark: 10, agentBenchmark: 2, src: "Hackett", occurrence: "recurring", capability: "Intelligent Consolidation & Reporting" },
             ], sap: [{ module: "Group Reporting / BPC", desc: "Group consolidation" }], valLevers: [{ lever: "Automate consolidation", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
             { id: "r2r-007", l4: "9.1.4.2", label: "Perform management & statutory reporting", jobs: ["Prepare management reporting packages","Generate statutory financial statements","Perform variance analysis commentary","Submit regulatory filings"], kpis: [
-              { name: "Report generation time", unit: "hours", current: null, benchmark: 4, src: "APQC", occurrence: "recurring", capability: "Intelligent Consolidation & Reporting" },
+              { name: "Report generation time", unit: "hours", current: null, benchmark: 4, agentBenchmark: 0.5, src: "APQC", occurrence: "recurring", capability: "Intelligent Consolidation & Reporting" },
             ], sap: [{ module: "SAC / BW4", desc: "Management reporting" }], valLevers: [{ lever: "Automate reporting", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
           ]},
         ]
@@ -395,7 +396,7 @@ const APQC = [
         subs: [
           { l3: "9.2.1 Asset Accounting", l3id: "9.2.1", procs: [
             { id: "r2r-008", l4: "9.2.1.1", label: "Manage fixed asset lifecycle", jobs: ["Capitalize new assets","Run depreciation calculations","Process asset transfers and retirements","Reconcile asset register to GL"], kpis: [
-              { name: "Asset capitalization accuracy", unit: "%", current: null, benchmark: 98, src: "APQC", occurrence: "recurring", capability: "Smart Asset Management" },
+              { name: "Asset capitalization accuracy", unit: "%", current: null, benchmark: 98, agentBenchmark: 99.5, src: "APQC", occurrence: "recurring", capability: "Smart Asset Management" },
             ], sap: [{ module: "FI-AA", desc: "Asset accounting" }], valLevers: [{ lever: "Automate asset capitalization", vtype: "Tangible", vclass: "Standardization", fintype: "SGA", stmt: "Income Statement" }] },
           ]},
         ]
@@ -405,7 +406,7 @@ const APQC = [
         subs: [
           { l3: "9.3.1 Cost Allocation & Analysis", l3id: "9.3.1", procs: [
             { id: "r2r-009", l4: "9.3.1.1", label: "Perform cost allocation & product costing", jobs: ["Define cost allocation rules","Execute allocation runs","Calculate standard product costs","Analyze cost variances"], kpis: [
-              { name: "Cost allocation cycle time", unit: "days", current: null, benchmark: 2, src: "APQC", occurrence: "recurring", capability: "Automated Cost Management" },
+              { name: "Cost allocation cycle time", unit: "days", current: null, benchmark: 2, agentBenchmark: 0.25, src: "APQC", occurrence: "recurring", capability: "Automated Cost Management" },
             ], sap: [{ module: "CO-PC / CO-PA", desc: "Product costing & profitability" }], valLevers: [{ lever: "Automate cost allocation", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
           ]},
         ]
@@ -415,7 +416,7 @@ const APQC = [
         subs: [
           { l3: "9.4.1 Tax Compliance", l3id: "9.4.1", procs: [
             { id: "r2r-010", l4: "9.4.1.1", label: "Calculate & file tax returns", jobs: ["Gather tax-relevant transactions","Calculate tax provisions","Prepare and review tax returns","Submit filings to authorities"], kpis: [
-              { name: "Tax filing accuracy", unit: "%", current: null, benchmark: 99.5, src: "APQC", occurrence: "recurring", capability: "Intelligent Tax Engine" },
+              { name: "Tax filing accuracy", unit: "%", current: null, benchmark: 99.5, agentBenchmark: 99.9, src: "APQC", occurrence: "recurring", capability: "Intelligent Tax Engine" },
             ], sap: [{ module: "FI-TX / ACR", desc: "Tax determination & reporting" }], valLevers: [{ lever: "Automate tax calculations", vtype: "Tangible", vclass: "Standardization", fintype: "SGA", stmt: "Income Statement" }] },
           ]},
         ]
@@ -432,18 +433,18 @@ const APQC = [
         subs: [
           { l3: "10.1.1 Purchase Requisition Processing", l3id: "10.1.1", procs: [
             { id: "p2p-001", l4: "10.1.1.1", label: "Create & approve purchase requisitions", jobs: ["Create purchase requisition","Validate budget availability","Route for approval","Convert approved requisition to PO"], kpis: [
-              { name: "Requisition-to-PO cycle time", unit: "days", current: null, benchmark: 2, src: "APQC", occurrence: "recurring", capability: "Smart Requisitioning" },
-              { name: "Auto-approval rate", unit: "%", current: null, benchmark: 50, src: "Hackett", occurrence: "recurring", capability: "Smart Requisitioning" },
+              { name: "Requisition-to-PO cycle time", unit: "days", current: null, benchmark: 2, agentBenchmark: 0.25, src: "APQC", occurrence: "recurring", capability: "Smart Requisitioning" },
+              { name: "Auto-approval rate", unit: "%", current: null, benchmark: 50, agentBenchmark: 80, src: "Hackett", occurrence: "recurring", capability: "Smart Requisitioning" },
             ], sap: [{ module: "MM-PUR", desc: "Purchase requisition management" }], valLevers: [{ lever: "Automate requisition approvals", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
           ]},
           { l3: "10.1.2 Purchase Order Management", l3id: "10.1.2", procs: [
             { id: "p2p-002", l4: "10.1.2.1", label: "Create & manage purchase orders", jobs: ["Create purchase order from requisition","Confirm order with supplier","Track PO delivery status","Manage PO changes and amendments"], kpis: [
-              { name: "PO accuracy rate", unit: "%", current: null, benchmark: 98, src: "APQC", occurrence: "recurring", capability: "Intelligent Procurement" },
-              { name: "Cost per PO", unit: "$", current: null, benchmark: 25, src: "Hackett", occurrence: "recurring", capability: "Intelligent Procurement" },
+              { name: "PO accuracy rate", unit: "%", current: null, benchmark: 98, agentBenchmark: 99.5, src: "APQC", occurrence: "recurring", capability: "Intelligent Procurement" },
+              { name: "Cost per PO", unit: "$", current: null, benchmark: 25, agentBenchmark: 5, src: "Hackett", occurrence: "recurring", capability: "Intelligent Procurement" },
             ], sap: [{ module: "MM-PUR", desc: "Purchase order processing" }], valLevers: [{ lever: "Reduce cost per PO", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
             { id: "p2p-003", l4: "10.1.2.2", label: "Manage goods receipt & 3-way matching", jobs: ["Record goods receipt","Perform 3-way match","Investigate matching exceptions","Post matched entries"], kpis: [
-              { name: "3-way match rate", unit: "%", current: null, benchmark: 85, src: "APQC", occurrence: "recurring", capability: "Intelligent Procurement" },
-              { name: "GR processing time", unit: "hours", current: null, benchmark: 4, src: "Hackett", occurrence: "recurring", capability: "Intelligent Procurement" },
+              { name: "3-way match rate", unit: "%", current: null, benchmark: 85, agentBenchmark: 96, src: "APQC", occurrence: "recurring", capability: "Intelligent Procurement" },
+              { name: "GR processing time", unit: "hours", current: null, benchmark: 4, agentBenchmark: 0.5, src: "Hackett", occurrence: "recurring", capability: "Intelligent Procurement" },
             ], sap: [{ module: "MM-IM / MM-IV", desc: "Goods receipt & invoice verification" }], valLevers: [{ lever: "Increase auto-matching rate", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
           ]},
         ]
@@ -453,19 +454,19 @@ const APQC = [
         subs: [
           { l3: "10.2.1 Invoice Processing", l3id: "10.2.1", procs: [
             { id: "p2p-004", l4: "10.2.1.1", label: "Receive & process supplier invoices", jobs: ["Capture invoice via OCR or EDI","Validate against purchase order","Route exceptions for resolution","Post approved invoice"], kpis: [
-              { name: "Touchless invoice rate", unit: "%", current: null, benchmark: 75, src: "APQC", occurrence: "recurring", capability: "Touchless Invoice Processing" },
-              { name: "Cost per invoice processed", unit: "$", current: null, benchmark: 5.00, src: "Hackett", occurrence: "recurring", capability: "Touchless Invoice Processing" },
-              { name: "Invoice exception rate", unit: "%", current: null, benchmark: 15, src: "APQC", occurrence: "recurring", capability: "Touchless Invoice Processing" },
+              { name: "Touchless invoice rate", unit: "%", current: null, benchmark: 75, agentBenchmark: 93, src: "APQC", occurrence: "recurring", capability: "Touchless Invoice Processing" },
+              { name: "Cost per invoice processed", unit: "$", current: null, benchmark: 5.00, agentBenchmark: 1, src: "Hackett", occurrence: "recurring", capability: "Touchless Invoice Processing" },
+              { name: "Invoice exception rate", unit: "%", current: null, benchmark: 15, agentBenchmark: 4, src: "APQC", occurrence: "recurring", capability: "Touchless Invoice Processing" },
             ], sap: [{ module: "MM-IV / FI-AP", desc: "Invoice processing & verification" }], valLevers: [{ lever: "Increase touchless processing rate", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }] },
           ]},
           { l3: "10.2.2 Payment Processing", l3id: "10.2.2", procs: [
             { id: "p2p-005", l4: "10.2.2.1", label: "Schedule & execute supplier payments", jobs: ["Run payment proposal","Optimize payment timing for discounts","Execute payment run","Reconcile payment to bank"], kpis: [
-              { name: "On-time payment rate", unit: "%", current: null, benchmark: 95, src: "APQC", occurrence: "recurring", capability: "Optimized Payment Execution" },
-              { name: "Early payment discount capture", unit: "%", current: null, benchmark: 70, src: "Hackett", occurrence: "recurring", capability: "Optimized Payment Execution" },
-              { name: "Days payable outstanding (DPO)", unit: "days", current: null, benchmark: 45, src: "APQC", occurrence: "recurring", capability: "Optimized Payment Execution" },
+              { name: "On-time payment rate", unit: "%", current: null, benchmark: 95, agentBenchmark: 99, src: "APQC", occurrence: "recurring", capability: "Optimized Payment Execution" },
+              { name: "Early payment discount capture", unit: "%", current: null, benchmark: 70, agentBenchmark: 90, src: "Hackett", occurrence: "recurring", capability: "Optimized Payment Execution" },
+              { name: "Days payable outstanding (DPO)", unit: "days", current: null, benchmark: 45, agentBenchmark: 50, src: "APQC", occurrence: "recurring", capability: "Optimized Payment Execution" },
             ], sap: [{ module: "FI-AP", desc: "Payment processing & bank comms" }], valLevers: [{ lever: "Optimize payment timing", vtype: "Tangible", vclass: "Working Capital", fintype: "COGS", stmt: "Balance Sheet" }] },
             { id: "p2p-006", l4: "10.2.2.2", label: "Manage supplier financing & dynamic discounting", jobs: ["Identify early payment candidates","Offer dynamic discount to suppliers","Process early payment transactions"], kpis: [
-              { name: "Supply chain financing adoption", unit: "%", current: null, benchmark: 30, src: "Hackett", occurrence: "recurring", capability: "Optimized Payment Execution" },
+              { name: "Supply chain financing adoption", unit: "%", current: null, benchmark: 30, agentBenchmark: 55, src: "Hackett", occurrence: "recurring", capability: "Optimized Payment Execution" },
             ], sap: [{ module: "FSCM", desc: "Supply chain finance" }], valLevers: [{ lever: "Implement dynamic discounting", vtype: "Tangible", vclass: "Cost Avoidance", fintype: "COGS", stmt: "Income Statement" }] },
           ]},
         ]
@@ -475,13 +476,13 @@ const APQC = [
         subs: [
           { l3: "10.3.1 Supplier Evaluation & Risk", l3id: "10.3.1", procs: [
             { id: "p2p-007", l4: "10.3.1.1", label: "Evaluate & manage supplier performance", jobs: ["Collect supplier performance data","Calculate supplier scorecards","Conduct supplier business reviews","Manage corrective action plans"], kpis: [
-              { name: "Supplier scorecard coverage", unit: "%", current: null, benchmark: 80, src: "APQC", occurrence: "recurring", capability: "Supplier Intelligence" },
-              { name: "Strategic supplier spend coverage", unit: "%", current: null, benchmark: 75, src: "Hackett", occurrence: "recurring", capability: "Supplier Intelligence" },
+              { name: "Supplier scorecard coverage", unit: "%", current: null, benchmark: 80, agentBenchmark: 95, src: "APQC", occurrence: "recurring", capability: "Supplier Intelligence" },
+              { name: "Strategic supplier spend coverage", unit: "%", current: null, benchmark: 75, agentBenchmark: 90, src: "Hackett", occurrence: "recurring", capability: "Supplier Intelligence" },
             ], sap: [{ module: "SLC / Ariba", desc: "Supplier lifecycle management" }], valLevers: [{ lever: "Improve supplier management coverage", vtype: "Intangible", vclass: "Risk Mitigation", fintype: "COGS", stmt: "Income Statement" }] },
           ]},
           { l3: "10.3.2 Contract Management", l3id: "10.3.2", procs: [
             { id: "p2p-008", l4: "10.3.2.1", label: "Manage supplier contracts & compliance", jobs: ["Draft and negotiate supplier contracts","Monitor contract compliance","Track contract milestones and renewals","Audit maverick spend"], kpis: [
-              { name: "Contract utilization rate", unit: "%", current: null, benchmark: 80, src: "APQC", occurrence: "recurring", capability: "Contract Lifecycle Management" },
+              { name: "Contract utilization rate", unit: "%", current: null, benchmark: 80, agentBenchmark: 93, src: "APQC", occurrence: "recurring", capability: "Contract Lifecycle Management" },
             ], sap: [{ module: "Ariba / CLM", desc: "Contract lifecycle management" }], valLevers: [{ lever: "Increase contract compliance", vtype: "Tangible", vclass: "Cost Avoidance", fintype: "COGS", stmt: "Income Statement" }] },
           ]},
         ]
@@ -716,6 +717,10 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
   // Questionnaire upload & process mining
   const [uploadedMining, setUploadedMining] = useState(initialData?.uploadedMining || {});
 
+  // Paste responses modal
+  const [showPasteModal, setShowPasteModal] = useState(false);
+  const [pasteText, setPasteText] = useState("");
+
   // Catalyst API key (entered by consultant, never stored)
   const [apiKey, setApiKey] = useState("");
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
@@ -813,6 +818,8 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
     const multipliers = { High: 1.0, Medium: 0.65, Low: 0.35 };
     let totalValue = 0;
     let revImpact = 0, cogsImpact = 0, sgaImpact = 0;
+    let totalAgentValue = 0;
+    let agentRevImpact = 0, agentCogsImpact = 0, agentSgaImpact = 0;
     const procImpacts = [];
 
     selProcs.forEach(proc => {
@@ -822,17 +829,18 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
       const addressablePct = (procScenarios[proc.id]?.addressable || 80) / 100;
       const m = multipliers[potential] * addressablePct;
       let procVal = 0;
+      let procAgentVal = 0;
 
       (proc.kpis || []).forEach((kpi, ki) => {
         const current = vals[`kpi_current_${ki}`] ?? kpi.current;
         const bench = bmarks[`bench_${ki}`] ?? kpi.benchmark;
+        const lever = proc.valLevers?.[0];
+        const baseAmt = lever?.fintype === "Revenue" ? baseline.revenue :
+          lever?.fintype === "COGS" ? baseline.cogs : baseline.sga;
+
         if (current != null && bench != null && bench !== 0) {
           const gap = Math.abs(current - bench);
           const addressable = gap * m;
-          const lever = proc.valLevers?.[0];
-          const baseAmt = lever?.fintype === "Revenue" ? baseline.revenue :
-            lever?.fintype === "COGS" ? baseline.cogs : baseline.sga;
-          // Unit-aware impact calculation
           let impact;
           if (kpi.unit === "%") {
             impact = (addressable / 100) * baseAmt * 0.01;
@@ -845,9 +853,28 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
           else if (lever?.fintype === "COGS") cogsImpact += impact;
           else sgaImpact += impact;
         }
+
+        // Agent uplift: incremental value from ERP benchmark to agent benchmark
+        const agentBench = kpi.agentBenchmark;
+        const benchVal = bmarks[`bench_${ki}`] ?? kpi.benchmark;
+        if (agentBench != null && benchVal != null && benchVal !== 0 && agentBench !== benchVal) {
+          const agentGap = Math.abs(benchVal - agentBench);
+          let agentImpact;
+          if (kpi.unit === "%") {
+            agentImpact = (agentGap * m / 100) * baseAmt * 0.01;
+          } else {
+            const agentGapPct = Math.abs(benchVal) > 0 ? (agentGap * m / Math.abs(benchVal)) : 0;
+            agentImpact = agentGapPct * baseAmt * 0.01;
+          }
+          procAgentVal += agentImpact;
+          if (lever?.fintype === "Revenue") agentRevImpact += agentImpact;
+          else if (lever?.fintype === "COGS") agentCogsImpact += agentImpact;
+          else agentSgaImpact += agentImpact;
+        }
       });
 
-      procImpacts.push({ id: proc.id, label: proc.label, l4: proc.l4, value: procVal, e2e: proc.e2e, color: proc.l1Color, scenario: potential });
+      totalAgentValue += procAgentVal;
+      procImpacts.push({ id: proc.id, label: proc.label, l4: proc.l4, value: procVal, agentValue: procAgentVal, e2e: proc.e2e, color: proc.l1Color, scenario: potential });
       totalValue += procVal;
     });
 
@@ -905,8 +932,10 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
 
     return {
       total: totalValue,
-      impacts: procImpacts.sort((a, b) => b.value - a.value),
-      pnl: { revImpact, cogsImpact, sgaImpact },
+      agentTotal: totalAgentValue,
+      combined: totalValue + totalAgentValue,
+      impacts: procImpacts.sort((a, b) => (b.value + b.agentValue) - (a.value + a.agentValue)),
+      pnl: { revImpact, cogsImpact, sgaImpact, agentRevImpact, agentCogsImpact, agentSgaImpact },
       balanceSheet: { receivablesImpact, payablesImpact, inventoryImpact,
         totalWorkingCapital: receivablesImpact + payablesImpact + inventoryImpact }
     };
@@ -983,25 +1012,278 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
     loadingSetter(prev => ({ ...prev, [procId]: false }));
   };
 
-  // ═══ Questionnaire Export ═══
-  const exportQuestionnaire = () => {
-    const headers = ["Process ID", "APQC Code", "Process Label", "E2E",
-      ...Q_TEMPLATES.map((qt, i) => `Q${i + 1}: ${qt.q}`),
-      "Mining: Variants Discovered", "Mining: Conformance Rate (%)",
-      "Mining: Avg Cycle Time (days)", "Mining: Rework Loops (%)"];
-    const rows = selProcs.map(proc => {
-      const answers = Q_TEMPLATES.map((_, qi) => questAnswers[`${proc.id}_q${qi}`] || "");
-      const mining = uploadedMining[proc.id] || {};
-      return [proc.id, proc.l4, proc.label, proc.e2e, ...answers,
-        mining.variants || "", mining.conformance || "", mining.cycleTime || "", mining.rework || ""];
+  // ═══ Questionnaire Export — Professional HTML Document ═══
+  const generateQuestionnaireDoc = () => {
+    const now = new Date().toISOString().split("T")[0];
+    const fnObj = FUNCTIONS.find(f => f.id === (selectedFunction || "finance"));
+    const fnName = fnObj?.name || "Finance";
+    const fnDesc = fnObj?.desc || "";
+
+    // Group selected procs by E2E
+    const e2eGroups = {};
+    selProcs.forEach(proc => {
+      if (!e2eGroups[proc.e2e]) e2eGroups[proc.e2e] = [];
+      e2eGroups[proc.e2e].push(proc);
     });
-    const csvContent = [headers, ...rows].map(row =>
-      row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")
-    ).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+
+    // Efficiency questions
+    const effQ = [
+      { q: "How many FTEs work on this process?", hint: "Full-time equivalents dedicated to this process" },
+      { q: "What percentage of time is spent on rework or corrections?", hint: "Estimate % of effort on rework, corrections, exceptions" },
+      { q: "What is the average cycle time?", hint: "Specify days or hours. E.g., 5 days, 4 hours" },
+      { q: "What percentage of the process is currently automated?", hint: "% of steps handled without manual intervention" },
+      { q: "What is the current error/exception rate?", hint: "% of transactions requiring manual correction" },
+      { q: "What is the primary bottleneck?", hint: "Manual data entry / Approvals / System integration / Reconciliation / Other" },
+      { q: "What is the transaction volume per period?", hint: "Specify daily, weekly, or monthly volume" },
+    ];
+    // Leakage questions
+    const leakQ = [
+      { q: "Is the data granular enough for effective decision-making?", hint: "Yes / Partially / No" },
+      { q: "What is the reporting frequency?", hint: "Real-time / Daily / Weekly / Monthly / Quarterly" },
+      { q: "Are there known data quality issues?", hint: "None / Minor / Significant / Critical" },
+      { q: "What percentage of decisions rely on manual data gathering?", hint: "Estimate %" },
+      { q: "Is there a single source of truth for this process data?", hint: "Yes / Partially / No" },
+      { q: "What is the estimated revenue or cost leakage from data gaps?", hint: "None / <1% / 1-3% / 3-5% / >5%" },
+    ];
+
+    const qRow = (items) => items.map((item, i) => `
+      <tr style="background:${i % 2 === 0 ? '#fff' : '#FAFAF8'}">
+        <td style="padding:10px 14px;border:1px solid #E0DDD6;font-size:12px;color:#333;width:40%">${item.q}</td>
+        <td style="padding:10px 14px;border:1px solid #E0DDD6;min-width:160px">&nbsp;</td>
+        <td style="padding:10px 14px;border:1px solid #E0DDD6;font-size:10px;color:#999;font-style:italic;width:25%">${item.hint}</td>
+      </tr>`).join("");
+
+    // Build per-process sections
+    const processSections = Object.entries(e2eGroups).map(([e2eName, procs], gi) => {
+      const procsHtml = procs.map(proc => {
+        const bp = getBlueprintForL2(proc.l2id);
+        const jobs = proc.jobs || [];
+        const saps = (proc.sap || []).map(s => s.module).join(", ");
+        const kpiRows = (proc.kpis || []).map((kpi, ki) => `
+          <tr style="background:${ki % 2 === 0 ? '#fff' : '#FAFAF8'}">
+            <td style="padding:8px 12px;border:1px solid #E0DDD6;font-size:12px">${kpi.name}</td>
+            <td style="padding:8px 12px;border:1px solid #E0DDD6;min-width:90px;text-align:center">&nbsp;</td>
+            <td style="padding:8px 12px;border:1px solid #E0DDD6;text-align:center;font-size:11px;color:#888">${kpi.unit}</td>
+            <td style="padding:8px 12px;border:1px solid #E0DDD6;text-align:center;font-size:11px;color:#7CB9A8">${kpi.benchmark ?? "—"} ${kpi.unit}</td>
+            <td style="padding:8px 12px;border:1px solid #E0DDD6;min-width:100px">&nbsp;</td>
+          </tr>`).join("");
+
+        return `
+        <div style="margin:28px 0;page-break-inside:avoid">
+          <div style="background:#111110;padding:14px 20px;border-radius:8px 8px 0 0;display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <span style="font-family:monospace;font-size:11px;color:#888;margin-right:8px">${proc.l4}</span>
+              <span style="font-size:16px;font-weight:600;color:#EEEAE4">${proc.label}</span>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center">
+              ${bp ? `<span style="font-size:9px;padding:2px 8px;border-radius:4px;background:${bp.color}25;color:${bp.color};font-weight:600">${bp.name}</span>` : ""}
+              ${saps ? `<span style="font-size:9px;padding:2px 8px;border-radius:4px;background:#7BA7CC25;color:#7BA7CC;font-weight:600">${saps}</span>` : ""}
+            </div>
+          </div>
+          <div style="border:1px solid #E0DDD6;border-top:none;padding:16px 20px;border-radius:0 0 8px 8px">
+
+            <div style="font-size:11px;color:#888;margin-bottom:6px">
+              <strong>L2:</strong> ${proc.l2} &nbsp;|&nbsp; <strong>L3:</strong> ${proc.l3}
+            </div>
+
+            ${jobs.length > 0 ? `
+            <div style="margin:10px 0 16px">
+              <div style="font-size:10px;color:#D4A853;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Key Activities</div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px">
+                ${jobs.map(j => `<span style="font-size:11px;padding:4px 10px;background:#FAFAF8;border:1px solid #E0DDD6;border-radius:6px;color:#444">${j}</span>`).join("")}
+              </div>
+            </div>` : ""}
+
+            <div style="margin:16px 0 8px;font-size:12px;font-weight:700;color:#7BA7CC;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #7BA7CC;padding-bottom:4px">Section A — Process Efficiency</div>
+            <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
+              <thead><tr style="background:#F5F3EE">
+                <th style="padding:8px 14px;border:1px solid #E0DDD6;text-align:left;font-size:11px;color:#888;font-weight:600">Question</th>
+                <th style="padding:8px 14px;border:1px solid #E0DDD6;text-align:left;font-size:11px;color:#888;font-weight:600">Your Answer</th>
+                <th style="padding:8px 14px;border:1px solid #E0DDD6;text-align:left;font-size:11px;color:#888;font-weight:600">Notes / Context</th>
+              </tr></thead>
+              <tbody>${qRow(effQ)}</tbody>
+            </table>
+
+            <div style="margin:16px 0 8px;font-size:12px;font-weight:700;color:#D4A853;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #D4A853;padding-bottom:4px">Section B — Data-Driven Leakage</div>
+            <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
+              <thead><tr style="background:#F5F3EE">
+                <th style="padding:8px 14px;border:1px solid #E0DDD6;text-align:left;font-size:11px;color:#888;font-weight:600">Question</th>
+                <th style="padding:8px 14px;border:1px solid #E0DDD6;text-align:left;font-size:11px;color:#888;font-weight:600">Your Answer</th>
+                <th style="padding:8px 14px;border:1px solid #E0DDD6;text-align:left;font-size:11px;color:#888;font-weight:600">Notes / Context</th>
+              </tr></thead>
+              <tbody>${qRow(leakQ)}</tbody>
+            </table>
+
+            ${kpiRows ? `
+            <div style="margin:16px 0 8px;font-size:12px;font-weight:700;color:#7CB9A8;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #7CB9A8;padding-bottom:4px">Section C — KPI Baselines</div>
+            <table style="width:100%;border-collapse:collapse">
+              <thead><tr style="background:#F5F3EE">
+                <th style="padding:8px 12px;border:1px solid #E0DDD6;text-align:left;font-size:11px;color:#888;font-weight:600">KPI Name</th>
+                <th style="padding:8px 12px;border:1px solid #E0DDD6;text-align:center;font-size:11px;color:#888;font-weight:600">Current Value</th>
+                <th style="padding:8px 12px;border:1px solid #E0DDD6;text-align:center;font-size:11px;color:#888;font-weight:600">Unit</th>
+                <th style="padding:8px 12px;border:1px solid #E0DDD6;text-align:center;font-size:11px;color:#888;font-weight:600">Reference Benchmark</th>
+                <th style="padding:8px 12px;border:1px solid #E0DDD6;text-align:left;font-size:11px;color:#888;font-weight:600">Notes</th>
+              </tr></thead>
+              <tbody>${kpiRows}</tbody>
+            </table>` : ""}
+          </div>
+        </div>`;
+      }).join("");
+
+      return `
+      <div style="page-break-before:${gi > 0 ? 'always' : 'auto'}">
+        <div style="background:linear-gradient(135deg,#111110,#1A1A18);padding:16px 24px;border-radius:10px;margin:32px 0 8px">
+          <span style="font-size:20px;font-weight:600;color:#EEEAE4;font-family:'Playfair Display',serif">${e2eName}</span>
+          <span style="font-size:12px;color:#888;margin-left:12px">${procs.length} process${procs.length > 1 ? "es" : ""} in scope</span>
+        </div>
+        ${procsHtml}
+      </div>`;
+    }).join("");
+
+    // Glossary terms
+    const glossary = [
+      ["DSO", "Days Sales Outstanding — average days to collect payment after a sale"],
+      ["DPO", "Days Payable Outstanding — average days to pay suppliers"],
+      ["FTE", "Full-Time Equivalent — standardized measure of workforce capacity"],
+      ["APQC", "American Productivity & Quality Center — process benchmarking framework"],
+      ["E2E", "End-to-End — complete process flow from trigger to outcome"],
+      ["SGA", "Selling, General & Administrative expenses"],
+      ["COGS", "Cost of Goods Sold"],
+      ["EBITDA", "Earnings Before Interest, Taxes, Depreciation & Amortization"],
+      ["KPI", "Key Performance Indicator"],
+      ["SSOT", "Single Source of Truth — unified authoritative data source"],
+      ["EDI", "Electronic Data Interchange"],
+      ["3-Way Match", "Matching purchase order, goods receipt, and invoice"],
+    ];
+
+    // Appendix: all processes in scope
+    const appendixRows = selProcs.map((p, i) => `
+      <tr style="background:${i % 2 === 0 ? '#fff' : '#FAFAF8'}">
+        <td style="padding:6px 12px;border:1px solid #E0DDD6;font-family:monospace;font-size:11px;color:#888">${p.l4}</td>
+        <td style="padding:6px 12px;border:1px solid #E0DDD6;font-size:12px">${p.label}</td>
+        <td style="padding:6px 12px;border:1px solid #E0DDD6;font-size:11px;color:#888">${p.e2e}</td>
+        <td style="padding:6px 12px;border:1px solid #E0DDD6;font-size:11px;color:#888">${p.l2}</td>
+        <td style="padding:6px 12px;border:1px solid #E0DDD6;font-size:11px;color:#888">${(p.kpis || []).length}</td>
+      </tr>`).join("");
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Process Assessment Questionnaire — ${baseline.company}</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; color: #333; background: #fff; line-height: 1.5; }
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .no-print { display: none !important; }
+    .page-break { page-break-before: always; }
+    table { page-break-inside: avoid; }
+  }
+  @page { margin: 1.5cm; size: A4; }
+  table { border-collapse: collapse; width: 100%; }
+  td, th { vertical-align: top; }
+</style>
+</head>
+<body>
+
+<!-- ═══ COVER PAGE ═══ -->
+<div style="min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;background:linear-gradient(180deg,#111110 0%,#1A1A18 100%);padding:60px 40px;page-break-after:always">
+  <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:4px;margin-bottom:24px">humaninthelead.ai</div>
+  <div style="font-size:42px;font-family:'Playfair Display',serif;color:#EEEAE4;font-weight:400;letter-spacing:-1px;margin-bottom:8px">Process Assessment<br/>Questionnaire</div>
+  <div style="width:80px;height:2px;background:#D4A853;margin:20px auto"></div>
+  <div style="font-size:20px;color:#D4A853;font-weight:500;margin-bottom:32px">${baseline.company}</div>
+  <div style="font-size:14px;color:#B8B0A4;margin-bottom:4px">Function: <strong style="color:#D4A853">${fnName}</strong></div>
+  <div style="font-size:13px;color:#888;margin-bottom:4px">${fnDesc}</div>
+  <div style="font-size:13px;color:#888;margin-bottom:40px">Date: ${now}</div>
+  <div style="font-size:13px;color:#B8B0A4">Prepared by <strong style="color:#EEEAE4">humaninthelead.ai</strong></div>
+  <div style="margin-top:60px;padding:12px 24px;border:1px solid #D4A85344;border-radius:8px">
+    <div style="font-size:10px;color:#D4A853;text-transform:uppercase;letter-spacing:2px;font-weight:600">Confidential — For Internal Use Only</div>
+  </div>
+  <div style="margin-top:auto;padding-top:40px;font-size:10px;color:#555">${selProcs.length} processes in scope &nbsp;·&nbsp; ${selProcs.reduce((s, p) => s + (p.kpis?.length || 0), 0)} KPIs &nbsp;·&nbsp; PrismL4 Bottom-Up Value Engine</div>
+</div>
+
+<!-- ═══ INSTRUCTIONS ═══ -->
+<div style="max-width:800px;margin:0 auto;padding:40px 32px;page-break-after:always">
+  <div style="font-size:28px;font-family:'Playfair Display',serif;color:#111;margin-bottom:24px">Instructions</div>
+  <div style="font-size:14px;color:#444;line-height:1.8;margin-bottom:24px">
+    This questionnaire is designed to gather detailed information about your current process performance.
+    It supports PrismL4's bottom-up value identification methodology — working from individual APQC L4 processes
+    upward to calculate financial impact.
+  </div>
+  <div style="background:#FAFAF8;border:1px solid #E0DDD6;border-radius:10px;padding:20px 24px;margin-bottom:24px">
+    <div style="font-size:14px;font-weight:700;color:#111;margin-bottom:12px">How to Complete</div>
+    <ol style="font-size:13px;color:#444;line-height:2;padding-left:20px">
+      <li>Share the relevant process sections with your <strong>L3/L4 process owners</strong></li>
+      <li>Each process has two assessment tracks:<br/>
+        <span style="color:#7BA7CC;font-weight:600">Section A — Process Efficiency:</span> FTEs, rework, cycle time, automation, errors, bottlenecks, volume<br/>
+        <span style="color:#D4A853;font-weight:600">Section B — Data-Driven Leakage:</span> data granularity, reporting frequency, quality, manual decisions, SSOT, leakage
+      </li>
+      <li><span style="color:#7CB9A8;font-weight:600">Section C — KPI Baselines</span> contains pre-loaded benchmark KPIs. Fill in your <strong>current values</strong></li>
+      <li>Return the completed questionnaire to your assessment lead</li>
+    </ol>
+  </div>
+  <div style="background:#D4A85310;border-left:3px solid #D4A853;padding:14px 20px;border-radius:0 8px 8px 0;margin-bottom:24px">
+    <div style="font-size:12px;color:#D4A853;font-weight:700;margin-bottom:4px">Tip</div>
+    <div style="font-size:13px;color:#555">You can print this document (Ctrl+P → Save as PDF) or open it in Microsoft Word. Tables are formatted for easy data entry.</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div style="background:#FAFAF8;border:1px solid #E0DDD6;border-radius:8px;padding:14px 18px;text-align:center">
+      <div style="font-size:24px;font-family:'Playfair Display',serif;color:#D4A853">${selProcs.length}</div>
+      <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">Processes</div>
+    </div>
+    <div style="background:#FAFAF8;border:1px solid #E0DDD6;border-radius:8px;padding:14px 18px;text-align:center">
+      <div style="font-size:24px;font-family:'Playfair Display',serif;color:#7CB9A8">${selProcs.reduce((s, p) => s + (p.kpis?.length || 0), 0)}</div>
+      <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">KPIs to Baseline</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PROCESS SECTIONS ═══ -->
+<div style="max-width:800px;margin:0 auto;padding:0 32px 40px">
+  ${processSections}
+</div>
+
+<!-- ═══ APPENDIX ═══ -->
+<div style="max-width:800px;margin:0 auto;padding:40px 32px;page-break-before:always">
+  <div style="font-size:28px;font-family:'Playfair Display',serif;color:#111;margin-bottom:24px">Appendix</div>
+
+  <div style="font-size:16px;font-weight:600;color:#111;margin-bottom:12px">A. Processes in Scope</div>
+  <table style="margin-bottom:32px">
+    <thead><tr style="background:#F5F3EE">
+      <th style="padding:8px 12px;border:1px solid #E0DDD6;text-align:left;font-size:11px;color:#888;font-weight:600">APQC Code</th>
+      <th style="padding:8px 12px;border:1px solid #E0DDD6;text-align:left;font-size:11px;color:#888;font-weight:600">Process</th>
+      <th style="padding:8px 12px;border:1px solid #E0DDD6;text-align:left;font-size:11px;color:#888;font-weight:600">E2E Flow</th>
+      <th style="padding:8px 12px;border:1px solid #E0DDD6;text-align:left;font-size:11px;color:#888;font-weight:600">L2 Group</th>
+      <th style="padding:8px 12px;border:1px solid #E0DDD6;text-align:center;font-size:11px;color:#888;font-weight:600">KPIs</th>
+    </tr></thead>
+    <tbody>${appendixRows}</tbody>
+  </table>
+
+  <div style="font-size:16px;font-weight:600;color:#111;margin-bottom:12px">B. Glossary</div>
+  <table>
+    <tbody>
+      ${glossary.map(([term, def], i) => `
+      <tr style="background:${i % 2 === 0 ? '#fff' : '#FAFAF8'}">
+        <td style="padding:6px 12px;border:1px solid #E0DDD6;font-size:12px;font-weight:700;color:#111;width:120px">${term}</td>
+        <td style="padding:6px 12px;border:1px solid #E0DDD6;font-size:12px;color:#555">${def}</td>
+      </tr>`).join("")}
+    </tbody>
+  </table>
+</div>
+
+<div style="text-align:center;padding:20px;font-size:10px;color:#888;border-top:1px solid #E0DDD6;margin-top:40px">
+  Generated by PrismL4 — humaninthelead.ai &nbsp;·&nbsp; ${now}
+</div>
+
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `${baseline.company.replace(/\s+/g, "_")}_questionnaire.csv`;
+    link.download = `${baseline.company.replace(/\s+/g, "_")}_Questionnaire_${now}.html`;
     link.click();
     URL.revokeObjectURL(link.href);
   };
@@ -1060,6 +1342,53 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
     event.target.value = "";
   };
 
+  // ═══ Paste Responses Handler ═══
+  const handlePasteResponses = () => {
+    if (!pasteText.trim()) return;
+    const newAnswers = { ...baselineData };
+    const lines = pasteText.split("\n").map(l => l.trim()).filter(Boolean);
+    let currentProcId = null;
+    let currentSection = null; // "a" or "b"
+    const effKeys = ["ftes", "rework", "cycleTime", "automation", "errorRate", "bottleneck", "volume"];
+    const leakKeys = ["granularity", "reportFreq", "dataQuality", "manualPct", "ssot", "leakage"];
+    let qIndex = 0;
+
+    for (const line of lines) {
+      // Detect process by APQC code
+      const procMatch = line.match(/^(\d+\.\d+\.\d+\.\d+)/);
+      if (procMatch) {
+        const proc = ALL_PROCS.find(p => p.l4 === procMatch[1]);
+        if (proc && selectedProcs.has(proc.id)) {
+          currentProcId = proc.id;
+          qIndex = 0;
+          currentSection = null;
+        }
+        continue;
+      }
+      // Detect section headers
+      if (/section\s*a|process\s*efficiency/i.test(line)) { currentSection = "a"; qIndex = 0; continue; }
+      if (/section\s*b|data.driven\s*leakage/i.test(line)) { currentSection = "b"; qIndex = 0; continue; }
+      // Skip header rows
+      if (/^question/i.test(line) || /^kpi\s*name/i.test(line) || /^-{3,}/.test(line)) continue;
+      // Parse tab or pipe-delimited answer lines
+      if (currentProcId && currentSection) {
+        const parts = line.split(/\t|\|/).map(s => s.trim()).filter(Boolean);
+        if (parts.length >= 2) {
+          const answer = parts[1];
+          if (currentSection === "a" && qIndex < effKeys.length) {
+            newAnswers[`${currentProcId}_a_${effKeys[qIndex]}`] = answer;
+          } else if (currentSection === "b" && qIndex < leakKeys.length) {
+            newAnswers[`${currentProcId}_b_${leakKeys[qIndex]}`] = answer;
+          }
+          qIndex++;
+        }
+      }
+    }
+    setBaselineData(newAnswers);
+    setShowPasteModal(false);
+    setPasteText("");
+  };
+
   // ═══ Phase 0 Report Generator ═══
   const generatePhase0Report = () => {
     const now = new Date().toISOString().split("T")[0];
@@ -1078,10 +1407,12 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
         const bench = procBenchmarks[proc.id]?.[`bench_${ki}`] ?? kpi.benchmark;
         const q = getQuartile(current, bench, kpi);
         const qBadge = q ? `<span style="font-size:10px;padding:1px 6px;border-radius:3px;background:${q.color}20;color:${q.color};font-weight:700">${q.icon} ${q.label}</span>` : "";
+        const agentB = kpi.agentBenchmark;
         return `<tr>
           <td style="padding:4px 8px;font-size:12px">${kpi.name}</td>
           <td style="padding:4px 8px;font-size:12px;text-align:center">${current ?? "—"} ${kpi.unit}</td>
-          <td style="padding:4px 8px;font-size:12px;text-align:center;color:#7CB9A8">${bench ?? "—"} ${kpi.unit}</td>
+          <td style="padding:4px 8px;font-size:12px;text-align:center;color:#D4A853">${bench ?? "—"} ${kpi.unit}</td>
+          <td style="padding:4px 8px;font-size:12px;text-align:center;color:#7CB9A8">${agentB != null ? agentB + " " + kpi.unit : "—"}</td>
           <td style="padding:4px 8px;font-size:12px;text-align:center">${kpi.src}</td>
           <td style="padding:4px 8px;font-size:12px;text-align:center">${qBadge}</td>
         </tr>`;
@@ -1111,11 +1442,11 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
         '</div>' : "";
       return `<div style="margin:20px 0;padding:16px;border:1px solid #ddd;border-radius:10px;border-left:4px solid ${proc.l1Color}">
         <h3 style="margin:0 0 4px;font-size:16px">${proc.l4} — ${proc.label}</h3>
-        <div style="font-size:12px;color:#888;margin-bottom:8px">${proc.e2e}${impact?.value > 0 ? ` · Value Impact: $${impact.value.toFixed(1)}M` : ""}</div>
+        <div style="font-size:12px;color:#888;margin-bottom:8px">${proc.e2e}${impact?.value > 0 ? ` · ERP: $${impact.value.toFixed(1)}M` : ""}${impact?.agentValue > 0 ? ` · Agent: $${impact.agentValue.toFixed(1)}M` : ""}${(impact?.value > 0 || impact?.agentValue > 0) ? ` · Total: $${((impact?.value || 0) + (impact?.agentValue || 0)).toFixed(1)}M` : ""}</div>
         ${baselineHtml}
         ${answers ? `<table style="width:100%;border-collapse:collapse;margin:8px 0"><tr style="background:#f5f5f5"><th style="text-align:left;padding:4px 8px;font-size:11px">Question</th><th style="text-align:left;padding:4px 8px;font-size:11px">Response</th></tr>${answers}</table>` : ""}
         ${miningHtml}
-        ${benchmarks ? `<table style="width:100%;border-collapse:collapse;margin:8px 0"><tr style="background:#f5f5f5"><th style="text-align:left;padding:4px 8px;font-size:11px">KPI</th><th style="text-align:center;padding:4px 8px;font-size:11px">Current</th><th style="text-align:center;padding:4px 8px;font-size:11px">Benchmark</th><th style="text-align:center;padding:4px 8px;font-size:11px">Source</th><th style="text-align:center;padding:4px 8px;font-size:11px">Quartile</th></tr>${benchmarks}</table>` : ""}
+        ${benchmarks ? `<table style="width:100%;border-collapse:collapse;margin:8px 0"><tr style="background:#f5f5f5"><th style="text-align:left;padding:4px 8px;font-size:11px">KPI</th><th style="text-align:center;padding:4px 8px;font-size:11px">Current</th><th style="text-align:center;padding:4px 8px;font-size:11px">ERP Benchmark</th><th style="text-align:center;padding:4px 8px;font-size:11px">Agent Benchmark</th><th style="text-align:center;padding:4px 8px;font-size:11px">Source</th><th style="text-align:center;padding:4px 8px;font-size:11px">Quartile</th></tr>${benchmarks}</table>` : ""}
         ${sapHtml}
         ${agentHtml}
       </div>`;
@@ -1144,9 +1475,9 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
 
     <h2>1. Executive Summary</h2>
     <div class="kpi-grid">
-      <div class="kpi-box"><div class="value" style="color:#D4A853">${totalImpact > 0 ? `$${totalImpact.toFixed(0)}M` : "—"}</div><div class="label">Total Value Identified</div></div>
-      <div class="kpi-box"><div class="value" style="color:#7BA7CC">${selProcs.length}</div><div class="label">Processes In Scope</div></div>
-      <div class="kpi-box"><div class="value" style="color:#7CB9A8">${totalKPIs}</div><div class="label">KPIs Measured</div></div>
+      <div class="kpi-box"><div class="value" style="color:#D4A853">${totalImpact > 0 ? `$${totalImpact.toFixed(0)}M` : "—"}</div><div class="label">ERP Value</div></div>
+      <div class="kpi-box"><div class="value" style="color:#7CB9A8">${valResult.agentTotal > 0 ? `$${valResult.agentTotal.toFixed(0)}M` : "—"}</div><div class="label">Agent Uplift</div></div>
+      <div class="kpi-box"><div class="value" style="color:#1a1a18;font-size:28px">${valResult.combined > 0 ? `$${valResult.combined.toFixed(0)}M` : "—"}</div><div class="label">Combined Value</div></div>
       <div class="kpi-box"><div class="value" style="color:#C4A1D4">${scenarioLevel}</div><div class="label">Scenario</div></div>
     </div>
 
@@ -1173,19 +1504,26 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
 
     <h2>3. P&L Impact Summary (${scenarioLevel} Scenario)</h2>
     <table>
-      <tr><th>Line Item</th><th style="text-align:right">Baseline</th><th style="text-align:right">Impact</th><th style="text-align:right">Improved</th></tr>
-      ${[
-        ["Revenue", baseline.revenue, revImpact],
-        ["COGS", baseline.cogs, -cogsImpact],
-        ["Gross Profit", baseline.revenue - baseline.cogs, revImpact + cogsImpact],
-        ["SG&A", baseline.sga, -sgaImpact],
-        ["EBITDA", baseline.ebitda, totalImpact],
-      ].map(([l, base, imp]) => `<tr${l === "EBITDA" ? ' style="background:#fdf8ef;font-weight:700"' : ""}>
-        <td>${l}</td>
-        <td style="text-align:right;font-family:monospace">$${base?.toLocaleString()}M</td>
-        <td style="text-align:right;font-family:monospace" class="${imp > 0 ? "pnl-impact" : imp < 0 ? "pnl-neg" : ""}">${imp !== 0 ? (imp > 0 ? "+" : "") + "$" + imp.toFixed(1) + "M" : "—"}</td>
-        <td style="text-align:right;font-family:monospace">$${(base + imp).toLocaleString()}M</td>
-      </tr>`).join("")}
+      <tr><th>Line Item</th><th style="text-align:right">Baseline</th><th style="text-align:right">ERP Impact</th><th style="text-align:right">Agent Impact</th><th style="text-align:right">Combined</th><th style="text-align:right">Improved</th></tr>
+      ${(() => {
+        const aRev = valResult.pnl.agentRevImpact || 0;
+        const aCogs = valResult.pnl.agentCogsImpact || 0;
+        const aSga = valResult.pnl.agentSgaImpact || 0;
+        return [
+          ["Revenue", baseline.revenue, revImpact, aRev],
+          ["COGS", baseline.cogs, -cogsImpact, -aCogs],
+          ["Gross Profit", baseline.revenue - baseline.cogs, revImpact + cogsImpact, aRev + aCogs],
+          ["SG&A", baseline.sga, -sgaImpact, -aSga],
+          ["EBITDA", baseline.ebitda, totalImpact, aRev + aCogs + aSga],
+        ].map(([l, base, imp, agent]) => `<tr${l === "EBITDA" ? ' style="background:#fdf8ef;font-weight:700"' : ""}>
+          <td>${l}</td>
+          <td style="text-align:right;font-family:monospace">$${base?.toLocaleString()}M</td>
+          <td style="text-align:right;font-family:monospace;color:#D4A853">${imp !== 0 ? (imp > 0 ? "+" : "") + "$" + imp.toFixed(1) + "M" : "—"}</td>
+          <td style="text-align:right;font-family:monospace;color:#7CB9A8">${agent !== 0 ? (agent > 0 ? "+" : "") + "$" + agent.toFixed(1) + "M" : "—"}</td>
+          <td style="text-align:right;font-family:monospace;font-weight:600">${(imp + agent) !== 0 ? (imp + agent > 0 ? "+" : "") + "$" + (imp + agent).toFixed(1) + "M" : "—"}</td>
+          <td style="text-align:right;font-family:monospace">$${(base + imp + agent).toLocaleString()}M</td>
+        </tr>`).join("");
+      })()}
     </table>
 
     ${valResult.balanceSheet.totalWorkingCapital > 0 ? `
@@ -1250,6 +1588,7 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
             unit: kpi.unit,
             current: vals[`kpi_current_${ki}`] ?? kpi.current,
             benchmark: bmarks[`bench_${ki}`] ?? kpi.benchmark,
+            agentBenchmark: kpi.agentBenchmark ?? null,
             source: kpi.src,
             method: kpi.method,
           })),
@@ -1286,7 +1625,9 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
         };
       }),
       valuation: {
-        total: valResult.total,
+        erpTotal: valResult.total,
+        agentTotal: valResult.agentTotal,
+        combinedTotal: valResult.combined,
         scenarioLevel,
         pnl: valResult.pnl,
         balanceSheet: valResult.balanceSheet,
@@ -2157,19 +2498,45 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
             {/* Export / Upload Controls */}
             {viewMode === "consultant" && selProcs.length > 0 && (
               <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
-                <button onClick={exportQuestionnaire} style={{ fontSize: 11, padding: "6px 16px", borderRadius: 8, background: GREEN + "15", border: `1px solid ${GREEN}33`, color: GREEN, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
-                  ↓ Export Questionnaire (CSV)
+                <button onClick={generateQuestionnaireDoc} style={{ fontSize: 11, padding: "6px 16px", borderRadius: 8, background: GREEN + "15", border: `1px solid ${GREEN}33`, color: GREEN, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
+                  ↓ Download Questionnaire
                 </button>
                 <label style={{ fontSize: 11, padding: "6px 16px", borderRadius: 8, background: PURPLE + "15", border: `1px solid ${PURPLE}33`, color: PURPLE, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
-                  ↑ Upload Completed Questionnaire
+                  ↑ Upload Responses (CSV)
                   <input type="file" accept=".csv" onChange={handleQuestionnaireUpload} style={{ display: "none" }} />
                 </label>
+                <button onClick={() => setShowPasteModal(true)} style={{ fontSize: 11, padding: "6px 16px", borderRadius: 8, background: BLUE + "15", border: `1px solid ${BLUE}33`, color: BLUE, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
+                  ⎘ Paste Responses
+                </button>
                 {Object.keys(uploadedMining).length > 0 && (
                   <span style={{ fontSize: 10, padding: "3px 8px", borderRadius: 4, background: PURPLE + "20", color: PURPLE, fontWeight: 600 }}>
                     {Object.keys(uploadedMining).length} processes with mining data
                   </span>
                 )}
-                <span style={{ fontSize: 10, color: t.mut, fontStyle: "italic" }}>Export → send to process owners → upload their responses</span>
+                <span style={{ fontSize: 10, color: t.mut, fontStyle: "italic" }}>Download → send to process owners → upload or paste their responses</span>
+              </div>
+            )}
+
+            {/* Paste Responses Modal */}
+            {showPasteModal && (
+              <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setShowPasteModal(false)}>
+                <div onClick={e => e.stopPropagation()} style={{ background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 16, padding: 24, width: "90%", maxWidth: 700, maxHeight: "80vh", display: "flex", flexDirection: "column" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                    <div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: t.tx }}>Paste Questionnaire Responses</div>
+                      <div style={{ fontSize: 11, color: t.mut, marginTop: 4 }}>Paste the completed questionnaire text below. The parser will match responses to processes by APQC code.</div>
+                    </div>
+                    <button onClick={() => setShowPasteModal(false)} style={{ background: "none", border: "none", color: t.mut, cursor: "pointer", fontSize: 20 }}>×</button>
+                  </div>
+                  <div style={{ fontSize: 10, color: t.mut, marginBottom: 8, padding: "8px 12px", background: BLUE + "08", border: `1px solid ${BLUE}22`, borderRadius: 8 }}>
+                    <strong style={{ color: BLUE }}>Expected format:</strong> Each process section should start with its APQC code (e.g. 8.2.1.1). Use tab or pipe (|) to separate question and answer on each line. Section headers like "Section A" or "Section B" help the parser identify which track the answers belong to.
+                  </div>
+                  <textarea value={pasteText} onChange={e => setPasteText(e.target.value)} placeholder={"8.2.1.1 — Manage Accounts Payable\nSection A — Process Efficiency\nFTEs on this process\t12\nRework %\t8\n...\nSection B — Data-Driven Leakage\nReporting granularity (1-5)\t3\n..."} style={{ flex: 1, minHeight: 300, padding: 12, borderRadius: 10, border: `1px solid ${t.bdr}`, background: t.bg, color: t.tx, fontFamily: "monospace", fontSize: 12, resize: "vertical" }} />
+                  <div style={{ display: "flex", gap: 8, marginTop: 12, justifyContent: "flex-end" }}>
+                    <button onClick={() => setShowPasteModal(false)} style={{ fontSize: 12, padding: "8px 20px", borderRadius: 8, background: "transparent", border: `1px solid ${t.bdr}`, color: t.tx2, cursor: "pointer", fontFamily: FONT }}>Cancel</button>
+                    <button onClick={() => { handlePasteResponses(); setShowPasteModal(false); setPasteText(""); }} style={{ fontSize: 12, padding: "8px 20px", borderRadius: 8, background: BLUE, border: "none", color: "#fff", cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>Import Responses</button>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -2713,12 +3080,38 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
         {step === 6 && (
           <div>
             {stepHeader(6, "AI Impact Agents")}
-            <div style={{ fontSize: 13, color: t.tx2, marginBottom: 20 }}>Catalyst generates AI agent scenarios with quantitative impact benchmarks — efficiency gains, cost reductions, and published case studies per L4 process.</div>
+            <div style={{ fontSize: 13, color: t.tx2, marginBottom: 20 }}>Three-column KPI comparison: Today vs S/4HANA best practice vs S/4HANA + AI Agent. Catalyst generates detailed agent scenarios below.</div>
 
-            <div style={{ display: "grid", gap: 8 }}>
-              {selProcs.map(proc => (
-                <div key={proc.id} style={{ ...cardStyle, borderLeft: `3px solid ${GOLD}` }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <div style={{ display: "grid", gap: 12 }}>
+              {selProcs.map(proc => {
+                const vals = procValues[proc.id] || {};
+                const bmarks = procBenchmarks[proc.id] || {};
+                const potential = procScenarios[proc.id]?.potential || scenarioLevel;
+                const m = { High: 1.0, Medium: 0.65, Low: 0.35 }[potential] * ((procScenarios[proc.id]?.addressable || 80) / 100);
+                let procErpVal = 0, procAgentVal = 0;
+                const kpiRows = (proc.kpis || []).map((kpi, ki) => {
+                  const current = vals[`kpi_current_${ki}`] ?? kpi.current;
+                  const bench = bmarks[`bench_${ki}`] ?? kpi.benchmark;
+                  const agentBench = kpi.agentBenchmark;
+                  const lever = proc.valLevers?.[0];
+                  const baseAmt = lever?.fintype === "Revenue" ? baseline.revenue : lever?.fintype === "COGS" ? baseline.cogs : baseline.sga;
+                  let erpImpact = 0, agentImpact = 0;
+                  if (current != null && bench != null && bench !== 0) {
+                    const gap = Math.abs(current - bench) * m;
+                    erpImpact = kpi.unit === "%" ? (gap / 100) * baseAmt * 0.01 : (bench !== 0 ? (gap / Math.abs(bench)) : 0) * baseAmt * 0.01;
+                  }
+                  if (agentBench != null && bench != null && bench !== 0 && agentBench !== bench) {
+                    const agentGap = Math.abs(bench - agentBench) * m;
+                    agentImpact = kpi.unit === "%" ? (agentGap / 100) * baseAmt * 0.01 : (Math.abs(bench) > 0 ? (agentGap / Math.abs(bench)) : 0) * baseAmt * 0.01;
+                  }
+                  procErpVal += erpImpact;
+                  procAgentVal += agentImpact;
+                  return { kpi, ki, current, bench, agentBench, erpImpact, agentImpact };
+                });
+
+                return (
+                <div key={proc.id} style={{ ...cardStyle, borderLeft: `3px solid ${GREEN}` }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                     <div>
                       <span style={{ fontSize: 10, fontFamily: "monospace", color: t.mut, marginRight: 6 }}>{proc.l4}</span>
                       <span style={{ fontSize: 14, fontWeight: 600, color: t.tx }}>{proc.label}</span>
@@ -2733,18 +3126,49 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
                     </button>
                   </div>
 
+                  {/* Three-column KPI comparison table */}
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 12 }}>
+                    <thead><tr>
+                      {["KPI", "Today", "With S/4HANA", "With S/4 + Agent", "Agent Delta"].map((h, i) => (
+                        <th key={i} style={{ padding: "5px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: i === 0 ? "left" : "right", color: t.mut, fontWeight: 600, fontSize: 10, textTransform: "uppercase", letterSpacing: ".5px" }}>{h}</th>
+                      ))}
+                    </tr></thead>
+                    <tbody>
+                      {kpiRows.map(({ kpi, ki, current, bench, agentBench, agentImpact }) => {
+                        const todayColor = (current != null && bench != null) ? (Math.abs(current - bench) / Math.abs(bench) > 0.35 ? RED : Math.abs(current - bench) / Math.abs(bench) > 0.1 ? GOLD : GREEN) : t.mut;
+                        return (
+                          <tr key={ki}>
+                            <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx2, fontSize: 11 }}>{kpi.name} <span style={{ color: t.sub, fontSize: 9 }}>({kpi.unit})</span></td>
+                            <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: todayColor, fontWeight: 600 }}>{current != null ? current : "—"}</td>
+                            <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: GOLD }}>{bench != null ? bench : "—"}</td>
+                            <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: GREEN, fontWeight: 600 }}>{agentBench != null ? agentBench : "—"}</td>
+                            <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: agentImpact > 0 ? GREEN : t.sub, fontSize: 11 }}>{agentImpact > 0 ? `+$${agentImpact.toFixed(1)}M` : "—"}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+
+                  {/* Value summary row */}
+                  <div style={{ display: "flex", gap: 16, padding: "8px 0", borderTop: `1px solid ${t.bdr}`, marginBottom: 10 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600 }}><span style={{ color: GOLD }}>ERP Value:</span> <span style={{ fontFamily: "monospace", color: GOLD }}>{procErpVal > 0 ? `$${procErpVal.toFixed(1)}M` : "—"}</span></span>
+                    <span style={{ fontSize: 12, fontWeight: 600 }}><span style={{ color: GREEN }}>Agent Uplift:</span> <span style={{ fontFamily: "monospace", color: GREEN }}>{procAgentVal > 0 ? `$${procAgentVal.toFixed(1)}M` : "—"}</span></span>
+                    <span style={{ fontSize: 12, fontWeight: 700 }}><span style={{ color: t.tx }}>Total:</span> <span style={{ fontFamily: "monospace", color: t.tx }}>{(procErpVal + procAgentVal) > 0 ? `$${(procErpVal + procAgentVal).toFixed(1)}M` : "—"}</span></span>
+                  </div>
+
                   {agentResults[proc.id] ? (
                     <div style={{ padding: 14, background: GOLD + "08", border: `1px solid ${GOLD}22`, borderRadius: 10 }}>
                       <div style={{ fontSize: 10, color: GOLD, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 8 }}>⚡ AI Agent Scenario</div>
                       <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{agentResults[proc.id]}</div>
                     </div>
                   ) : (
-                    <div style={{ padding: 20, border: `2px dashed ${t.bdr}`, borderRadius: 10, textAlign: "center" }}>
+                    <div style={{ padding: 16, border: `2px dashed ${t.bdr}`, borderRadius: 10, textAlign: "center" }}>
                       <div style={{ fontSize: 12, color: t.mut }}>Click "Generate Agent" to have Catalyst describe an AI agent for this process</div>
                     </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
@@ -2788,17 +3212,17 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
               }} style={{ ...btnPrimary, padding: "8px 20px", fontSize: 13 }}>Save Scenario</button>
             </div>
 
-            {/* Summary KPIs */}
+            {/* Summary KPIs — ERP / Agent / Combined split */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 24 }}>
               {[
-                { l: "Total Value", v: fd(valResult.total), c: GOLD },
-                { l: "Processes", v: selProcs.length, c: BLUE },
+                { l: "ERP Value", v: fd(valResult.total), c: GOLD },
+                { l: "Agent Uplift", v: fd(valResult.agentTotal), c: GREEN },
+                { l: "Combined", v: fd(valResult.combined), c: "#FFFFFF", large: true },
                 { l: "Scenario", v: scenarioLevel, c: scenarioLevel === "High" ? GREEN : scenarioLevel === "Medium" ? GOLD : ORANGE },
-                { l: "KPIs Measured", v: totalKPIs, c: GREEN },
               ].map(k => (
                 <div key={k.l} style={{ background: `${k.c}0C`, border: `1px solid ${k.c}22`, borderRadius: 10, padding: "12px 16px", textAlign: "center" }}>
                   <div style={{ fontSize: 11, color: k.c, textTransform: "uppercase", letterSpacing: ".5px", fontWeight: 600, marginBottom: 4 }}>{k.l}</div>
-                  <div style={{ fontSize: 22, fontFamily: SERIF, color: k.c }}>{k.v}</div>
+                  <div style={{ fontSize: k.large ? 28 : 22, fontFamily: SERIF, color: k.c, fontWeight: k.large ? 700 : 400 }}>{k.v}</div>
                 </div>
               ))}
             </div>
@@ -2835,25 +3259,27 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
             {/* P&L Impact Summary */}
             <div style={labelStyle}>P&L Impact Summary</div>
             {(() => {
-              const { revImpact, cogsImpact, sgaImpact } = valResult.pnl;
+              const { revImpact, cogsImpact, sgaImpact, agentRevImpact, agentCogsImpact, agentSgaImpact } = valResult.pnl;
               return (
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginBottom: 24 }}>
-                  <thead><tr>{["Line Item", "Baseline", "Impact", "Improved"].map((h, i) => (
+                  <thead><tr>{["Line Item", "Baseline", "ERP Impact", "Agent Impact", "Combined", "Improved"].map((h, i) => (
                     <th key={i} style={{ padding: "8px 12px", borderBottom: `2px solid ${t.bdr}`, textAlign: i === 0 ? "left" : "right", color: t.mut, fontWeight: 600, fontSize: 12 }}>{h}</th>
                   ))}</tr></thead>
                   <tbody>
                     {[
-                      { l: "Revenue", base: baseline.revenue, imp: revImpact, c: GREEN },
-                      { l: "COGS", base: baseline.cogs, imp: -cogsImpact, c: RED },
-                      { l: "Gross Profit", base: baseline.revenue - baseline.cogs, imp: revImpact + cogsImpact, c: GOLD },
-                      { l: "SG&A", base: baseline.sga, imp: -sgaImpact, c: RED },
-                      { l: "EBITDA", base: baseline.ebitda, imp: revImpact + cogsImpact + sgaImpact, c: GOLD },
+                      { l: "Revenue", base: baseline.revenue, imp: revImpact, agent: agentRevImpact || 0 },
+                      { l: "COGS", base: baseline.cogs, imp: -cogsImpact, agent: -(agentCogsImpact || 0) },
+                      { l: "Gross Profit", base: baseline.revenue - baseline.cogs, imp: revImpact + cogsImpact, agent: (agentRevImpact || 0) + (agentCogsImpact || 0) },
+                      { l: "SG&A", base: baseline.sga, imp: -sgaImpact, agent: -(agentSgaImpact || 0) },
+                      { l: "EBITDA", base: baseline.ebitda, imp: revImpact + cogsImpact + sgaImpact, agent: (agentRevImpact || 0) + (agentCogsImpact || 0) + (agentSgaImpact || 0) },
                     ].map(row => (
                       <tr key={row.l} style={{ background: row.l === "EBITDA" ? GOLD + "08" : "transparent" }}>
                         <td style={{ padding: "6px 12px", borderBottom: `1px solid ${t.bdr}40`, color: row.l === "EBITDA" ? GOLD : t.tx2, fontWeight: row.l === "EBITDA" ? 700 : 400 }}>{row.l}</td>
                         <td style={{ padding: "6px 12px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", fontSize: 13, color: t.mut }}>{fm(row.base)}</td>
-                        <td style={{ padding: "6px 12px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", fontSize: 13, color: row.imp > 0 ? GREEN : row.imp < 0 ? GREEN : t.sub, fontWeight: 600 }}>{row.imp !== 0 ? fd(row.imp) : "—"}</td>
-                        <td style={{ padding: "6px 12px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", fontSize: 13, color: row.l === "EBITDA" ? GOLD : t.tx, fontWeight: row.l === "EBITDA" ? 700 : 500 }}>{fm(row.base + row.imp)}</td>
+                        <td style={{ padding: "6px 12px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", fontSize: 13, color: row.imp > 0 ? GOLD : row.imp < 0 ? GOLD : t.sub, fontWeight: 600 }}>{row.imp !== 0 ? fd(row.imp) : "—"}</td>
+                        <td style={{ padding: "6px 12px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", fontSize: 13, color: row.agent > 0 ? GREEN : row.agent < 0 ? GREEN : t.sub, fontWeight: 600 }}>{row.agent !== 0 ? fd(row.agent) : "—"}</td>
+                        <td style={{ padding: "6px 12px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", fontSize: 13, color: (row.imp + row.agent) !== 0 ? t.tx : t.sub, fontWeight: 600 }}>{(row.imp + row.agent) !== 0 ? fd(row.imp + row.agent) : "—"}</td>
+                        <td style={{ padding: "6px 12px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", fontSize: 13, color: row.l === "EBITDA" ? GOLD : t.tx, fontWeight: row.l === "EBITDA" ? 700 : 500 }}>{fm(row.base + row.imp + row.agent)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -2896,7 +3322,7 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
             {/* Process-level impact table */}
             <div style={labelStyle}>Value by L4 Process</div>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginBottom: 24 }}>
-              <thead><tr>{["APQC L4", "Process", "E2E", "Scenario", "Score", "Value ($M)"].map((h, i) => (
+              <thead><tr>{["APQC L4", "Process", "E2E", "Scenario", "Score", "ERP ($M)", "Agent ($M)", "Total ($M)"].map((h, i) => (
                 <th key={i} style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: i >= 5 ? "right" : "left", color: t.mut, fontWeight: 600, fontSize: 12 }}>{h}</th>
               ))}</tr></thead>
               <tbody>
@@ -2931,7 +3357,9 @@ export default function PrismL4({ user, onLogout, assessmentId, initialData, isO
                       <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40` }}>
                         {scoreLabel ? <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 3, background: scoreColor + "15", color: scoreColor, fontWeight: 600 }}>{scoreLabel}</span> : <span style={{ fontSize: 10, color: t.sub }}>—</span>}
                       </td>
-                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: GREEN, fontWeight: 700 }}>{fd(imp.value)}</td>
+                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: GOLD, fontWeight: 700 }}>{fd(imp.value)}</td>
+                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: GREEN, fontWeight: 600 }}>{imp.agentValue > 0 ? fd(imp.agentValue) : "—"}</td>
+                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: t.tx, fontWeight: 700 }}>{fd(imp.value + (imp.agentValue || 0))}</td>
                     </tr>
                   );
                 })}
