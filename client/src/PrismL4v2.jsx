@@ -4261,99 +4261,31 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                 const reader = new FileReader();
                 reader.onload = async (evt) => {
                   const base64 = evt.target.result.split(",")[1];
-                  const isPdf = file.name.toLowerCase().endsWith(".pdf");
-                  const extractionPrompt = `You are a financial data extraction expert. Extract financial data from this document using FLEXIBLE LABEL MATCHING. Companies use different names for the same line items.
-
-FIELD DEFINITIONS & LABEL ALIASES (search for ANY of these labels):
-
-revenue: "Revenue", "Net Operating Revenues", "Net revenues", "Total revenues", "Total net revenues", "Net sales", "Sales"
-cogs: "Cost of goods sold", "Cost of sales", "Cost of revenues", "Cost of products sold"
-grossProfit: "Gross Profit", "Gross profit", "Gross margin" — OR CALCULATE as revenue minus cogs
-sga: "Selling, general and administrative expenses", "SG&A", "Selling, general & administrative", "Operating expenses" (if no COGS split)
-operatingIncome: "Operating Income", "Operating income", "Income from operations", "Operating profit"
-ebitda: CALCULATE as Operating Income + Depreciation & Amortization. Check BOTH the income statement AND the cash flow statement for depreciation. Never return "not found" if you have operating income and depreciation.
-netIncome: "Net Income Attributable to Shareowners", "Net Income", "Net income", "Net earnings", "Net income attributable to common shareholders"
-accountsReceivable: "Trade accounts receivable", "Accounts receivable, net", "Receivables", "Trade receivables"
-accountsPayable: "Accounts payable and accrued expenses", "Accounts payable", "Trade payables"
-inventory: "Inventories", "Inventory", "Merchandise inventories"
-capex: "Purchases of property, plant and equipment", "Capital expenditures", "Additions to property, plant and equipment"
-operatingCashFlow: "Net Cash Provided by Operating Activities", "Cash provided by operations", "Net cash from operating activities"
-depreciation: "Depreciation and amortization", "Depreciation", "D&A" — check BOTH income statement and cash flow statement
-headcount: "Number of employees", "Employees", "Associates", "Total employees"
-financeHeadcount: "Finance employees", "Finance FTEs" (rarely stated — use null if not found)
-annualPayroll: "Salaries and wages", "Employee compensation", "Personnel expenses" (rarely a single line — use null if not found)
-
-INSTRUCTIONS:
-- Prefer ANNUAL (full-year) figures over quarterly. Look for "Year Ended", "Fiscal Year", "Twelve Months Ended".
-- Numbers in financial statements are often stated "in millions" or "in billions" — convert ALL values to millions USD. If stated in billions, multiply by 1000. If stated in millions, use as-is.
-- If a field is not directly stated but CAN BE CALCULATED from other extracted values, calculate it and mark confidence as "calculated".
-- NEVER return "not found" if a reasonable calculation is possible.
-- For EBITDA: always attempt Operating Income + Depreciation & Amortization.
-- For Gross Profit: always attempt Revenue - COGS.
-- For EPS: look for "Diluted Net Income Per Share", "Earnings per share — diluted", "Diluted EPS"
-- For Free Cash Flow: look for "Free Cash Flow" or calculate as Operating Cash Flow - Capital Expenditures
-
-Return ONLY a JSON object (no markdown, no other text) in this exact format:
-{
-  "fields": {
-    "revenue": { "value": <number in millions or null>, "sourceLabel": "<exact label found in document>", "confidence": "found"|"calculated"|"not found" },
-    "cogs": { ... }, "grossProfit": { ... }, "sga": { ... }, "operatingIncome": { ... },
-    "ebitda": { ... }, "netIncome": { ... }, "accountsReceivable": { ... },
-    "accountsPayable": { ... }, "inventory": { ... }, "capex": { ... },
-    "operatingCashFlow": { ... }, "depreciation": { ... },
-    "headcount": { ... }, "financeHeadcount": { ... }, "annualPayroll": { ... },
-    "eps": { ... }, "freeCashFlow": { ... }, "operatingMargin": { ... }
-  },
-  "fiscalYear": "<year string>",
-  "currency": "USD",
-  "companyName": "<company name>",
-  "segments": [{"name": "<segment>", "revenue": <number>, "operatingIncome": <number>}]
-}`;
-                  // Build message content with native PDF document support
-                  const messageContent = isPdf
-                    ? [
-                        { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } },
-                        { type: "text", text: extractionPrompt },
-                      ]
-                    : [{ type: "text", text: extractionPrompt + "\n\nThe file content (base64 Excel): " + base64.slice(0, 100000) }];
 
                   try {
-                    let text = "";
-                    const proxyRes = await fetch("/api/catalyst", {
+                    // Use dedicated server endpoint — extracts PDF text server-side, then AI parses
+                    const res = await fetch("/api/extract-financials", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        messages: [{ role: "user", content: messageContent }],
-                        max_tokens: 4096,
-                      }),
+                      body: JSON.stringify({ base64, fileName: file.name }),
                     });
-                    if (proxyRes.ok) {
-                      const proxyData = await proxyRes.json();
-                      text = proxyData.result || "";
-                    } else {
-                      const proxyErr = await proxyRes.json().catch(() => ({}));
-                      if (apiKey) {
-                        // Fallback to direct API call with native PDF support
-                        const response = await fetch("https://api.anthropic.com/v1/messages", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2024-10-22", "anthropic-dangerous-direct-browser-access": "true" },
-                          body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 4096, messages: [{ role: "user", content: messageContent }] }),
-                        });
-                        const data = await response.json();
-                        if (data.error) throw new Error(data.error.message || "API error");
-                        text = data.content?.map(i => i.text || "").join("\n") || "";
-                      } else {
-                        throw new Error(proxyErr.error || `Server returned ${proxyRes.status}`);
-                      }
+
+                    if (!res.ok) {
+                      const errData = await res.json().catch(() => ({}));
+                      throw new Error(errData.error || `Server returned ${res.status}`);
                     }
 
-                    if (!text.trim()) {
+                    const { result: text, rawTextLength, rawTextPreview } = await res.json();
+                    console.log(`[financials] Extracted ${rawTextLength} chars from PDF. Preview:`, rawTextPreview?.substring(0, 500));
+                    console.log(`[financials] AI response:`, text?.substring(0, 500));
+
+                    if (!text?.trim()) {
                       throw new Error("No response from AI — the document may be too large or unreadable");
                     }
 
                     const jsonMatch = text.match(/\{[\s\S]*\}/);
                     if (!jsonMatch) {
-                      throw new Error("Could not parse financial data from response. The document may not contain recognizable financial statements.");
+                      throw new Error("Could not parse financial data from AI response. Raw response: " + text.substring(0, 200));
                     }
 
                     const parsed = JSON.parse(jsonMatch[0]);
@@ -4364,6 +4296,9 @@ Return ONLY a JSON object (no markdown, no other text) in this exact format:
                         flat[k] = v.value;
                         conf[k] = { confidence: v.confidence || "not found", sourceLabel: v.sourceLabel || "" };
                       });
+                      // Count how many fields were found
+                      const foundCount = Object.values(conf).filter(c => c.confidence === "found" || c.confidence === "calculated").length;
+                      console.log(`[financials] Parsed ${foundCount}/${Object.keys(conf).length} fields successfully`);
                       setFinancialsDraft(prev => ({ ...prev, ...flat }));
                       setFinancialsConfidence(conf);
                     } else {
