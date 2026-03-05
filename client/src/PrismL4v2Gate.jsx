@@ -1,15 +1,36 @@
-import { useState } from "react";
+import { useState, Component } from "react";
 import PrismL4v2 from "./PrismL4v2";
 
 const PASS = "Betterquestions2026@";
 const SESSION_KEY = "prisml4v2_unlocked";
+
+class PrismErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  render() {
+    if (this.state.error) return (
+      <div style={{ minHeight: "100vh", background: "#111110", color: "#EEEAE4", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif", flexDirection: "column", gap: "1rem", padding: 20 }}>
+        <h2 style={{ color: "#D48A8A" }}>Something went wrong</h2>
+        <pre style={{ fontSize: "0.8rem", color: "#B8B0A4", maxWidth: 600, overflow: "auto" }}>{this.state.error?.message}</pre>
+        <button onClick={() => { sessionStorage.removeItem(SESSION_KEY); window.location.reload(); }} style={{ padding: "0.75rem 1.5rem", background: "#D4A853", color: "#111110", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 600 }}>Back to Login</button>
+      </div>
+    );
+    return this.props.children;
+  }
+}
 
 export default function PrismL4v2Gate() {
   const [input, setInput] = useState("");
   const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem(SESSION_KEY) === "true");
   const [error, setError] = useState(false);
 
-  if (unlocked) return <PrismL4v2 />;
+  if (unlocked) return (
+    <div style={{ minHeight: "100vh", background: "#111110", position: "relative", zIndex: 1 }}>
+      <PrismErrorBoundary>
+        <PrismL4v2 />
+      </PrismErrorBoundary>
+    </div>
+  );
 
   const handleSubmit = (e) => {
     e.preventDefault();
