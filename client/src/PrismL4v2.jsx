@@ -4493,6 +4493,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                 { key: "location", label: "Location", required: true },
                 { key: "cost", label: "Annual Cost (fully loaded or base)", required: true },
                 { key: "fte", label: "FTE %", required: false },
+                { key: "managerId", label: "Manager ID", required: false },
                 { key: "skip", label: "Skip this column", required: false },
               ];
               const AUTO_MAP = {
@@ -4501,6 +4502,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                 location: /^(location|city|country|office|region|site)$/i,
                 cost: /^(annual.?salary|salary|base.?salary|total.?comp|fully.?loaded|annual.?cost|compensation|pay|total.?cost)$/i,
                 fte: /^(fte|fte.?%|full.?time|headcount|hours)$/i,
+                managerId: /^(manager.?id|manager|reports.?to|supervisor.?id|manager.?name)$/i,
               };
 
               const handleCensusFile = (file) => {
@@ -4572,8 +4574,9 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                   const rawCost = parseFloat(String(row[colIdx.cost] || "0").replace(/[,$]/g, "")) || 0;
                   const cost = rawCost * costMult;
                   const fte = colIdx.fte != null ? (parseFloat(row[colIdx.fte]) || 1.0) : 1.0;
+                  const managerId = colIdx.managerId != null ? String(row[colIdx.managerId] || "").trim() : null;
                   if (!dept && !role) continue;
-                  parsed.push({ department: dept, role, location: loc, cost, fte });
+                  parsed.push({ department: dept, role, location: loc, cost, fte, managerId });
                   totalFTE += fte;
                   totalCost += cost * fte;
                   if (!byDept[dept]) byDept[dept] = { name: dept, headcount: 0, fte: 0, totalCost: 0 };
