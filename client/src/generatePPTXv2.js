@@ -43,7 +43,7 @@ const cl = (t, ex) => ({ text: t, options: { fontSize: 10, color: C.white, ...ex
 /* ═══════════════════════════════════════════════════════
    PRECOMPUTE shared data
    ═══════════════════════════════════════════════════════ */
-function precompute({ baseline, selProcs, valResult, procValues, procBenchmarks, agentResults, getQuartile, PROC_MAP, FUNCTIONS, selectedFunction, valueRealization, companyFinancials, multiYearRamp }) {
+function precompute({ baseline, selProcs, valResult, procValues, procBenchmarks, agentResults, getQuartile, PROC_MAP, FUNCTIONS, selectedFunction, valueRealization, companyFinancials, multiYearRamp, assessmentProfile }) {
   const imps = valResult.impacts.filter(i => i.value > 0);
   const { revImpact: rv, cogsImpact: cg, sgaImpact: sg } = valResult.pnl;
   const tv = valResult.total;
@@ -108,14 +108,14 @@ function precompute({ baseline, selProcs, valResult, procValues, procBenchmarks,
   // Top 3 processes by value
   const top3 = imps.slice(0, 3);
 
-  return { imps, rv, cg, sg, tv, agTot, combined, bsh, fnName, e2e, procQuartiles, qT, qA, qL, qTot, leakage, agentData, top3, valueRealization, companyFinancials, multiYearRamp };
+  return { imps, rv, cg, sg, tv, agTot, combined, bsh, fnName, e2e, procQuartiles, qT, qA, qL, qTot, leakage, agentData, top3, valueRealization, companyFinancials, multiYearRamp, assessmentProfile };
 }
 
 /* ═══════════════════════════════════════════════════════
    EXECUTIVE DECK — 4 slides
    ═══════════════════════════════════════════════════════ */
 function buildExecDeck(pptx, data, baseline) {
-  const { tv, agTot, combined, rv, cg, sg, top3, leakage, fnName } = data;
+  const { tv, agTot, combined, rv, cg, sg, top3, leakage, fnName, assessmentProfile } = data;
   const dt = today();
   let pg = 1;
 
@@ -128,9 +128,12 @@ function buildExecDeck(pptx, data, baseline) {
     s.addShape(pptx.shapes.RECTANGLE, { x: 0.5, y: 0.6, w: 1.8, h: 1.0, fill: { color: "2A2A25" }, rectRadius: 0.05 });
     s.addText("Upload logo", { x: 0.5, y: 0.6, w: 1.8, h: 1.0, fontSize: 9, fontFace: "Calibri", color: C.gray, align: "center" });
     // Company name, subtitle, date
-    s.addText(baseline.company || "Company", { x: 0.5, y: 3.1, w: 5.5, h: 0.7, fontSize: 36, fontFace: "Georgia", color: C.white, bold: true });
-    s.addText("SAP S/4HANA Phase 0 Business Case", { x: 0.5, y: 3.8, w: 5.5, h: 0.35, fontSize: 18, fontFace: "Georgia", color: C.gray });
-    s.addText(`Prepared: ${dt}  |  Confidential`, { x: 0.5, y: 4.2, w: 5.5, h: 0.25, fontSize: 12, fontFace: "Calibri", color: C.dkGray });
+    const coName = assessmentProfile?.companyName || baseline.company || "Company";
+    const fy = assessmentProfile?.fiscalYear || "";
+    s.addText(coName, { x: 0.5, y: 3.1, w: 5.5, h: 0.7, fontSize: 36, fontFace: "Georgia", color: C.gold, bold: true });
+    s.addText("Phase 0 SAP S/4HANA Business Case", { x: 0.5, y: 3.8, w: 5.5, h: 0.35, fontSize: 18, fontFace: "Georgia", color: C.white });
+    s.addText(`${fy ? "FY" + fy + "  |  " : ""}${dt}`, { x: 0.5, y: 4.2, w: 5.5, h: 0.25, fontSize: 12, fontFace: "Calibri", color: C.dkGray });
+    s.addText("Prepared by Human in the Lead", { x: 0.5, y: 5.1, w: 5.5, h: 0.25, fontSize: 9, fontFace: "Calibri", color: C.dkGray });
     // Right side: Three stacked value boxes
     const vBoxX = 7.0, vBoxW = 2.5;
     [
@@ -154,7 +157,9 @@ function buildExecDeck(pptx, data, baseline) {
     const cfYear = baseline.companyFinancials?.fiscalYear || "";
     const nProcs = top3.length > 0 ? data.imps.length : 0;
     s.addText("The opportunity", { x: 0.5, y: 0.35, w: 9.0, h: 0.5, fontSize: 28, fontFace: "Georgia", color: C.white });
-    s.addText(`Based on ${nProcs} processes assessed, ${cfName}${cfYear ? " FY" + cfYear : ""} financials, ${baseline.industry || "industry"} peer benchmarks`, { x: 0.5, y: 0.85, w: 9.0, h: 0.3, fontSize: 12, fontFace: "Calibri", color: C.gray });
+    const peerInd = assessmentProfile?.industry || baseline.industry || "industry";
+    const peerRev = assessmentProfile?.revenueBand || baseline.revenueBand || "";
+    s.addText(`Based on ${nProcs} processes assessed, ${cfName}${cfYear ? " FY" + cfYear : ""} financials, ${peerInd}${peerRev ? " " + peerRev : ""} peer benchmarks`, { x: 0.5, y: 0.85, w: 9.0, h: 0.3, fontSize: 12, fontFace: "Calibri", color: C.gray });
 
     // Horizontal stacked bar: ERP (gold) + Agent (green stacked) = Total
     const barY = 1.5, barH = 0.6, barMaxW = 7.5;
@@ -270,16 +275,17 @@ function buildExecDeck(pptx, data, baseline) {
    DETAILED REPORT — 10 slides max
    ═══════════════════════════════════════════════════════ */
 function buildDetailedDeck(pptx, data, baseline, { selProcs, procValues, procBenchmarks, agentResults, baselineData, PROC_MAP, getQuartile, scenarioLevel, totalKPIs, processOwners }) {
-  const { imps, rv, cg, sg, tv, agTot, combined, bsh, fnName, e2e, procQuartiles, qT, qA, qL, qTot, leakage, agentData, valueRealization, companyFinancials, multiYearRamp } = data;
+  const { imps, rv, cg, sg, tv, agTot, combined, bsh, fnName, e2e, procQuartiles, qT, qA, qL, qTot, leakage, agentData, valueRealization, companyFinancials, multiYearRamp, assessmentProfile } = data;
   const dt = today();
   let pg = 1;
 
   // ── Slide 1: Cover ──
   (() => {
     const s = dkSl(pptx); goldLn(pptx, s);
-    s.addText(baseline.company || "Company", { x: 0.5, y: 1.0, w: 9.0, h: 0.9, fontSize: 40, fontFace: "Georgia", color: C.gold, bold: true });
+    const dCoName = assessmentProfile?.companyName || baseline.company || "Company";
+    s.addText(dCoName, { x: 0.5, y: 1.0, w: 9.0, h: 0.9, fontSize: 40, fontFace: "Georgia", color: C.gold, bold: true });
     s.addText("Phase 0 Detailed Report", { x: 0.5, y: 1.9, w: 9.0, h: 0.5, fontSize: 20, fontFace: "Georgia", color: C.white });
-    s.addText(fnName + "  |  " + dt, { x: 0.5, y: 2.6, w: 9.0, h: 0.3, fontSize: 11, fontFace: "Calibri", color: C.gray });
+    s.addText(fnName + "  |  " + dt + (assessmentProfile?.fiscalYear ? "  |  FY" + assessmentProfile.fiscalYear : ""), { x: 0.5, y: 2.6, w: 9.0, h: 0.3, fontSize: 11, fontFace: "Calibri", color: C.gray });
     s.addText(fmtD(combined), { x: 0.5, y: 3.4, w: 9.0, h: 1.0, fontSize: 64, fontFace: "Georgia", color: C.gold, bold: true, align: "center" });
     s.addText("Total Combined Value", { x: 0.5, y: 4.3, w: 9.0, h: 0.3, fontSize: 12, fontFace: "Calibri", color: C.gray, align: "center" });
     pg++;
@@ -395,7 +401,7 @@ function buildDetailedDeck(pptx, data, baseline, { selProcs, procValues, procBen
     addFtr(s, pg++);
   })();
 
-  // ── Slide 6: ERP Value — bar chart ──
+  // ── Slide 6: ERP Value — table with SAP Lever column ──
   (() => {
     const s = dkSl(pptx); goldLn(pptx, s);
     s.addText("ERP Value by Process", { x: 0.5, y: 0.5, w: 9.0, h: 0.4, fontSize: 24, fontFace: "Georgia", color: C.white });
@@ -404,19 +410,36 @@ function buildDetailedDeck(pptx, data, baseline, { selProcs, procValues, procBen
     const top2Names = imps.slice(0, 2).map(i => trunc(i.label, 20)).join(" and ");
     s.addText(top2Pct > 0 ? `${top2Names} represent ${top2Pct}% of total ERP opportunity` : "ERP value distributed across all assessed processes", { x: 0.5, y: 0.9, w: 9.0, h: 0.25, fontSize: 11, fontFace: "Calibri", color: C.gray, italic: true });
 
-    const top8 = imps.slice(0, 8);
-    if (top8.length > 0) {
-      s.addChart(pptx.charts.BAR, [{
-        name: "Value ($M)", labels: top8.map(i => trunc(i.label, 20)), values: top8.map(i => Math.round(i.value * 10) / 10),
-      }], {
-        x: 0.5, y: 1.2, w: 9.0, h: 3.8, showTitle: false, barDir: "bar",
-        showValue: true, valueFontSize: 9, valueFontColor: C.white,
-        catAxisLabelColor: C.gray, catAxisLabelFontSize: 9,
-        valAxisLabelColor: C.gray, valAxisLabelFontSize: 9,
-        catAxisLineShow: false, valAxisLineShow: false,
-        valGridLine: { color: C.bdr, size: 0.5 },
-        chartColors: [C.gold],
-      });
+    // Build SAP lever lookup from selProcs
+    const leverLookup = {};
+    selProcs.forEach(p => {
+      const sapMods = (p.sap || []).map(s => s.module).join(", ");
+      const capability = (p.kpis || [])[0]?.capability || "";
+      leverLookup[p.id] = { module: sapMods, capability: trunc(capability, 25) };
+    });
+
+    const top10 = imps.slice(0, 10);
+    if (top10.length > 0) {
+      const rows = [
+        [hd("Process"), hd("SAP Lever", { align: "left" }), hd("ERP Value", { align: "right" }), hd("Agent Uplift", { align: "right" }), hd("Total", { align: "right" })],
+        ...top10.map((imp, i) => {
+          const lv = leverLookup[imp.id] || {};
+          const agV = imp.agentValue || 0;
+          const total = imp.value + agV;
+          const rowFill = i % 2 === 0 ? { fill: { color: C.card } } : {};
+          return [
+            cl(trunc(imp.label, 28), { fontSize: 9, ...rowFill }),
+            { text: [
+              { text: lv.capability || "—", options: { fontSize: 9, color: C.white } },
+              { text: lv.module ? "\n" + lv.module : "", options: { fontSize: 8, color: C.blue, bold: true } },
+            ], options: { ...rowFill } },
+            cl(fmtD(imp.value), { align: "right", color: C.gold, bold: true, ...rowFill }),
+            cl(agV > 0 ? fmtD(agV) : "\u2014", { align: "right", color: C.green, ...rowFill }),
+            cl(fmtD(total), { align: "right", color: C.white, bold: true, ...rowFill }),
+          ];
+        }),
+      ];
+      s.addTable(rows, { x: 0.5, y: 1.2, w: 9.0, colW: [2.2, 2.5, 1.5, 1.5, 1.3], border: { type: "solid", pt: 0.5, color: C.bdr }, rowH: 0.38 });
     }
     addFtr(s, pg++);
   })();
@@ -591,14 +614,16 @@ export function generateExecDeck(params) {
   const pptx = setupPptx();
   const data = precompute(params);
   buildExecDeck(pptx, data, params.baseline);
-  pptx.writeFile({ fileName: (params.baseline.company || "Company").replace(/\s+/g, "_") + "_Phase0_Executive.pptx" });
+  const coName = params.assessmentProfile?.companyName || params.baseline.company || "Company";
+  pptx.writeFile({ fileName: coName.replace(/\s+/g, "_") + "_Phase0_Executive.pptx" });
 }
 
 export function generateDetailedDeck(params) {
   const pptx = setupPptx();
   const data = precompute(params);
   buildDetailedDeck(pptx, data, params.baseline, params);
-  pptx.writeFile({ fileName: (params.baseline.company || "Company").replace(/\s+/g, "_") + "_Phase0_Detailed.pptx" });
+  const coName = params.assessmentProfile?.companyName || params.baseline.company || "Company";
+  pptx.writeFile({ fileName: coName.replace(/\s+/g, "_") + "_Phase0_Detailed.pptx" });
 }
 
 export default function generatePPTXv2(params) {

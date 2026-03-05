@@ -875,6 +875,22 @@ const CalcExplainerDrawer = ({ data, onClose, mode }) => {
           <button onClick={onClose} style={{ background: "none", border: "none", color: t.mut, fontSize: 18, cursor: "pointer", padding: "4px 8px", lineHeight: 1 }}>✕</button>
         </div>
         <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
+          {/* SAP Lever — What makes this benchmark achievable */}
+          {(() => {
+            const leverData = data.procId ? getSapLever(data.procId) : null;
+            const ctx = data.procId && data.kpiName ? getBenchmarkContext(data.procId, data.kpiName) : null;
+            if (!leverData) return null;
+            const lv = leverData.lever;
+            return (
+              <div style={{ marginBottom: 16, padding: "12px 14px", background: BLUE + "0C", borderRadius: 8, border: `1px solid ${BLUE}30` }}>
+                <div style={{ fontSize: 10, color: BLUE, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 8 }}>What Makes This Benchmark Achievable</div>
+                <div style={{ fontSize: 12, color: t.tx, fontWeight: 600, marginBottom: 4 }}>SAP Lever: {lv.name} ({lv.module})</div>
+                <div style={{ fontSize: 11, color: t.tx2, fontStyle: "italic", lineHeight: 1.5, marginBottom: 8 }}>"{lv.capability}"</div>
+                {ctx && <div style={{ fontSize: 11, color: t.tx2, lineHeight: 1.5, marginBottom: 6 }}>Benchmark: {data.benchmarkValue ?? "—"} {data.unit} — {ctx}</div>}
+                <div style={{ fontSize: 10, color: t.mut }}>Deployment: {lv.deploymentType}</div>
+              </div>
+            );
+          })()}
           <div style={{ marginBottom: 16, padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
             <div style={{ fontSize: 10, color: t.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Formula</div>
             <div style={{ fontSize: 12, fontFamily: "monospace", color: GOLD, lineHeight: 1.6 }}>gap × base amount × addressable% × scenario factor</div>
@@ -1190,7 +1206,7 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
         const addressable = gap * m;
         result = kpi.unit === '%' ? (addressable / 100) * baseAmt * 0.01 : (bench !== 0 ? (addressable / Math.abs(bench)) : 0) * baseAmt * 0.01;
       }
-      return { kpiName: kpi.name, unit: kpi.unit, currentValue: current, benchmarkValue: bench, inputSource: realCurrent != null ? 'Questionnaire' : kpi.current != null ? 'Modeled estimate' : 'Not provided', benchmarkSource: srcLabel, benchmarkYear: srcMeta.year, sampleSize: sampleN, gapValue: gap, gapPct, baseAmount: baseAmt, baseAmountSource: fintype + ' from financial baseline', addressablePct, scenarioLevel: potential, scenarioFactor, resultFormatted: result > 0 ? (result < 1 ? '$' + Math.round(result * 1000) + 'K' : '$' + result.toFixed(1) + 'M') : '$0', confidence };
+      return { procId: proc.id, kpiName: kpi.name, unit: kpi.unit, currentValue: current, benchmarkValue: bench, inputSource: realCurrent != null ? 'Questionnaire' : kpi.current != null ? 'Modeled estimate' : 'Not provided', benchmarkSource: srcLabel, benchmarkYear: srcMeta.year, sampleSize: sampleN, gapValue: gap, gapPct, baseAmount: baseAmt, baseAmountSource: fintype + ' from financial baseline', addressablePct, scenarioLevel: potential, scenarioFactor, resultFormatted: result > 0 ? (result < 1 ? '$' + Math.round(result * 1000) + 'K' : '$' + result.toFixed(1) + 'M') : '$0', confidence };
     }
     // Agent type
     if (type === 'agent') {
@@ -1201,7 +1217,7 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
         const addressable = agentGap * m;
         agentResult = kpi.unit === '%' ? (addressable / 100) * baseAmt * 0.01 : (agentBench !== 0 ? (addressable / Math.abs(agentBench)) : 0) * baseAmt * 0.01;
       }
-      return { kpiName: kpi.name + ' (Agent)', unit: kpi.unit, currentValue: current, benchmarkValue: agentBench, inputSource: realCurrent != null ? 'Questionnaire' : kpi.current != null ? 'Modeled estimate' : 'Not provided', benchmarkSource: 'AI Agent benchmark', benchmarkYear: '2024', sampleSize: null, gapValue: agentGap, gapPct: agentGapPct, baseAmount: baseAmt, baseAmountSource: fintype + ' from financial baseline', addressablePct, scenarioLevel: potential, scenarioFactor, resultFormatted: agentResult > 0 ? (agentResult < 1 ? '$' + Math.round(agentResult * 1000) + 'K' : '$' + agentResult.toFixed(1) + 'M') : '$0', confidence };
+      return { procId: proc.id, kpiName: kpi.name, unit: kpi.unit, currentValue: current, benchmarkValue: agentBench, inputSource: realCurrent != null ? 'Questionnaire' : kpi.current != null ? 'Modeled estimate' : 'Not provided', benchmarkSource: 'AI Agent benchmark', benchmarkYear: '2024', sampleSize: null, gapValue: agentGap, gapPct: agentGapPct, baseAmount: baseAmt, baseAmountSource: fintype + ' from financial baseline', addressablePct, scenarioLevel: potential, scenarioFactor, resultFormatted: agentResult > 0 ? (agentResult < 1 ? '$' + Math.round(agentResult * 1000) + 'K' : '$' + agentResult.toFixed(1) + 'M') : '$0', confidence };
     }
     return null;
   }, [procValues, procBenchmarks, procScenarios, scenarioLevel, baseline, baselineData]);
@@ -1794,6 +1810,13 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
             <div style="font-size:11px;color:#888;margin-bottom:6px">
               <strong>L2:</strong> ${proc.l2} &nbsp;|&nbsp; <strong>L3:</strong> ${proc.l3}
             </div>
+
+            ${(() => { const lv = getSapLever(proc.id); return lv ? `
+            <div style="margin:10px 0 16px;padding:10px 14px;background:#7BA7CC08;border-left:3px solid #7BA7CC;border-radius:6px">
+              <div style="font-size:10px;color:#7BA7CC;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Relevant SAP Capability Being Assessed</div>
+              <div style="font-size:13px;font-weight:600;color:#333">${lv.lever.name} <span style="font-size:10px;font-family:monospace;color:#7BA7CC;margin-left:4px">(${lv.lever.module})</span></div>
+              <div style="font-size:11px;color:#666;font-style:italic;margin-top:2px">${lv.lever.capability}</div>
+            </div>` : ""; })()}
 
             ${jobs.length > 0 ? `
             <div style="margin:10px 0 16px">
@@ -4319,7 +4342,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                     {/* Section Tabs */}
                     <div style={{ display: "flex", gap: 2, marginBottom: 12, borderBottom: `1px solid ${t.bdr}` }}>
                       {[
-                        { key: "sap", label: "SAP Capabilities", color: BLUE },
+                        { key: "sap", label: "SAP Lever", color: BLUE },
                         { key: "agents", label: "AI Agents", color: GOLD },
                         { key: "benchmarks", label: "Benchmarks", color: GREEN },
                       ].map(tab => (
@@ -4436,6 +4459,9 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                     <span title={`Range: ${Math.round(activeBench * 0.85 * 10) / 10}–${Math.round(activeBench * 1.15 * 10) / 10}${kpi.unit === "%" ? "%" : ""} | n=${getSampleSize(selectedSource, seed)} | ${(SOURCE_META[selectedSource] || SOURCE_META.custom).year}`} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 12, height: 12, borderRadius: "50%", background: t.mut + "20", color: t.mut, fontSize: 7, fontWeight: 700, cursor: "help" }}>?</span>
                                   </div>
                                 )}
+                                {(() => { const ctx = getBenchmarkContext(proc.id, kpi.name); const lv = getSapLever(proc.id); return ctx && lv ? (
+                                  <div style={{ fontSize: 9, color: GOLD, fontStyle: "italic", marginTop: 4, lineHeight: 1.4 }}>Benchmark requires <span style={{ fontWeight: 600 }}>{lv.lever.name}</span> to be achievable — {ctx}</div>
+                                ) : null; })()}
                               </div>
                             );
                           })}
@@ -4449,19 +4475,82 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                       </div>
                     )}
 
-                    {/* Section B: SAP S/4HANA Optimization */}
+                    {/* Section B: SAP Lever — Story Card */}
                     {procTab === "sap" && (
                       <div>
-                        {(proc.sap || []).length > 0 ? (proc.sap || []).map((sap, si) => (
-                          <div key={si} style={{ padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${BLUE}15`, marginBottom: 4 }}>
-                            <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
-                              <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, background: BLUE + "18", color: BLUE, fontWeight: 700 }}>{sap.module}</span>
-                              <span style={{ fontSize: 12, color: t.tx2 }}>{sap.desc}</span>
+                        {(() => {
+                          const leverData = getSapLever(proc.id);
+                          if (!leverData) return (
+                            <div style={{ padding: 20, textAlign: "center", color: t.mut, border: `2px dashed ${t.bdr}`, borderRadius: 10 }}>No SAP lever mapped for this process</div>
+                          );
+                          const lv = leverData.lever;
+                          const depColor = lv.deploymentType === "Optimization" ? PURPLE : BLUE;
+                          return (
+                            <div style={{ padding: "16px 18px", background: t.bg, borderRadius: 10, border: `1px solid ${BLUE}20`, marginBottom: 8 }}>
+                              <div style={{ fontSize: 10, color: BLUE, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 10 }}>What S/4HANA Activates</div>
+                              <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+                                <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: BLUE + "18", color: BLUE, fontWeight: 700, fontFamily: "monospace" }}>{lv.module}</span>
+                                <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: depColor + "15", color: depColor, fontWeight: 600 }}>{lv.deploymentType}</span>
+                              </div>
+                              <div style={{ fontSize: 16, fontWeight: 700, color: t.tx, marginBottom: 4 }}>{lv.name}</div>
+                              <div style={{ fontSize: 13, color: "#888", fontStyle: "italic", lineHeight: 1.5, marginBottom: 14 }}>{lv.capability}</div>
+                              <div style={{ borderTop: `1px solid ${t.bdr}`, paddingTop: 12 }}>
+                                <div style={{ fontSize: 10, color: t.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 8 }}>KPIs this lever impacts</div>
+                                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                                  <thead><tr>
+                                    <th style={{ padding: "4px 8px", textAlign: "left", color: t.mut, fontSize: 10, fontWeight: 600, borderBottom: `1px solid ${t.bdr}40` }}>KPI</th>
+                                    <th style={{ padding: "4px 8px", textAlign: "right", color: t.mut, fontSize: 10, fontWeight: 600, borderBottom: `1px solid ${t.bdr}40` }}>Current</th>
+                                    <th style={{ padding: "4px 0", textAlign: "center", color: t.mut, fontSize: 10, borderBottom: `1px solid ${t.bdr}40`, width: 24 }}></th>
+                                    <th style={{ padding: "4px 8px", textAlign: "right", color: t.mut, fontSize: 10, fontWeight: 600, borderBottom: `1px solid ${t.bdr}40` }}>With Lever</th>
+                                    <th style={{ padding: "4px 8px", textAlign: "right", color: t.mut, fontSize: 10, fontWeight: 600, borderBottom: `1px solid ${t.bdr}40` }}>Improvement</th>
+                                  </tr></thead>
+                                  <tbody>
+                                    {kpiRows.map(({ kpi, ki, current, bench }) => {
+                                      const hib = /rate|score|adoption|fill|perfect|touchless|match|auto|straight/i.test(kpi.name);
+                                      const gap = current != null && bench != null ? Math.abs(current - bench) : null;
+                                      const improvLabel = gap != null ? (hib ? `+${gap.toFixed(1)}${kpi.unit === "%" ? "pp" : " " + kpi.unit}` : `-${gap.toFixed(1)} ${kpi.unit}`) : null;
+                                      return (
+                                        <tr key={ki}>
+                                          <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}20`, color: t.tx2, fontSize: 11 }}>{kpi.name} <span style={{ color: t.sub, fontSize: 9 }}>({kpi.unit})</span></td>
+                                          <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}20`, textAlign: "right", fontFamily: "monospace", color: "#888" }}>{current ?? "—"}</td>
+                                          <td style={{ padding: "5px 0", borderBottom: `1px solid ${t.bdr}20`, textAlign: "center", color: GOLD, fontSize: 13 }}>→</td>
+                                          <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}20`, textAlign: "right", fontFamily: "monospace", color: GOLD, fontWeight: 600 }}>{bench ?? "—"}</td>
+                                          <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}20`, textAlign: "right", fontSize: 10, color: GREEN, fontWeight: 600 }}>{improvLabel || "—"}</td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                              {/* Benchmark context per KPI */}
+                              {kpiRows.map(({ kpi, ki }) => {
+                                const ctx = getBenchmarkContext(proc.id, kpi.name);
+                                if (!ctx) return null;
+                                return (
+                                  <div key={ki} style={{ marginTop: 8, padding: "6px 10px", background: GOLD + "08", borderRadius: 6, border: `1px solid ${GOLD}18` }}>
+                                    <div style={{ fontSize: 10, color: GOLD, fontStyle: "italic", lineHeight: 1.5 }}>
+                                      <span style={{ fontWeight: 600 }}>{kpi.name}:</span> {ctx}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                              <div style={{ marginTop: 10, fontSize: 9, color: t.mut }}>Source: APQC · n={getSampleSize("primary", proc.id.split("").reduce((a, c) => a + c.charCodeAt(0), 0))} · {baseline.industry || "Manufacturing"} {baseline.revenueBand || "$1-5B"} · 2023</div>
                             </div>
-                            {sap.scenario && <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.5, fontStyle: "italic" }}>{sap.scenario}</div>}
+                          );
+                        })()}
+                        {/* Also show original SAP modules for reference */}
+                        {(proc.sap || []).length > 0 && (
+                          <div style={{ marginTop: 8 }}>
+                            {(proc.sap || []).map((sap, si) => (
+                              <div key={si} style={{ padding: "8px 12px", background: t.bg, borderRadius: 6, border: `1px solid ${BLUE}10`, marginBottom: 3 }}>
+                                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                                  <SapBadge module={sap.module} />
+                                  <span style={{ fontSize: 11, color: t.tx2 }}>{sap.desc}</span>
+                                </div>
+                                {sap.scenario && <div style={{ fontSize: 11, color: t.mut, lineHeight: 1.4, fontStyle: "italic", marginTop: 3 }}>{sap.scenario}</div>}
+                              </div>
+                            ))}
                           </div>
-                        )) : (
-                          <div style={{ padding: 20, textAlign: "center", color: t.mut, border: `2px dashed ${t.bdr}`, borderRadius: 10 }}>No SAP modules mapped for this process</div>
                         )}
                       </div>
                     )}
