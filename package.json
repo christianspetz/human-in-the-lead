@@ -1,6 +1,6 @@
 {
   "name": "human-in-the-lead",
-  "version": "1.0.0",
+  "version": "2.0.1",
   "description": "AI Transformation Readiness Diagnostic by Christian Spetz",
   "main": "server/index.js",
   "scripts": {
