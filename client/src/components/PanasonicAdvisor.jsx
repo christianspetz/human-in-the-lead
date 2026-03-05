@@ -1,467 +1,1234 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
+/* ─── COLOR PALETTE ─────────────────────────────────────── */
 const C = {
   bg: "#08080A",
   surface: "#111114",
   surfaceAlt: "#16161A",
-  border: "#222228",
+  border: "#1E1E24",
+  borderLight: "#2C2C34",
   text: "#E4E2DC",
   textMuted: "#908E86",
-  textDim: "#58564F",
+  textDim: "#48464A",
   accent: "#D4A843",
-  accentDim: "#D4A84320",
-  red: "#D45443",
-  redDim: "#D4544318",
-  green: "#5AAA6A",
-  greenDim: "#5AAA6A18",
-  blue: "#5488CC",
-  blueDim: "#5488CC18",
+  accentDim: "#D4A84314",
+  accentBright: "#F0C060",
+  red: "#C84B3A",
+  redDim: "#C84B3A14",
+  green: "#4E9E60",
+  greenDim: "#4E9E6014",
+  blue: "#4A80C4",
+  blueDim: "#4A80C414",
+  orange: "#D07840",
 };
 
-const QUESTIONS = [
+/* ─── CHART DATA ────────────────────────────────────────── */
+const COMPANIES = [
   {
-    id: "structure",
-    label: "How to Structure This",
-    question: "How should Panasonic structure its AI transformation given the new CAIO, 8 operating companies, and Blue Yonder operating independently?",
-    answer: [
-      { type: "bold", text: "The core problem: Panasonic doesn't have one AI transformation — it has six, running at different speeds, in different cultures, with different definitions of success." },
-      { type: "p", text: "The new CAIO (Sakakibara) needs to resist the instinct to centralize everything. That's the Japanese corporate default — consolidate, create a center of excellence, issue guidelines. It will fail here because Blue Yonder is 5 years ahead, Connect just got its first American CEO, and Energy is making money from AI infrastructure without any help from headquarters." },
-      { type: "heading", text: "The structure that works:" },
-      { type: "item", label: "Federated AI governance, not centralized AI control", text: "The CAIO sets standards, shared infrastructure (data platforms, evaluation frameworks, vendor relationships like Anthropic), and a common language for measuring AI value. Operating companies keep execution autonomy." },
-      { type: "item", label: "Blue Yonder as the internal benchmark, not a silo", text: "Don't integrate Blue Yonder — learn from it. Their SADA Loop architecture, their 5 AI agents, their $2B tech stack rebuild are a playbook. Create a formal mechanism where Blue Yonder's learnings flow inward. Exchange programs, shared architecture reviews, joint pilot design." },
-      { type: "item", label: "Kill the PX Ambassador model", text: "56 volunteers for 180,000 people is theater. Replace with embedded AI leads — one per operating company, reporting dually to the CAIO and the business CEO. Give them budget authority and P&L accountability." },
-      { type: "item", label: "90-day proof cycles", text: "No more 18-month transformation roadmaps. Each operating company commits to one AI use case per quarter with a measurable KPI. The CAIO's job is sequencing and resource allocation across these cycles, not writing strategy decks." },
-      { type: "flag", text: "The biggest structural risk: the 'Business CEO' mechanism (operating company presidents as Holdings executive officers) is being deployed simultaneously. If the CAIO and the business CEOs clash on AI investment priorities, there's no established precedent for who wins. Define this before it happens." },
+    id: "ge", name: "GE Predix", outcome: "collapsed", color: C.red,
+    points: [[0,5],[6,15],[12,30],[18,42],[24,35],[30,25],[36,15],[48,12],[60,10]],
+    inflection: { month: 18, label: "Peak hype — zero enterprise revenue" },
+    summary: "Built a $4B platform before knowing what customers would pay for. Software engineers without software culture. Abandoned 2018.",
+  },
+  {
+    id: "hitachi", name: "Hitachi Lumada", outcome: "won", color: C.green,
+    points: [[0,3],[6,8],[12,15],[18,22],[24,30],[30,42],[36,55],[48,72],[60,88]],
+    inflection: { month: 24, label: "Co-creation model found product-market fit" },
+    summary: "Resisted the platform instinct. Went deep on customer-specific co-creation. OT + IT expertise = moat pure AI vendors can't cross. Now 41% of revenue.",
+  },
+  {
+    id: "siemens", name: "Siemens Xcelerator", outcome: "progressing", color: C.blue,
+    points: [[0,3],[6,10],[12,18],[18,26],[24,33],[30,40],[36,47],[48,55],[60,60]],
+    inflection: { month: 36, label: "Platform stabilized — slower than forecast" },
+    summary: "8 operating units, different digital maturity levels, coordination is the bottleneck. Right model, 2-3 years behind schedule.",
+  },
+  {
+    id: "msft", name: "Microsoft Azure", outcome: "won", color: "#7CB8D4",
+    points: [[0,5],[6,8],[12,14],[18,20],[24,32],[30,50],[36,68],[48,88],[60,95]],
+    inflection: { month: 24, label: "Nadella: mobile-first, cloud-first mandate" },
+    summary: "Slow first 18 months, fierce internal resistance from Windows/Office. Nadella accepted cannibalization. No Japanese conglomerate has ever done this.",
+  },
+  {
+    id: "panasonic", name: "Panasonic Go", outcome: "current", color: C.accent,
+    points: [[0,5],[6,12],[12,22]],
+    inflection: { month: 12, label: "Month 12 — CAIO appointed, Well dissolved" },
+    summary: "You are here.",
+  },
+];
+
+/* ─── PIVOT CURVE SOURCES ───────────────────────────────── */
+const PIVOT_SOURCES = [
+  {
+    company: "GE Predix", color: "#C84B3A",
+    note: "Index represents composite transformation momentum: analyst sentiment, enterprise customer count, internal adoption metrics, and revenue share. GE Predix trajectory based on reported investment data and documented abandonment timeline.",
+    sources: [
+      { label: "GE 2017 Annual Report", detail: "GE Digital revenue and Predix investment figures; $4B+ cumulative platform spend disclosed" },
+      { label: "Harvard Business Review, 2019", detail: "\"GE's Digital Reinvention\" — analysis of the structural failure to build software culture inside a hardware company" },
+      { label: "The Wall Street Journal, Nov 2018", detail: "Reporting on Predix wind-down, leadership changes, and GE Digital headcount reductions" },
+      { label: "MIT Sloan Management Review, 2020", detail: "Post-mortem analysis: platform investment without validated enterprise demand as primary failure mode" },
     ],
   },
   {
-    id: "blockers",
-    label: "Likely Blockers",
-    question: "What are the 3 most likely blockers that will stall Panasonic Go in the next 18 months?",
-    answer: [
-      { type: "heading", text: "Blocker #1: The Well talent exodus (next 3 weeks)" },
-      { type: "p", text: "250 Silicon Valley employees recruited from Google, Fitbit, Nike, and Waymo are about to lose their organizational home. These people joined a 'hyper-growth startup,' not a Japanese conglomerate. The moment Well HQ dissolves, every one of them updates their LinkedIn. Matsuoka joining the Analog Devices board in January is a leading indicator. If she leaves, the signal to the rest of the team is unmistakable." },
-      { type: "bold", text: "Why it's hard to fix: You can't retain startup talent by reassigning them to a corporate CAIO structure. The incentive mismatch is fundamental." },
-      { type: "heading", text: "Blocker #2: The adoption canyon (ongoing)" },
-      { type: "p", text: "0.46 uses per employee per day at Connect — the most technically advanced operating company. At group scale, the number is almost certainly lower. PX-AI is deployed. It is not adopted. And the 12,000 job cuts make it worse: the rational response to 'learn this AI tool' when your division is being cut is 'why would I train my replacement?'" },
-      { type: "bold", text: "Why it's hard to fix: Adoption requires changed workflows, not available tools. Nobody's job description has been rewritten to assume AI as a core input. Until it has, PX-AI is optional — and optional tools die." },
-      { type: "heading", text: "Blocker #3: The revenue definition problem (FY2027)" },
-      { type: "p", text: "The 30% AI revenue target has no published breakdown. Is Energy selling batteries to data centers 'AI revenue'? Is a factory using predictive maintenance 'AI-driven'? When the target is undefined, every business unit will either claim everything counts (to hit the number) or claim nothing counts (to avoid accountability). Both are toxic." },
-      { type: "bold", text: "Why it's hard to fix: Defining 'AI revenue' requires Kusumi to make a political choice. A narrow definition shows the company is behind. A broad definition makes the target meaningless. Neither is comfortable." },
-      { type: "flag", text: "The meta-blocker: all three are hitting simultaneously within 18 months. Any one is manageable. The combination is what creates the risk of stall — leadership attention gets split across firefighting instead of building." },
+    company: "Hitachi Lumada", color: "#4E9E60",
+    note: "Trajectory based on Lumada revenue as % of total Hitachi revenue, disclosed quarterly since 2018. 41% figure from FY2024 investor presentation.",
+    sources: [
+      { label: "Hitachi Integrated Report 2024", detail: "Lumada revenue ¥3.2T, 41% of total revenue. CAGR of ~18% since 2018 launch." },
+      { label: "Hitachi IR Day Presentations 2020–2024", detail: "Annual disclosure of Lumada segment metrics, co-creation model details, and OT+IT positioning" },
+      { label: "Nikkei Asia, March 2023", detail: "Analysis of Higashihara's portfolio divestiture strategy as precondition for Lumada growth" },
+      { label: "McKinsey Quarterly, 2022", detail: "\"How Hitachi became a digital company\" — co-creation model and why it outperformed platform-first approaches" },
     ],
   },
   {
-    id: "culture",
-    label: "Cultural Barriers",
-    question: "How does Panasonic overcome a culture where 'change has not yet taken root' and the 250-year plan creates permission to wait?",
-    answer: [
-      { type: "bold", text: "The 250-year plan is both Panasonic's greatest asset and its most sophisticated defense mechanism against urgency." },
-      { type: "p", text: "When your mission spans 250 years, everything feels early. 'We're in the fifth phase' sounds like progress, but it's also a way to defer hard decisions — there's always another phase. Kusumi knows this. His 30-year stagnation admission is a direct attack on the complacency the plan enables." },
-      { type: "heading", text: "What actually moves culture:" },
-      { type: "item", label: "Make the crisis visible, not abstract", text: "Kusumi's '30 years of stagnation' line is powerful — but it's at the CEO level. Does the factory floor in Osaka know that Hitachi's Lumada drives 41% of revenue while Panasonic Go is at ~10%? Does the Connect team in Newark know that their 97% profit growth is subsidizing loss-making TVs? Make the competitive gap a dashboard, not a speech." },
-      { type: "item", label: "Use the 250-year plan as an accelerant, not a brake", text: "Reframe: 'If Matsushita were alive today, would he wait 10 years to adopt the most transformative technology since electricity? His Tap Water Philosophy was about making abundance accessible — AI is the modern version.' Turn the founder into an argument for speed, not patience." },
-      { type: "item", label: "Change the assigned seating", text: "Former Connect CEO Higuchi found assigned seating by rank at internal meetings and banned it. That's not a trivial anecdote — it's a symbol. Every company has 'assigned seating' equivalents: approval chains, title hierarchies, consensus rituals. Identify the top 5 cultural artifacts that slow decisions and eliminate them publicly. Kusumi asking people to drop titles was this instinct — but 'most people didn't like it.' He needs to insist, not ask." },
-      { type: "item", label: "Create defectors, not converts", text: "Don't try to change the whole culture. Find the 500 people (out of 180,000) who already think differently and give them disproportionate authority, visibility, and resources. The 550 PX Contest entries are a talent signal — somewhere in those submissions are your transformation leaders. Promote three of them into roles that make the rest of the company pay attention." },
-      { type: "flag", text: "The hardest truth: Kusumi took a 40% pay cut. That's a leadership signal. But cultural change in a 108-year-old Japanese conglomerate with a 250-year plan requires more than signals — it requires consequences. What happens to the operating company CEO who doesn't hit AI adoption targets? If the answer is 'nothing,' the culture won't change." },
+    company: "Siemens Xcelerator", color: "#4A80C4",
+    note: "Progress index derived from reported Siemens Digital Industries revenue, partner ecosystem growth, and Xcelerator marketplace transaction data.",
+    sources: [
+      { label: "Siemens Annual Report 2023", detail: "Digital Industries segment performance; Xcelerator marketplace launch metrics and partner count" },
+      { label: "Siemens Capital Markets Day, 2022", detail: "Xcelerator platform strategy announcement; original growth forecast vs. subsequent revisions" },
+      { label: "Financial Times, Jan 2024", detail: "Analysis of Xcelerator's slower-than-forecast adoption and coordination challenges across business units" },
+      { label: "Gartner IoT Market Guide, 2023", detail: "Competitive positioning of industrial IoT platforms; Xcelerator rated strong but behind original timeline" },
     ],
   },
   {
-    id: "failure",
-    label: "Why This Fails",
-    question: "Make the case that Panasonic Go fails. What's the most likely failure mode?",
-    answer: [
-      { type: "bold", text: "The most likely failure mode: Panasonic Go becomes a branding exercise that reorganizes the org chart without changing how the company creates value." },
-      { type: "p", text: "Here's the scenario:" },
-      { type: "item", label: "Phase 1 — Announcement momentum (CES 2025, done)", text: "Big keynote, Anthropic partnership, Panasonic Go banner. Stock rises 40%. Analysts upgrade. The narrative works." },
-      { type: "item", label: "Phase 2 — Structural rearrangement (now)", text: "New CAIO, dissolved Well, Business CEO mechanism, 12,000 cuts. This looks like transformation. But organizational restructuring is the part of transformation that executives are most comfortable with — it's moving boxes on an org chart. It doesn't require any customer to experience anything different." },
-      { type: "item", label: "Phase 3 — The plateau (late 2026)", text: "The CAIO discovers that operating company CEOs protect their budgets. Blue Yonder continues operating independently because integration adds friction to their best-in-class product. PX-AI usage stays below 1 use/employee/day. The 30% target gets pushed to 'long-term aspiration.' CES 2027 showcases more demos." },
-      { type: "item", label: "Phase 4 — The narrative pivot (2027-2028)", text: "Revenue stays flat. The restructuring costs are absorbed. The company claims 'AI-driven' improvements in operating margin from automation. But organic growth from AI-native products and services never materializes at scale. Panasonic Go becomes what 'Panasonic Transformation (PX)' was — a program name, not a business result." },
-      { type: "heading", text: "Why this specific failure mode is most likely:" },
-      { type: "p", text: "Because it's exactly what happened before. PX launched in 2021. It progressed through phases (PX ZERO → PX 1.0 → PX 2.0). It deployed tools, created ambassadors, ran contests, and established governance forums. Five years later, Kusumi is standing on a stage admitting 30 years of stagnation. PX didn't fail dramatically — it succeeded incrementally. And incremental success in a company growing 0% per year is just well-organized stagnation." },
-      { type: "flag", text: "The counterargument: Blue Yonder is real ($1.42B, 25B daily predictions). Energy's data center pivot is real (47% profit growth). Connect's 97% profit growth is real. Panasonic has genuine AI assets — the question is whether the corporate organism can compose them into a growth story, or whether they remain isolated bright spots inside a flat conglomerate." },
+    company: "Microsoft Azure", color: "#7CB8D4",
+    note: "Azure revenue as % of total Microsoft revenue, per quarterly earnings. Inflection at Nadella's appointment (Feb 2014) visible in trajectory.",
+    sources: [
+      { label: "Microsoft Quarterly Earnings 2010–2015", detail: "Azure revenue growth from launch through Nadella-era mobile-first/cloud-first mandate" },
+      { label: "Satya Nadella, Hit Refresh (2017)", detail: "First-person account of internal resistance, cultural transformation, and the decision to cannibalize Windows/Office" },
+      { label: "Harvard Business School Case, 2018", detail: "Microsoft's Cloud Transformation — analysis of organizational change required for Azure to succeed" },
+      { label: "Bloomberg, Feb 2014", detail: "Nadella appointment coverage; analyst reaction to the mobile-first, cloud-first reframe" },
     ],
   },
   {
-    id: "well",
-    label: "Well Dissolution",
-    question: "Panasonic Well is being dissolved in 3 weeks. How do you prevent a talent exodus and preserve the Anthropic partnership?",
-    answer: [
-      { type: "bold", text: "You probably can't prevent all departures. The question is: which 50 people absolutely cannot leave, and what do they need to stay?" },
-      { type: "p", text: "The 250-person Well team was recruited under a specific promise: work at a Silicon Valley startup, not a Japanese conglomerate. They took below-FAANG comp for equity-like upside and creative freedom. That contract is being broken. No restructuring memo fixes this." },
-      { type: "heading", text: "Triage — the first 72 hours after dissolution:" },
-      { type: "item", label: "Map the 50 irreplaceable people", text: "Engineers who built the Anthropic integration, the Umi product leads, anyone with direct Anthropic relationships. These people have offers waiting — Google, Anthropic itself, any AI startup. Personal conversations with Sakakibara or Kusumi, not HR form letters." },
-      { type: "item", label: "Create a 'founding team' identity for what comes next", text: "Don't reassign Well people into existing operating company structures. Create a new unit under the CAIO — call it the AI Products Lab, whatever — and staff it with the best Well talent. They need to feel like they're building something, not being absorbed." },
-      { type: "item", label: "Retention packages that match the market", text: "These people can walk to Anthropic, Google DeepMind, or any funded AI startup tomorrow. Panasonic's comp structure probably can't match. But a 2-year retention bonus tied to shipping the first AI-native product is a conversation starter." },
-      { type: "heading", text: "The Anthropic partnership:" },
-      { type: "p", text: "This is the most urgent governance question. The Anthropic relationship was announced as a 'global strategic partnership' with Daniela Amodei on stage. It covers consumer (Umi) and enterprise (Claude across the group). If Matsuoka was the relationship owner and she's disengaging, who becomes the single point of contact? Anthropic needs to know — partnerships die from ambiguity, not from conflict." },
-      { type: "flag", text: "Watch Matsuoka's next move closely. She joined the Analog Devices board in January. If she takes an operational role elsewhere before June, expect 30-40% of the senior Well team to follow within 90 days. Her departure would also signal to Anthropic that their executive champion inside Panasonic is gone." },
-    ],
-  },
-  {
-    id: "adoption",
-    label: "Adoption Gap",
-    question: "PX-AI has 180,000 users but 0.46 uses/employee/day. How do you close the gap between deployment and actual transformation?",
-    answer: [
-      { type: "bold", text: "Stop measuring access. Start measuring changed workflows." },
-      { type: "p", text: "0.46 uses/employee/day at Connect (the best case) means the average employee interacts with AI less than once per day — and that's a query to a chatbot, not a transformed process. Most employees tried it, found it mildly useful for writing emails, and went back to their existing tools. This is the 'enterprise chatbot plateau' that every large company hits." },
-      { type: "heading", text: "Three things that actually move adoption:" },
-      { type: "item", label: "Rewrite 10 job descriptions to require AI", text: "Pick 10 high-visibility roles across 3 operating companies. Rewrite their job descriptions so that AI usage is a core competency, not optional enrichment. 'Uses AI tools to generate first-draft analysis for all client deliverables' — not 'has access to PX-AI.' When AI is in the job spec, adoption follows because performance reviews follow." },
-      { type: "item", label: "Kill a process, don't add a tool", text: "The reason PX-AI gets 0.46 uses/day is that it was deployed alongside existing workflows, not instead of them. Find 5 manual processes that take >2 hours/week across thousands of employees. Replace them entirely with AI-native workflows. Not 'use PX-AI to help with expense reports' — 'expense reports are now submitted through this AI system, the old form is gone.' Removal creates adoption faster than addition." },
-      { type: "item", label: "Publish internal league tables", text: "Which operating company has the highest AI adoption? Which department? Which team? Panasonic's culture is competitive between units. Use it. Publish monthly adoption metrics by business unit with the CAIO's commentary. The operating company CEO whose division is last will react. That's the point." },
-      { type: "flag", text: "The 12,000 job cuts make all of this harder. Telling employees to deeply adopt the AI tool while simultaneously cutting their colleagues is asking people to trust an institution that is actively reducing trust. The messaging has to be honest: 'We are cutting roles that AI will replace. We are investing in people who learn to work with AI. These are the same decision.' Silence on this connection is the worst option — people will draw the conclusion anyway." },
-    ],
-  },
-  {
-    id: "blueyonder",
-    label: "Blue Yonder Problem",
-    question: "Blue Yonder is the most advanced AI asset but operates independently. How should Panasonic learn from it without destroying what makes it work?",
-    answer: [
-      { type: "bold", text: "Blue Yonder works because it's independent. The moment Panasonic tries to 'integrate' it, you get the worst of both worlds — slower Blue Yonder and a parent company that still can't build AI products." },
-      { type: "p", text: "Duncan Angove spent 3 years and $2 billion rebuilding the tech stack. They launched 5 AI agents with autonomous decision-making. They make 25 billion predictions daily. They have their own customers, brand, and culture. This is not an underperforming subsidiary that needs fixing — it's the proof point that Panasonic's AI ambition is achievable." },
-      { type: "heading", text: "The learning model:" },
-      { type: "item", label: "Architecture exchanges, not integration", text: "Blue Yonder's SADA Loop (See, Analyze, Decide, Act) and their approach to domain-specific fine-tuned LLMs are directly transferable to manufacturing, energy, and corporate functions. Create quarterly architecture review sessions where Blue Yonder's engineering team presents patterns, and operating companies identify where they apply. No shared codebase required." },
-      { type: "item", label: "Rotation program for the CAIO's team", text: "Send 5-10 engineers from the new CAIO organization to embed at Blue Yonder for 90-day rotations. They learn how AI products are built at scale, then return to apply those patterns in their operating companies. Blue Yonder gets free engineering help on their roadmap." },
-      { type: "item", label: "Joint customer pilots", text: "Blue Yonder serves 23 of the top 25 retailers. These are also Panasonic hardware customers. Create joint solutions — Blue Yonder's supply chain AI + Panasonic Connect's warehouse hardware + Panasonic Industry's sensors. This is where the '30% AI revenue' actually lives: integrated solutions that neither company can sell alone." },
-      { type: "heading", text: "The IPO question:" },
-      { type: "p", text: "The announced 2022 IPO never happened. This is actually the right call for now — keeping Blue Yonder gives Panasonic its best AI asset and its best internal learning lab. But if Panasonic can't figure out how to learn from Blue Yonder within 2 years, then the IPO argument gets stronger: unlock the value, return capital, and admit the conglomerate model doesn't work for AI." },
-    ],
-  },
-  {
-    id: "caio",
-    label: "CAIO First 90 Days",
-    question: "Sakakibara is the first CAIO, coming from one operating company. How does he establish authority across all operating companies in his first 90 days?",
-    answer: [
-      { type: "bold", text: "He has exactly one advantage: he's the first. There's no precedent for the role, which means he gets to define it. But if he spends the first 90 days writing strategy documents, he loses." },
-      { type: "heading", text: "Days 1-30: Listening tour with teeth" },
-      { type: "p", text: "Meet every operating company CEO one-on-one. Not to present Panasonic Go strategy — they've all seen the slides. Instead: 'What's the one AI initiative that would change your business this year? What's stopping you? What do you need from me?' Write down the answers. Publish a summary to Kusumi and the board. This creates immediate accountability — every operating company CEO knows their answer is on record." },
-      { type: "heading", text: "Days 30-60: Pick two wins and fund them" },
-      { type: "p", text: "From the listening tour, identify 2 high-impact, high-feasibility AI projects across different operating companies. Fund them from a central CAIO budget (he needs to negotiate this with Kusumi before day 1). These projects should be deliverable in 90 days. One should be customer-facing. One should save measurable cost. The CAIO's credibility comes from shipped results, not governance frameworks." },
-      { type: "heading", text: "Days 60-90: Establish the operating model" },
-      { type: "p", text: "Now — after demonstrating value — propose the ongoing governance model. Embedded AI leads per operating company (not ambassadors), quarterly AI investment reviews, shared infrastructure decisions, talent rotation policies. The order matters: demonstrate, then govern. Not the reverse." },
-      { type: "item", label: "The one thing he must NOT do", text: "Create a CAIO 'office' with a large central team that produces strategy documents and governance frameworks. This is the reflex. It will be resisted by every operating company. He should stay small (10-15 people), move fast, and measure himself by operating company results, not by the quality of his strategy deck." },
-      { type: "flag", text: "The political trap: Sakakibara comes from Connect. Connect is the strongest performing division. Every other operating company will assume he'll favor Connect. His first funded project should be in a non-Connect operating company. The signal matters more than the project." },
-    ],
-  },
-  {
-    id: "revenue",
-    label: "The 30% Question",
-    question: "The 30% AI revenue target by 2035 has no published pathway. How would you build the roadmap?",
-    answer: [
-      { type: "bold", text: "30% of \u00A58.5 trillion = \u00A52.55 trillion (~$17 billion) in AI-driven revenue by 2035. Today, the only clearly measurable AI revenue is Blue Yonder at $1.42 billion. The gap is enormous." },
-      { type: "heading", text: "First: define what counts" },
-      { type: "p", text: "This is the political decision Kusumi has to make. Three possible definitions, each with different implications:" },
-      { type: "item", label: "Narrow: AI-native products and services", text: "Blue Yonder SaaS, Umi (if it launches), AI agents, software products with AI at the core. This is the honest definition. It puts the number at maybe 5-8% today. The gap is visible and motivating." },
-      { type: "item", label: "Medium: AI-enabled solutions", text: "Hardware + software bundles where AI is the differentiator. Smart factory solutions, AI-powered warehouse systems, predictive energy storage. This is defensible and probably the right answer. Gets you to maybe 12-15%." },
-      { type: "item", label: "Broad: Revenue from AI-adjacent businesses", text: "Batteries sold to AI data centers, MEGTRON boards in AI servers, any product where AI is in the customer's value chain. This is tempting because Energy's 47% growth looks like AI revenue. But it makes the target meaningless — selling copper wire to a data center is not an AI business." },
-      { type: "heading", text: "Then: the unit-by-unit build" },
-      { type: "item", label: "Blue Yonder: $1.4B \u2192 $3-4B", text: "SaaS growth at 10.4%, accelerate via acquisitions (already doing this: One Network, Optoro). AI agents expand TAM. Achievable." },
-      { type: "item", label: "Connect: $0 \u2192 $1-2B in AI solutions", text: "Bundled hardware + Blue Yonder software + AI services for retail/logistics. Joint offerings. This is the integration revenue." },
-      { type: "item", label: "Energy: redefine the unit", text: "AI data center storage as a dedicated P&L. \u00A5100B AI component target by FY2031 is already stated." },
-      { type: "item", label: "Well / AI Products: $0 \u2192 ???", text: "This was supposed to be the consumer AI play. With Well dissolved, the pathway is unclear. Umi's status is unknown." },
-      { type: "flag", text: "The honest math: even with aggressive growth, Panasonic gets to maybe 18-22% by 2035 under the 'medium' definition. 30% requires either a major acquisition, a breakthrough consumer AI product, or a very generous definition of 'AI-driven.' Kusumi should be challenged on which one he's planning for." },
-    ],
-  },
-  {
-    id: "quickwins",
-    label: "Quick Wins",
-    question: "What are 3 things Panasonic could do in the next 90 days that would signal this transformation is real, not theater?",
-    answer: [
-      { type: "heading", text: "Quick Win #1: Ship one AI product to an external customer" },
-      { type: "p", text: "Not a demo. Not a CES showcase. Not an internal tool. One AI-powered product or service that a customer pays for, that didn't exist 90 days ago. Blue Yonder's 5 AI agents are already there — extend one of them to a Panasonic Connect customer as a joint offering. The signal: we sell AI products now, not just hardware with AI marketing." },
-      { type: "heading", text: "Quick Win #2: Publish the PX-AI adoption dashboard externally" },
-      { type: "p", text: "Put the real numbers in the investor presentation. Not '180,000 employees have access' — the actual usage rates, by operating company, with trends. This is terrifying for most companies. That's exactly why it works as a signal. Kusumi has already shown willingness to be candid about 30 years of stagnation. Extend that candor to AI adoption metrics. Investors and analysts will respect the honesty, and it creates internal pressure to improve the numbers." },
-      { type: "heading", text: "Quick Win #3: Name the Well successor before Well dies" },
-      { type: "p", text: "Before March 31 — not after — announce exactly where the Well capabilities land: which team, which leader, which mandate, which budget. The 250 Well employees need to know their new organizational home before the old one disappears, not after. And the Anthropic partnership needs a named executive owner, announced publicly, so Anthropic's leadership team knows who to call on April 1." },
-      { type: "flag", text: "The meta-signal: all three of these are uncomfortable. That's how you distinguish real transformation from theater. Theater is CES keynotes and partnership announcements. Transformation is shipping products, publishing real numbers, and making hard organizational decisions in public." },
-    ],
-  },
-  {
-    id: "hitachi",
-    label: "Hitachi Gap",
-    question: "Hitachi's Lumada drives 41% of revenue. Panasonic Go is at ~10%. Can the gap be closed?",
-    answer: [
-      { type: "bold", text: "The honest answer: Panasonic cannot replicate Hitachi's path. Lumada started in 2016 with a unified platform strategy. Panasonic is starting in 2025 with a fragmented conglomerate. But Panasonic has assets Hitachi didn't have." },
-      { type: "heading", text: "Why copying Hitachi won't work:" },
-      { type: "p", text: "Lumada succeeded because Hitachi had a simpler organizational structure, a head start of nearly a decade, and a CEO (Toshiaki Higashihara) who spent 7 years single-mindedly pivoting the company from infrastructure to digital. He divested the semiconductor business, sold Hitachi Metals, and reshaped the portfolio ruthlessly. Panasonic's operating company structure, with 8 quasi-independent units, makes this kind of top-down portfolio reshaping much harder." },
-      { type: "heading", text: "What Panasonic has that Hitachi didn't:" },
-      { type: "item", label: "Blue Yonder", text: "Hitachi built Lumada from scratch. Panasonic bought a market-leading AI platform for $8.5B. Blue Yonder's $1.42B in revenue is a foundation Hitachi didn't have at its equivalent stage." },
-      { type: "item", label: "Anthropic partnership", text: "Hitachi partners with OpenAI and Google Cloud. Panasonic has a deeper, more exclusive relationship with Anthropic — named a 'global strategic partnership' with the President on stage. If managed well, this is a differentiated technology relationship." },
-      { type: "item", label: "1 billion customer touchpoints", text: "Panasonic products are in over a billion homes. This is a data and distribution advantage that no amount of AI R&D can replicate. The question is whether Panasonic can build AI-powered services on top of this installed base." },
-      { type: "heading", text: "The realistic play:" },
-      { type: "p", text: "Don't try to build Lumada. Instead, build 3-4 domain-specific AI platforms: Blue Yonder (supply chain, already exists), an energy/infrastructure AI platform (data center services), a manufacturing AI platform (smart factory), and a consumer AI offering (Umi or its successor). Each can reach \u00A5200-500B independently. Combined, they approach the 30% target without requiring a single unified platform that the organizational structure won't support." },
-      { type: "flag", text: "The deepest Hitachi lesson isn't about technology — it's about portfolio discipline. Hitachi divested businesses to fund the transformation. Panasonic is cutting 12,000 people and closing TV factories, but hasn't divested a major business unit. Until it does, the transformation is additive — and additive transformations in flat-revenue companies are a resource allocation knife fight." },
-    ],
-  },
-  {
-    id: "jobcuts",
-    label: "Cuts + AI Paradox",
-    question: "How do you deploy AI transformation while simultaneously cutting 12,000 jobs?",
-    answer: [
-      { type: "bold", text: "You can't pretend these are separate initiatives. Every employee sees them as the same thing: 'AI is replacing us.'" },
-      { type: "p", text: "Kusumi took a 40% pay cut when the cuts were announced. That's a credibility signal. But the messaging from Panasonic so far treats the restructuring (cost reduction) and Panasonic Go (growth investment) as parallel tracks. Employees don't experience them as parallel — they experience them as 'the company is firing people and investing in robots.'" },
-      { type: "heading", text: "The only honest approach:" },
-      { type: "item", label: "Separate clearly which jobs AI replaces and which it transforms", text: "The 12,000 cuts are in 'sales and indirect departments, headquarters, and loss-making businesses.' Say that explicitly: these roles are being eliminated because the businesses they support are no longer viable — TVs, kitchen appliances. Don't let employees assume every job is at risk." },
-      { type: "item", label: "Create visible redeployment paths", text: "For every 100 jobs cut, show 20-30 new roles created in AI-related functions. Retraining programs with guaranteed placement for people who complete them. Not a vague 'upskilling initiative' — specific job titles, specific teams, specific start dates." },
-      { type: "item", label: "Sequence the cuts before the AI push", text: "Finish the restructuring — complete the cuts, close the factories, absorb the \u00A5180B charge — before asking the remaining employees to embrace AI transformation. Asking people to adopt new tools while their colleagues are being walked out is asking them to trust during a trust-destroying event. Let the wound close first." },
-      { type: "item", label: "Make the surviving divisions visibly invest in people", text: "Connect, Energy, and Industry are growing. Announce hiring in these divisions at the same time as cuts in Lifestyle. The narrative becomes 'we're shifting investment from declining businesses to growing ones' — not 'we're cutting costs.'" },
-      { type: "flag", text: "The uncomfortable truth: Panasonic probably can't do sequencing — the \u00A5600B profit target requires both the cost savings from cuts AND the revenue growth from AI, simultaneously. This means employees will experience the paradox directly. The only thing worse than the paradox is pretending it doesn't exist." },
+    company: "Panasonic Go", color: "#D4A843",
+    note: "Current position estimated from disclosed PX-AI adoption metrics, Blue Yonder revenue, and Panasonic Go announcement data. Trajectory is extrapolation only.",
+    sources: [
+      { label: "Panasonic Holdings Investor Day, Jan 2025", detail: "Panasonic Go announcement; AI revenue target of 30% by FY2035; CAIO appointment" },
+      { label: "Panasonic FY2025 Earnings Presentation", detail: "Blue Yonder $1.42B revenue; Energy segment 47% profit growth; Connect PX-AI adoption metrics" },
+      { label: "CES 2025 Press Materials", detail: "Anthropic strategic partnership announcement; Umi product reveal; Daniela Amodei appearance" },
+      { label: "Nikkei Asia, March 2025", detail: "Reporting on Panasonic Well dissolution timeline and CAIO structure details" },
     ],
   },
 ];
 
-function AnswerBlock({ item }) {
-  if (item.type === "bold") return (
-    <div style={{ fontSize: 14, fontWeight: 700, color: C.text, lineHeight: 1.7, margin: "14px 0" }}>{item.text}</div>
-  );
-  if (item.type === "p") return (
-    <div style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.75, margin: "10px 0" }}>{item.text}</div>
-  );
-  if (item.type === "heading") return (
-    <div style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: C.accent, letterSpacing: 2, marginTop: 20, marginBottom: 10, textTransform: "uppercase" }}>{item.text}</div>
-  );
-  if (item.type === "item") return (
-    <div style={{
-      background: C.surface,
-      border: `1px solid ${C.border}`,
-      borderRadius: 6,
-      padding: "12px 16px",
-      margin: "8px 0",
-    }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 4 }}>{item.label}</div>
-      <div style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.65 }}>{item.text}</div>
-    </div>
-  );
-  if (item.type === "flag") return (
-    <div style={{
-      background: C.redDim,
-      border: `1px solid ${C.red}25`,
-      borderLeft: `3px solid ${C.red}`,
-      borderRadius: "0 6px 6px 0",
-      padding: "12px 16px",
-      margin: "16px 0",
-    }}>
-      <span style={{ color: C.red, fontFamily: "'JetBrains Mono', monospace", fontSize: 9, letterSpacing: 1.5, fontWeight: 700 }}>&#9888; KEY RISK</span>
-      <div style={{ fontSize: 13, color: C.text, lineHeight: 1.65, marginTop: 6 }}>{item.text}</div>
-    </div>
-  );
-  return null;
-}
+/* ─── CHART MATH ─────────────────────────────────────────── */
+const SW = 530, SH = 218;
+const PAD = { l: 36, r: 16, t: 18, b: 32 };
+const cW = SW - PAD.l - PAD.r, cH = SH - PAD.t - PAD.b;
+const xS = m => PAD.l + (m / 60) * cW;
+const yS = v => PAD.t + cH - (v / 100) * cH;
+const toPath = pts => pts.map((p, i) => `${i === 0 ? "M" : "L"} ${xS(p[0]).toFixed(1)},${yS(p[1]).toFixed(1)}`).join(" ");
 
-export default function PanasonicAdvisor() {
-  const [activeQ, setActiveQ] = useState(null);
-  const [loaded, setLoaded] = useState(false);
+/* ─── DIAGNOSTIC DATA ────────────────────────────────────── */
+const DIMS = [
+  {
+    id: "authority", label: "CAIO Authority",
+    q: "Does the CAIO have real budget authority — not advisory influence — over divisional AI spending?",
+    lo: "Advisory only", hi: "Budget + P&L control",
+    insight: "Median tenure of purely advisory CAIOs: 22 months. Every hardware-to-AI CAIO that survived controlled ≥40% of divisional budgets. The Business CEO mechanism creates 8 presidents with direct Holdings access. Who wins when CAIO and Business CEO disagree on AI investment? This needs to be answered before month 18.",
+  },
+  {
+    id: "adoption", label: "Adoption vs. Deployment",
+    q: "How close is actual daily AI usage to available AI capability across the group?",
+    lo: "Tools deployed, unused", hi: "AI embedded in workflows",
+    insight: "PX-AI at Connect: 0.46 uses/employee/day. At the most AI-forward operating company. Deployment is an IT metric. Adoption requires workflow redesign — nobody's job description has been rewritten to assume AI as a core input. Until it has, PX-AI is optional. Optional tools die.",
+  },
+  {
+    id: "revenue", label: "AI Revenue Definition",
+    q: "Is 'AI revenue' defined with auditable, board-level criteria — or left open for BUs to interpret?",
+    lo: "Undefined / gameable", hi: "Auditable, specific criteria",
+    insight: "Undefined targets create two failure modes: gaming (every BU claims it) or paralysis (nothing qualifies). Both are toxic. Is Energy selling batteries to data centers 'AI revenue'? Hitachi defined Lumada revenue with 3 specific criteria by month 6. Without this, the 30% target is a sentiment, not a strategy.",
+  },
+  {
+    id: "talent", label: "Critical Talent Stability",
+    q: "How stable is the AI talent base coming out of the Well dissolution and 12,000-person reduction?",
+    lo: "High exodus risk", hi: "Locked in, motivated",
+    insight: "250 people recruited under a startup contract that's being broken. Voluntary attrition base rate in similar restructurings (Fitbit/Google, Nest, Yahoo): 40-60% within 12 months. These people can walk to Anthropic, any funded AI startup, or Google DeepMind tomorrow. The window to retain is 30 days, not 90.",
+  },
+  {
+    id: "speed", label: "Proof Cycle Speed",
+    q: "How fast can a new AI use case go from internal proposal to measurable business result?",
+    lo: ">18 months", hi: "<90 days",
+    insight: "Speed of proof is the single strongest leading indicator of transformation momentum. Japanese approval chains add 6-9 months on average. Nadella mandated 90-day cycles — Microsoft's transformation compounded within 3 years. The 18-month transformation roadmap is the enemy of transformation.",
+  },
+  {
+    id: "culture", label: "Cultural Permission to Fail",
+    q: "Do division directors and mid-level managers feel safe sponsoring AI pilots that might visibly fail?",
+    lo: "Failure = career risk", hi: "Experiments actively rewarded",
+    insight: "The Yamamoto Problem. The 52-year-old division director in Kadoma: 22 direct reports, bonus tied to operational stability, 18 years tenure. Rationally, he avoids any experiment that might fail publicly. Kusumi asked managers to drop titles. 'Most people didn't like it.' He asked. He needs to mandate — with consequence.",
+  },
+  {
+    id: "blueyonder", label: "Blue Yonder Knowledge Flow",
+    q: "Is Blue Yonder's AI architecture and learning actively transferring into operating companies?",
+    lo: "Complete operational silo", hi: "Formal transfer mechanism",
+    insight: "Blue Yonder's SADA Loop, 5-agent architecture, and $2B tech rebuild = 5 years of AI-native software learning. Currently no formal mechanism to transfer this. The operating companies have no idea what's inside. It's Panasonic's most valuable internal resource that nobody is learning from.",
+  },
+  {
+    id: "signal", label: "CEO Signal Depth",
+    q: "Is AI urgency felt in performance reviews, promotions, and budget cuts — or mainly in speeches?",
+    lo: "Lives in keynotes only", hi: "In every business review",
+    insight: "Signal degrades ~80% per org layer without structural reinforcement. Kusumi's 40% pay cut: strong. His 30-year stagnation admission: powerful. But when he asked people to drop titles, 'most didn't like it.' He asked. Transforming signal into behavior requires changing what Yamamoto gets promoted and fired for.",
+  },
+];
 
-  useEffect(() => { setTimeout(() => setLoaded(true), 80); }, []);
+const PROFILES = [
+  {
+    range: [8, 16], name: "Structural Theater", color: C.red,
+    desc: "Reorganizing the org chart without transforming how the company creates value. This is the GE Predix trajectory — significant investment, significant announcements, minimal enterprise impact.",
+    actions: [
+      "Stop: Pause all new initiatives until existing ones have auditable, measurable outcomes",
+      "Define: Publish precise AI revenue criteria with board accountability by Q1",
+      "Replace: Swap ambassador program for 8 embedded AI leads with P&L accountability",
+    ],
+    analog: "GE Predix at Month 18",
+  },
+  {
+    range: [17, 24], name: "Pilot Purgatory", color: C.orange,
+    desc: "Individual bright spots with no compound effect. Real proof points that don't add up to a growth story. The transformation is happening but not yet consequential.",
+    actions: [
+      "Sequence: Pick 2 operating companies with the best conditions; run one proof cycle each in 90 days",
+      "Transfer: Create a formal Blue Yonder → Operating Company knowledge transfer program",
+      "Protect: Give the 50 irreplaceable Well talents a 'founding team' identity — not reassignment",
+    ],
+    analog: "Hitachi Lumada at Month 18",
+  },
+  {
+    range: [25, 32], name: "Inflection Ready", color: C.accent,
+    desc: "Conditions for breakthrough are present but 2-3 critical gaps are large enough to stall momentum. The most common position for companies that ultimately succeed — and the most dangerous, because it feels like progress.",
+    actions: [
+      "Authorize: Give the CAIO explicit authority to veto operating company AI spending below a defined threshold",
+      "Mandate: Add AI adoption metrics to the top 200 division directors' performance reviews — with real consequence",
+      "Compress: Mandate 90-day proof cycles for all operating company AI initiatives, no exceptions",
+    ],
+    analog: "Siemens Xcelerator at Month 24",
+  },
+  {
+    range: [33, 40], name: "Breakout Configured", color: C.green,
+    desc: "Structural conditions are right. The risk now is over-coordination — trying to orchestrate everything instead of letting the best initiatives pull forward. Protect what's working. Ruthlessly stop what isn't.",
+    actions: [
+      "Protect: Build a governance wall around Blue Yonder before synergy conversations begin",
+      "Signal: Promote 3 below-VP transformation leaders publicly — let the org read the intent",
+      "Publish: Release Q1 AI revenue using the auditable definition, internal first. Start the accountability clock.",
+    ],
+    analog: "Microsoft Azure at Month 30",
+  },
+];
 
+/* ─── HARD TRUTHS ────────────────────────────────────────── */
+const HARD_TRUTHS = [
+  {
+    id: 1, n: "01",
+    headline: "The CAIO role is set up to fail.",
+    sub: "Not because of Sakakibara — because of the structure.",
+    take: "Without explicit budget authority over operating company AI spending, the CAIO becomes the world's most expensive internal consultant. Operating company CEOs will engage, nod, and protect their P&L. The median tenure for purely advisory CAIOs is 22 months before reorg or departure. If Sakakibara's authority is limited to 'standard-setting,' start the clock.",
+    pushback: "You might say: 'He reports directly to Kusumi — that's authority enough.' Counter: Does he control operating company AI budget lines? Can he defund a misaligned initiative? Can he promote or fire divisional AI leads? In a Japanese conglomerate, authority is not conveyed by reporting structure alone. The Business CEO mechanism creates 8 presidents with direct Holdings access. If the CAIO and a Business CEO disagree on AI priorities — who wins? This question needs to be answered before it happens, not after.",
+    parallel: "Intervention: A one-page memo — signed by Kusumi before month 13 — explicitly defining where CAIO authority ends and Business CEO authority begins. Not a governance framework. A memo. This costs nothing and is the single most asymmetric action available.",
+  },
+  {
+    id: 2, n: "02",
+    headline: "Panasonic Go is PX 3.0.",
+    sub: "Same DNA. Better branding.",
+    take: "PX launched 2021: big announcement, ambassador program, governance forums, innovation contest (550 entries), tool deployment. Five years later, Kusumi admits 30 years of stagnation. PX didn't fail dramatically — it succeeded at being well-organized stagnation. Panasonic Go has identical structural DNA: keynote, Anthropic partnership, new C-suite role, program name. If the incentive system for the 180,000 people below the CEO hasn't changed, neither will the outcome.",
+    pushback: "You might say: 'This time the CEO owns it personally — 40% pay cut, public commitment.' Counter: Jeff Immelt owned GE's software pivot personally too. The question isn't commitment at the top — it's whether Yamamoto in Kadoma faces different consequences this year than last for ignoring AI adoption. The PX Ambassador model (56 volunteers, 180,000 employees: ratio 1:3,214) is still operating. Until that ratio changes, the program is theater with better branding.",
+    parallel: "The diagnostic question: Name one thing in Yamamoto's performance review that has changed since Panasonic Go was announced. If the answer is 'nothing yet,' that's the answer.",
+  },
+  {
+    id: 3, n: "03",
+    headline: "Blue Yonder is a liability dressed as an asset.",
+    sub: "Its success depends on staying completely separate.",
+    take: "Blue Yonder processes 25 billion supply chain predictions daily for 3,000 clients. It works precisely because it operates independently — its own tech stack, talent base, and zero Panasonic overhead. Every 'synergy' conversation — shared services, joint GTM, platform integration — adds friction to something that succeeds by being separate. The biggest near-term risk to Blue Yonder is not competition. It's Panasonic's enthusiasm for leveraging it.",
+    pushback: "You might say: 'We're not integrating it — we just want to learn from it.' Counter: Organizational immune systems don't distinguish between integration and collaboration. The first governance request, the first shared-services discussion, the first 'why isn't Blue Yonder on our AI platform' meeting initiates a friction cycle that has damaged every similar acquisition. Nest at Google. Oculus at Meta. Skype at Microsoft.",
+    parallel: "The right model: Blue Yonder as a permanently protected asset with a formal one-way knowledge transfer mechanism. Panasonic learns from Blue Yonder. Blue Yonder does not participate in Panasonic Go programs. This is a governance decision that needs to be made now, before the first synergy meeting is scheduled.",
+  },
+  {
+    id: 4, n: "04",
+    headline: "The real AI transformation is in Energy — not Go.",
+    sub: "The narrative is pointing at the wrong story.",
+    take: "Panasonic Energy's Kansas factory AI, EV battery manufacturing optimization, and data center infrastructure pivot (47% profit growth FY2025) represent genuine AI-enabled value creation happening right now. It doesn't appear in any Panasonic Go keynote because it's not 'AI strategy' — it's just business. Meanwhile, the transformation narrative is centered on PX-AI adoption dashboards and CAIO org charts. The company has a working AI transformation story. It's just not the one being told.",
+    pushback: "You might say: 'Energy's growth is commodity-driven, not AI-driven.' Counter: AI-driven quality control and yield optimization at Kansas are producing measurable throughput improvements. The data center business is infrastructure that scales with AI demand. Both are AI-native value creation regardless of what the press release says. The question isn't whether Energy's AI story is real. It's why it's not the centerpiece of the Go narrative.",
+    parallel: "The strategy question worth asking: What changes if Panasonic Energy's manufacturing AI capability becomes the centerpiece of the Go narrative — instead of the Anthropic partnership? Which story is more defensible to a skeptical enterprise customer?",
+  },
+  {
+    id: 5, n: "05",
+    headline: "The person who decides if this works is named Yamamoto.",
+    sub: "Not Kusumi. Not Sakakibara.",
+    take: "Transformation doesn't stall at the CEO level. It stalls at the Yamamoto level — the 52-year-old division director in Kadoma who has 22 direct reports, a bonus tied to operational stability, 18 years of tenure, and zero career incentive to sponsor an AI experiment that might fail publicly. Every top-down transformation reaches Yamamoto at months 12-18. Kusumi can mandate. Yamamoto decides whether the mandate lands.",
+    pushback: "You might say: 'That's what the PX Ambassador program is for.' Counter: 56 volunteers, 180,000 employees. Yamamoto has likely never spoken to one. The question isn't whether the program exists — it's whether Yamamoto's performance review, promotion criteria, or bonus structure has changed in any way that makes AI adoption his personal interest. Has it?",
+    parallel: "The single highest-leverage intervention available right now: Add an AI adoption and experimentation metric to performance reviews for the top 200 division directors, with real consequence for non-performance. This costs almost nothing. It moves faster than any structural change. It directly solves the Yamamoto problem. It is not currently on any roadmap.",
+  },
+];
+
+/* ─── PATTERN FILES ──────────────────────────────────────── */
+const PATTERNS = [
+  {
+    company: "GE Predix", pivot: "Industrial hardware → Software platform",
+    announced: "2015", outcome: "Collapsed", outcomeColor: C.red,
+    month18: "20,000+ developers, $4B invested, zero enterprise revenue at scale. GE built the platform before understanding what customers would pay for. Engineering project wearing a business strategy costume.",
+    killer: "Trying to build software DNA from scratch inside a hardware culture. GE hired 5,000 software engineers but couldn't build a software organization. In 2018, Predix was abandoned. The engineers left. The platform was sold to Veritas Capital in 2019.",
+    parallel: "Panasonic risk: Is PX-AI a platform looking for use cases, or solutions built from specific customer problems? The Anthropic partnership is a capability announcement. 'What customer pays exactly how much for exactly what' is the question that separates revenue from demo.",
+    lesson: "Never build a horizontal software platform without a validated vertical use case already generating revenue.",
+  },
+  {
+    company: "Hitachi Lumada", pivot: "Industrial equipment → Data/AI services",
+    announced: "2016", outcome: "Succeeded (41% of revenue)", outcomeColor: C.green,
+    month18: "Slow uptake — but Hitachi resisted the platform instinct. They went deep on co-creation: joint development with specific customers on specific problems. Revenue was small but 100% real and defensible.",
+    killer: "Nothing killed it. Hitachi succeeded by doing what it didn't do: it didn't build a horizontal AI platform. It combined OT (operational technology) expertise with IT capability — a combination pure-play AI vendors cannot replicate.",
+    parallel: "Panasonic's Lumada equivalent: Blue Yonder's supply chain AI + Panasonic's manufacturing OT expertise. The combination exists. The intentional positioning and customer co-creation model doesn't — yet.",
+    lesson: "OT expertise + AI is a moat pure-play AI firms cannot cross. Panasonic's manufacturing depth is a dramatically underlevered competitive advantage.",
+  },
+  {
+    company: "Siemens Xcelerator", pivot: "Industrial hardware → Digital twin / IoT platform",
+    announced: "2022", outcome: "Progressing (slower than forecast)", outcomeColor: C.blue,
+    month18: "Steady growth but below projections. The structural challenge: 8 operating units with different digital maturity levels and different customer relationships. Platform coordination became the execution bottleneck.",
+    killer: "Platform complexity. Xcelerator requires customers, partners, and internal BUs to move simultaneously. At enterprise scale, coordinating this is harder than building the technology. The ecosystem model is correct; the execution timeline was optimistic by 2-3 years.",
+    parallel: "Panasonic's 8 operating companies face the identical coordination challenge. Xcelerator's lesson: pick 2 OCs with natural customer overlap, build the proof cases vertically, then expand horizontally. Don't boil the ocean.",
+    lesson: "Ecosystem platforms require 2-3x more time than technology platforms. Build vertical proof cases before the horizontal platform.",
+  },
+  {
+    company: "Microsoft Azure", pivot: "Software licensing → Cloud platform + AI",
+    announced: "2010", outcome: "Succeeded ($125B ARR)", outcomeColor: "#7CB8D4",
+    month18: "Modest uptake, fierce internal resistance from Windows and Office divisions protecting their revenue base. The internal war was more dangerous than the external competition.",
+    killer: "Nothing killed it — but almost did: Ballmer-era resistance to cannibalization. Nadella (2014) changed the frame: 'mobile-first, cloud-first' was a mandate, not a suggestion. He explicitly accepted that Azure would cannibalize Office and Windows. No Japanese conglomerate has ever publicly accepted internal cannibalization.",
+    parallel: "The Kusumi question: Is there a Panasonic business unit that should be deliberately cannibalized for the AI future? If not, Panasonic Go is additive strategy — building new things alongside old ones. Additive strategies in companies with zero organic growth don't move the needle.",
+    lesson: "Successful pivots always cannibalize something. If nothing is being sacrificed, nothing is actually transforming.",
+  },
+];
+
+/* ─── 90-DAY PLAYBOOK ────────────────────────────────────── */
+const NINETY = [
+  {
+    phase: "Days 1–30", label: "Stabilize & Define", color: C.red,
+    focus: "Stop the bleeding. Remove ambiguity on three questions that will define everything else.",
+    actions: [
+      {
+        title: "Well Talent Triage",
+        detail: "Map the 50 irreplaceable people from the Well dissolution. Engineers who built the Anthropic integration, Umi product leads, anyone with direct Anthropic relationships. Personal conversations with Sakakibara or Kusumi — not HR form letters. Offer a 'founding team' identity for the next unit, not reassignment into existing structures.",
+        why: "40-60% attrition is the base rate in similar restructurings. The window to retain is the first 30 days before LinkedIn updates go live. After that, offers are in hand and the conversation is over.",
+      },
+      {
+        title: "Define AI Revenue: 3 Auditable Criteria",
+        detail: "Publish a precise definition of what counts as 'AI revenue' across the group — approved by the board, non-gameable by BU heads. Three criteria: specificity (what qualifies), exclusion (what doesn't), audit mechanism (who verifies). Public by end of month.",
+        why: "Without this, every BU will either game the 30% target (claiming everything) or avoid accountability (claiming nothing). Both outcomes destroy the metric's value as a management tool.",
+      },
+      {
+        title: "Map CAIO Authority in Writing",
+        detail: "A one-page memo signed by Kusumi explicitly defining where the CAIO's authority ends and where Business CEO authority begins on AI spending decisions. Circulated to all 8 operating company CEOs.",
+        why: "Authority ambiguity is the single biggest predictor of CAIO failure. The first authority dispute will happen at month 6-9. Define it before it happens, not during the crisis.",
+      },
+    ],
+  },
+  {
+    phase: "Days 31–60", label: "Prove & Transfer", color: C.accent,
+    focus: "Generate 2 real proof points and activate the one internal resource nobody is using.",
+    actions: [
+      {
+        title: "Launch 2 Operating Company Proof Cycles",
+        detail: "Select 2 operating companies with the best structural conditions. Each commits to one AI use case with a measurable KPI deliverable by day 90. CAIO sequences and resources from a central fund negotiated with Kusumi before day 1. These are not pilots — they are products.",
+        why: "One real case study with a P&L number is worth more than 100 strategy slides. The CAIO's credibility is built from shipped results, not governance frameworks.",
+      },
+      {
+        title: "Blue Yonder Knowledge Transfer",
+        detail: "Create a formal 60-day program: 3 Blue Yonder product architects embedded part-time at Connect and Energy. Mandate a reverse knowledge transfer report at day 60. No shared codebase, no integration — architecture patterns only.",
+        why: "Blue Yonder's SADA Loop, 5-agent architecture, and $2B tech rebuild sit unused as an internal resource. No formal mechanism currently exists to transfer this learning. It is Panasonic's most valuable internal asset that nobody is learning from.",
+      },
+      {
+        title: "Kill the Ambassador Model",
+        detail: "Decommission the PX Ambassador program. Replace with 8 embedded AI leads — one per operating company — with dual reporting (CAIO + Business CEO), defined budget authority, and quarterly P&L accountability. Announce the first 8 names.",
+        why: "56 volunteers for 180,000 employees is symbolic governance at a ratio of 1:3,214. Embedded leads with real authority change behavior. Volunteers don't.",
+      },
+    ],
+  },
+  {
+    phase: "Days 61–90", label: "Signal & Scale", color: C.green,
+    focus: "Make it visible that this time is different. Change the incentive system, not just the narrative.",
+    actions: [
+      {
+        title: "Yamamoto Intervention: Performance Review Reset",
+        detail: "Add a mandatory AI adoption and experimentation metric to performance reviews for the top 200 division directors. Weight: 15-20% of total review. Real consequence for non-performance (no promotion, no bonus increment). Announced by Kusumi in a recorded all-hands.",
+        why: "Yamamoto will not change behavior because of a keynote. He will change it when his bonus is connected to it. This is the highest-leverage, lowest-cost intervention available. It is not on any current roadmap.",
+      },
+      {
+        title: "Promote 3 Transformation Leaders Publicly",
+        detail: "Identify 3 people below VP level who have driven measurable AI adoption or shipped an AI product. Promote them with a press-release-level internal announcement. Name them. Share their work. Make the signal unmistakable.",
+        why: "The organization watches who gets promoted far more carefully than what gets announced. 3 visible promotions send a clearer signal about what Panasonic values than any all-hands speech.",
+      },
+      {
+        title: "Publish the First AI Revenue Scorecard",
+        detail: "Release the first quarterly AI revenue figure using the newly defined criteria — internally first, then investor-facing. Even if the number is small. Especially if the number is small.",
+        why: "Starting the public accountability clock is irreversible. It creates a feedback loop that press releases don't. Every quarter becomes a signal to the organization about whether transformation is real or theater.",
+      },
+    ],
+  },
+];
+
+/* ─── SHARED COMPONENTS ──────────────────────────────────── */
+function Label({ children, color = C.accent }) {
   return (
     <div style={{
-      background: C.bg,
-      minHeight: "100vh",
-      fontFamily: "'Newsreader', 'Georgia', serif",
-      color: C.text,
-      opacity: loaded ? 1 : 0,
-      transition: "opacity 0.5s ease",
-    }}>
-      <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
+      fontFamily: "JetBrains Mono, monospace",
+      fontSize: 9,
+      letterSpacing: 2.5,
+      color,
+      fontWeight: 700,
+      marginBottom: 6,
+    }}>{children}</div>
+  );
+}
 
-      {/* Header */}
-      <div style={{
-        borderBottom: `1px solid ${C.border}`,
-        padding: "20px 28px 16px",
-      }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div>
-            <div style={{ fontSize: 9, letterSpacing: 3, color: C.accent, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase", marginBottom: 6 }}>
-              Transformation Strategy Advisor
-            </div>
-            <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: -0.5, margin: 0, lineHeight: 1.2 }}>
-              Panasonic Go — Strategic Questions
-            </h1>
-            <div style={{ fontSize: 14, color: C.textMuted, fontStyle: "italic", marginTop: 6 }}>
-              12 questions a transformation leader should be asking right now
-            </div>
+function Tag({ children, color = C.accent }) {
+  return (
+    <span style={{
+      display: "inline-block",
+      fontSize: 9,
+      fontFamily: "JetBrains Mono, monospace",
+      color,
+      border: `1px solid ${color}40`,
+      borderRadius: 3,
+      padding: "2px 7px",
+      letterSpacing: 1,
+    }}>{children}</span>
+  );
+}
+
+/* ─── TAB: PIVOT CURVE ───────────────────────────────────── */
+function PivotTab() {
+  const [hovered, setHovered] = useState(null);
+  const hCo = hovered ? COMPANIES.find(c => c.id === hovered) : null;
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 32, alignItems: "flex-start", flexWrap: "wrap" }}>
+        {/* Chart area */}
+        <div style={{ flex: "1 1 400px", minWidth: 320 }}>
+          <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 18, maxWidth: 480, lineHeight: 1.7 }}>
+            Four hardware companies announced major AI pivots in the last decade. Here's what actually happened over 60 months. The divergence point is always the same.
           </div>
-          <div style={{ fontSize: 10, color: C.textDim, fontFamily: "'JetBrains Mono', monospace", textAlign: "right" }}>
-            humaninthelead.ai<br/>Public data only
+          <svg
+            viewBox={`0 0 ${SW} ${SH}`}
+            style={{ width: "100%", maxWidth: SW, display: "block", overflow: "visible" }}
+          >
+            {/* Grid */}
+            {[0, 25, 50, 75, 100].map(v => (
+              <line key={v} x1={PAD.l} y1={yS(v)} x2={SW - PAD.r} y2={yS(v)}
+                stroke={C.border} strokeWidth={v === 0 ? 1.5 : 1} />
+            ))}
+            {[0, 12, 24, 36, 48, 60].map(m => (
+              <g key={m}>
+                <line x1={xS(m)} y1={PAD.t} x2={xS(m)} y2={PAD.t + cH}
+                  stroke={C.border} strokeWidth={m === 0 ? 1.5 : 1} />
+                <text x={xS(m)} y={SH - 6} fill={C.textDim} fontSize={8}
+                  textAnchor="middle" fontFamily="JetBrains Mono, monospace">M{m}</text>
+              </g>
+            ))}
+            {[0, 50, 100].map(v => (
+              <text key={v} x={PAD.l - 6} y={yS(v) + 3} fill={C.textDim} fontSize={8}
+                textAnchor="end" fontFamily="JetBrains Mono, monospace">{v}</text>
+            ))}
+
+            {/* Critical window highlight */}
+            <rect x={xS(18)} y={PAD.t} width={xS(24) - xS(18)} height={cH}
+              fill={C.accent} opacity={0.045} />
+            <rect x={xS(18)} y={PAD.t} width={1} height={cH} fill={C.accent} opacity={0.3} />
+            <rect x={xS(24)} y={PAD.t} width={1} height={cH} fill={C.accent} opacity={0.15} />
+            <text x={(xS(18) + xS(24)) / 2} y={PAD.t + 11} fill={C.accent} fontSize={7.5}
+              textAnchor="middle" fontFamily="JetBrains Mono, monospace" opacity={0.7}>
+              CRITICAL WINDOW
+            </text>
+
+            {/* Non-Panasonic lines */}
+            {COMPANIES.filter(c => c.id !== "panasonic").map(c => (
+              <g key={c.id}>
+                <path d={toPath(c.points)} stroke={c.color} strokeWidth={1.5} fill="none"
+                  opacity={hovered && hovered !== c.id ? 0.18 : 0.8}
+                  strokeDasharray={c.outcome === "progressing" ? "5 3" : "none"}
+                />
+                {/* Invisible wide hit area */}
+                <path d={toPath(c.points)} stroke="transparent" strokeWidth={14} fill="none"
+                  style={{ cursor: "pointer" }}
+                  onMouseEnter={() => setHovered(c.id)}
+                  onMouseLeave={() => setHovered(null)}
+                />
+              </g>
+            ))}
+
+            {/* Panasonic */}
+            <path d={toPath(COMPANIES.find(c => c.id === "panasonic").points)}
+              stroke={C.accent} strokeWidth={2.5} fill="none" opacity={1} />
+            <circle cx={xS(12)} cy={yS(22)} r={5} fill={C.accent} />
+            <circle cx={xS(12)} cy={yS(22)} r={9} fill={C.accent} opacity={0.15} />
+            <text x={xS(12) + 14} y={yS(22) - 6} fill={C.accent} fontSize={8.5}
+              fontFamily="JetBrains Mono, monospace" fontWeight={700}>YOU ARE HERE</text>
+
+            {/* Company end labels */}
+            {COMPANIES.filter(c => c.id !== "panasonic").map(c => {
+              const last = c.points[c.points.length - 1];
+              return (
+                <text key={c.id + "-lbl"} x={xS(last[0]) + 4} y={yS(last[1]) + 4}
+                  fill={c.color} fontSize={8} fontFamily="JetBrains Mono, monospace"
+                  opacity={hovered && hovered !== c.id ? 0.18 : 0.9}
+                  style={{ cursor: "pointer" }}
+                  onMouseEnter={() => setHovered(c.id)}
+                  onMouseLeave={() => setHovered(null)}
+                >
+                  {c.short || c.name.split(" ")[0]}
+                </text>
+              );
+            })}
+          </svg>
+
+          {/* Legend */}
+          <div style={{ display: "flex", gap: 16, marginTop: 12, flexWrap: "wrap" }}>
+            {COMPANIES.map(c => (
+              <div key={c.id}
+                style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer",
+                  opacity: hovered && hovered !== c.id && c.id !== "panasonic" ? 0.3 : 1 }}
+                onMouseEnter={() => c.id !== "panasonic" && setHovered(c.id)}
+                onMouseLeave={() => setHovered(null)}
+              >
+                <div style={{ width: 20, height: 2, background: c.color,
+                  borderRadius: 1, opacity: c.outcome === "progressing" ? 0.7 : 1 }} />
+                <span style={{ fontSize: 10, color: c.id === "panasonic" ? C.accent : C.textMuted,
+                  fontFamily: "JetBrains Mono, monospace" }}>{c.name}</span>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
 
-      <div style={{ display: "flex", minHeight: "calc(100vh - 100px)" }}>
-        {/* Left: question nav */}
-        <div style={{
-          width: 240,
-          borderRight: `1px solid ${C.border}`,
-          padding: "16px 0",
-          flexShrink: 0,
-          overflowY: "auto",
-        }}>
-          {QUESTIONS.map((q, i) => (
-            <button
-              key={q.id}
-              onClick={() => setActiveQ(i)}
-              style={{
-                display: "block",
-                width: "100%",
-                textAlign: "left",
-                background: activeQ === i ? C.accentDim : "transparent",
-                border: "none",
-                borderLeft: activeQ === i ? `3px solid ${C.accent}` : "3px solid transparent",
-                padding: "10px 16px 10px 14px",
-                color: activeQ === i ? C.accent : C.textMuted,
-                fontSize: 12,
-                fontFamily: "'JetBrains Mono', monospace",
-                cursor: "pointer",
-                transition: "all 0.12s",
-                letterSpacing: 0.2,
-              }}
-            >
-              {q.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Right: content */}
-        <div style={{ flex: 1, padding: "24px 32px", overflowY: "auto" }}>
-          {activeQ === null ? (
-            <div>
-              <div style={{
-                fontSize: 15,
-                color: C.textMuted,
-                lineHeight: 1.8,
-                marginBottom: 28,
-                maxWidth: 580,
-              }}>
-                Pick a strategic question from the left. Each one is grounded in the Panasonic Go research — business units, leadership, financials, cultural dynamics, and peer benchmarks.
+        {/* Side detail */}
+        <div style={{ width: 220, flexShrink: 0, paddingTop: 32 }}>
+          {hCo ? (
+            <div style={{ borderLeft: `2px solid ${hCo.color}`, paddingLeft: 16 }}>
+              <Label color={hCo.color}>{hCo.outcome.toUpperCase()}</Label>
+              <div style={{ fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 10 }}>{hCo.name}</div>
+              <div style={{ fontSize: 11, color: C.accent, fontFamily: "JetBrains Mono, monospace",
+                marginBottom: 8 }}>Month {hCo.inflection.month}</div>
+              <div style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.7, marginBottom: 12 }}>
+                {hCo.inflection.label}
               </div>
-
-              {/* Stat bar */}
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(4, 1fr)",
-                background: C.surface,
-                border: `1px solid ${C.border}`,
-                borderRadius: 8,
-                marginBottom: 28,
-              }}>
-                {[
-                  { v: "\u00A58.5T", l: "Revenue (flat)", c: C.textMuted },
-                  { v: "30%", l: "AI target by 2035", c: C.accent },
-                  { v: "12,000", l: "Jobs cut", c: C.red },
-                  { v: "18 mo", l: "Critical window", c: C.red },
-                ].map((s, i) => (
-                  <div key={i} style={{ textAlign: "center", padding: "16px 8px" }}>
-                    <div style={{ fontSize: 24, fontWeight: 700, color: s.c, fontFamily: "'JetBrains Mono', monospace" }}>{s.v}</div>
-                    <div style={{ fontSize: 10, color: C.textDim, marginTop: 4 }}>{s.l}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Grid of all questions */}
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 10,
-              }}>
-                {QUESTIONS.map((q, i) => (
-                  <button
-                    key={q.id}
-                    onClick={() => setActiveQ(i)}
-                    style={{
-                      background: C.surface,
-                      border: `1px solid ${C.border}`,
-                      borderRadius: 8,
-                      padding: "14px 16px",
-                      textAlign: "left",
-                      cursor: "pointer",
-                      transition: "all 0.15s",
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = C.accent; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}
-                  >
-                    <div style={{ fontSize: 12, fontWeight: 700, color: C.accent, fontFamily: "'JetBrains Mono', monospace", marginBottom: 4 }}>{q.label}</div>
-                    <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.5 }}>{q.question}</div>
-                  </button>
-                ))}
+              <div style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.7 }}>
+                {hCo.summary}
               </div>
             </div>
           ) : (
             <div>
-              {/* Question */}
-              <div style={{
-                fontSize: 18,
-                fontWeight: 700,
-                lineHeight: 1.5,
-                marginBottom: 24,
-                color: C.text,
-                maxWidth: 640,
-              }}>
-                {QUESTIONS[activeQ].question}
-              </div>
-
-              {/* Answer */}
-              <div style={{ maxWidth: 660 }}>
-                {QUESTIONS[activeQ].answer.map((item, i) => (
-                  <AnswerBlock key={i} item={item} />
-                ))}
-              </div>
-
-              {/* Navigate */}
-              <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginTop: 32,
-                paddingTop: 16,
-                borderTop: `1px solid ${C.border}`,
-              }}>
-                <button
-                  onClick={() => setActiveQ(activeQ > 0 ? activeQ - 1 : QUESTIONS.length - 1)}
-                  style={{
-                    background: "transparent",
-                    border: `1px solid ${C.border}`,
-                    borderRadius: 6,
-                    padding: "8px 16px",
-                    color: C.textMuted,
-                    fontSize: 11,
-                    fontFamily: "'JetBrains Mono', monospace",
-                    cursor: "pointer",
-                  }}
-                >
-                  &larr; {QUESTIONS[activeQ > 0 ? activeQ - 1 : QUESTIONS.length - 1].label}
-                </button>
-                <button
-                  onClick={() => setActiveQ(activeQ < QUESTIONS.length - 1 ? activeQ + 1 : 0)}
-                  style={{
-                    background: "transparent",
-                    border: `1px solid ${C.accent}40`,
-                    borderRadius: 6,
-                    padding: "8px 16px",
-                    color: C.accent,
-                    fontSize: 11,
-                    fontFamily: "'JetBrains Mono', monospace",
-                    cursor: "pointer",
-                  }}
-                >
-                  {QUESTIONS[activeQ < QUESTIONS.length - 1 ? activeQ + 1 : 0].label} &rarr;
-                </button>
+              <div style={{ fontSize: 10, color: C.textDim, fontFamily: "JetBrains Mono, monospace",
+                marginBottom: 20 }}>← HOVER A LINE</div>
+              <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.7 }}>
+                Every pivot looks identical at Month 12.<br /><br />
+                The trajectories diverge between Months 18–24.
               </div>
             </div>
           )}
         </div>
       </div>
 
+      {/* Pattern callout */}
+      <div style={{ marginTop: 28, padding: "18px 22px",
+        background: C.accentDim, border: `1px solid ${C.accent}28`,
+        borderRadius: 6, maxWidth: 640 }}>
+        <Label>THE PATTERN</Label>
+        <div style={{ fontSize: 14, lineHeight: 1.8, color: C.text }}>
+          Companies that won (Hitachi, Microsoft) had resolved three things by Month 18:{" "}
+          <span style={{ color: C.accent }}>authority clarity</span>,{" "}
+          <span style={{ color: C.accent }}>proof cycle speed</span>, and{" "}
+          <span style={{ color: C.accent }}>willingness to cannibalize</span>.{" "}
+          Companies that didn't (GE) had great announcements and no enterprise customers paying for anything.
+        </div>
+        <div style={{ marginTop: 12, fontSize: 12, color: C.accent, fontStyle: "italic" }}>
+          Panasonic has ~6 months to resolve these questions. Which trajectory is being built right now?
+        </div>
+      </div>
+
+      {/* Sources */}
+      <SourcesPanel sources={PIVOT_SOURCES} />
+    </div>
+  );
+}
+
+/* ─── TAB: DIAGNOSTIC ────────────────────────────────────── */
+function DiagnosticTab() {
+  const [scores, setScores] = useState({});
+  const [insight, setInsight] = useState(null);
+
+  const scored = Object.keys(scores).length;
+  const total = Object.values(scores).reduce((a, b) => a + b, 0);
+  const profile = scored === 8 ? PROFILES.find(p => total >= p.range[0] && total <= p.range[1]) : null;
+  const pct = scored === 8 ? Math.round(((total - 8) / 32) * 100) : null;
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 32, alignItems: "flex-start", flexWrap: "wrap" }}>
+        {/* Dimensions */}
+        <div style={{ flex: "1 1 380px" }}>
+          <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 20, lineHeight: 1.7 }}>
+            Score each dimension as you see it today. Not as it's described in the strategy deck — as it actually operates. This is calibrated against patterns from 4 comparable transformations.
+          </div>
+          {DIMS.map((d) => (
+            <div key={d.id} style={{ marginBottom: 18 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+                marginBottom: 6, gap: 12 }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 2 }}>{d.label}</div>
+                  <div style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.5 }}>{d.q}</div>
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
+                <span style={{ fontSize: 9, color: C.textDim, fontFamily: "JetBrains Mono, monospace",
+                  width: 88, textAlign: "right", flexShrink: 0 }}>{d.lo}</span>
+                {[1, 2, 3, 4, 5].map(n => (
+                  <button key={n} onClick={() => setScores(s => ({ ...s, [d.id]: n }))}
+                    onMouseEnter={() => !scores[d.id] && null}
+                    style={{
+                      width: 32, height: 32, borderRadius: 4,
+                      border: `1px solid ${scores[d.id] === n ? C.accent : C.border}`,
+                      background: scores[d.id] === n ? C.accentDim : scores[d.id] && scores[d.id] > n ? "#D4A84308" : "transparent",
+                      color: scores[d.id] === n ? C.accent : C.textDim,
+                      fontSize: 12, fontFamily: "JetBrains Mono, monospace",
+                      cursor: "pointer", fontWeight: scores[d.id] === n ? 700 : 400,
+                      transition: "all 0.1s",
+                    }}
+                  >{n}</button>
+                ))}
+                <span style={{ fontSize: 9, color: C.textDim, fontFamily: "JetBrains Mono, monospace",
+                  width: 88, flexShrink: 0 }}>{d.hi}</span>
+                <button
+                  onClick={() => setInsight(insight === d.id ? null : d.id)}
+                  style={{ background: "none", border: "none", cursor: "pointer",
+                    color: insight === d.id ? C.accent : C.textDim, fontSize: 13, padding: "0 4px",
+                    lineHeight: 1, flexShrink: 0 }}
+                  title="Why this matters"
+                >⊕</button>
+              </div>
+              {insight === d.id && (
+                <div style={{ marginTop: 10, padding: "10px 14px",
+                  background: C.surfaceAlt, border: `1px solid ${C.border}`,
+                  borderRadius: 5, fontSize: 11, color: C.textMuted, lineHeight: 1.7 }}>
+                  {d.insight}
+                </div>
+              )}
+              <div style={{ marginTop: 8, height: 1, background: C.border }} />
+            </div>
+          ))}
+        </div>
+
+        {/* Profile panel */}
+        <div style={{ width: 230, flexShrink: 0, position: "sticky", top: 0 }}>
+          <Label>READINESS PROFILE</Label>
+
+          {/* Progress */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+            <div style={{ flex: 1, height: 4, background: C.border, borderRadius: 2 }}>
+              <div style={{ width: `${(scored / 8) * 100}%`, height: "100%",
+                background: C.accent, borderRadius: 2, transition: "width 0.3s" }} />
+            </div>
+            <span style={{ fontSize: 10, fontFamily: "JetBrains Mono, monospace",
+              color: C.textMuted }}>{scored}/8</span>
+          </div>
+
+          {profile ? (
+            <div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: profile.color, lineHeight: 1.2, marginBottom: 4 }}>
+                {profile.name}
+              </div>
+              <div style={{ fontSize: 11, fontFamily: "JetBrains Mono, monospace",
+                color: C.textDim, marginBottom: 14 }}>{total}/40 · {pct}th percentile</div>
+              <div style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.7, marginBottom: 18 }}>
+                {profile.desc}
+              </div>
+
+              <Label>TOP INTERVENTIONS</Label>
+              {profile.actions.map((a, i) => (
+                <div key={i} style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+                  <div style={{ width: 20, height: 20, borderRadius: 3, flexShrink: 0,
+                    background: profile.color + "20", border: `1px solid ${profile.color}40`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 9, color: profile.color, fontFamily: "JetBrains Mono, monospace",
+                    fontWeight: 700 }}>{i + 1}</div>
+                  <div style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.6 }}>{a}</div>
+                </div>
+              ))}
+
+              <div style={{ marginTop: 14, padding: "8px 12px",
+                background: C.surface, border: `1px solid ${C.border}`,
+                borderRadius: 4, fontSize: 10, color: C.textDim,
+                fontFamily: "JetBrains Mono, monospace" }}>
+                ANALOG: {profile.analog}
+              </div>
+
+              <button
+                onClick={() => setScores({})}
+                style={{ marginTop: 16, background: "none",
+                  border: `1px solid ${C.border}`, borderRadius: 4, padding: "6px 12px",
+                  color: C.textDim, fontSize: 10, fontFamily: "JetBrains Mono, monospace",
+                  cursor: "pointer", width: "100%" }}
+              >RESET SCORES</button>
+            </div>
+          ) : (
+            <div style={{ padding: "20px 0" }}>
+              <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.8, marginBottom: 20 }}>
+                Score all 8 dimensions to generate your readiness profile — calibrated against Hitachi, GE, Siemens, and Microsoft at equivalent transformation stages.
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {DIMS.map(d => (
+                  <div key={d.id} style={{ display: "flex", justifyContent: "space-between",
+                    alignItems: "center" }}>
+                    <span style={{ fontSize: 10, color: scores[d.id] ? C.textMuted : C.textDim }}>{d.label}</span>
+                    {scores[d.id] ? (
+                      <span style={{ fontSize: 10, fontFamily: "JetBrains Mono, monospace",
+                        color: scores[d.id] <= 2 ? C.red : scores[d.id] >= 4 ? C.green : C.accent }}>
+                        {scores[d.id]}/5
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: 9, color: C.textDim, fontFamily: "JetBrains Mono, monospace" }}>—</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── TAB: HARD TRUTHS ───────────────────────────────────── */
+function HardTruthsTab() {
+  const [open, setOpen] = useState(null);
+
+  return (
+    <div>
+      <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 24, lineHeight: 1.7, maxWidth: 580 }}>
+        Five contrarian takes on Panasonic Go — designed to provoke disagreement.
+        Every pushback is a conversation. Every conversation is a data point.
+        The goal isn't to be right. It's to surface what isn't being said internally.
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+        {HARD_TRUTHS.map((t, i) => (
+          <div key={t.id}>
+            <button
+              onClick={() => setOpen(open === t.id ? null : t.id)}
+              style={{
+                width: "100%", background: "none", border: "none",
+                cursor: "pointer", textAlign: "left",
+                padding: "20px 0", display: "flex", gap: 20, alignItems: "flex-start",
+                borderTop: `1px solid ${C.border}`,
+              }}
+            >
+              <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 11,
+                color: C.red, flexShrink: 0, paddingTop: 2, fontWeight: 700,
+                opacity: 0.7 }}>{t.n}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 16, color: C.text, marginBottom: 4, fontWeight: 400,
+                  letterSpacing: -0.2 }}>{t.headline}</div>
+                <div style={{ fontSize: 11, color: C.textMuted }}>{t.sub}</div>
+              </div>
+              <div style={{ color: open === t.id ? C.accent : C.textDim, fontSize: 18,
+                flexShrink: 0, paddingTop: 0, transition: "transform 0.2s",
+                transform: open === t.id ? "rotate(45deg)" : "rotate(0deg)" }}>+</div>
+            </button>
+
+            {open === t.id && (
+              <div style={{ paddingBottom: 24, paddingLeft: 46 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                  <div>
+                    <Label color={C.red}>THE TAKE</Label>
+                    <div style={{ fontSize: 13, color: C.text, lineHeight: 1.8, maxWidth: 580 }}>
+                      {t.take}
+                    </div>
+                  </div>
+                  <div style={{ padding: "14px 18px", background: C.surfaceAlt,
+                    border: `1px solid ${C.border}`, borderRadius: 5, maxWidth: 560 }}>
+                    <Label color={C.accent}>WHY YOU MIGHT DISAGREE</Label>
+                    <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.8 }}>
+                      {t.pushback}
+                    </div>
+                  </div>
+                  <div>
+                    <Label color={C.blue}>PANASONIC PARALLEL</Label>
+                    <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.8, maxWidth: 560 }}>
+                      {t.parallel}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+        <div style={{ borderTop: `1px solid ${C.border}` }} />
+      </div>
+    </div>
+  );
+}
+
+/* ─── TAB: PATTERN FILES ─────────────────────────────────── */
+function PatternFilesTab() {
+  const [open, setOpen] = useState(null);
+
+  return (
+    <div>
+      <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 24, lineHeight: 1.7, maxWidth: 580 }}>
+        Deep-reads on four hardware-to-AI pivots. What they got right, what killed them, and the Panasonic parallel. Click any card to expand.
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+        {PATTERNS.map((p) => (
+          <div key={p.company}
+            style={{ background: C.surface, border: `1px solid ${open === p.company ? p.outcomeColor + "60" : C.border}`,
+              borderRadius: 6, overflow: "hidden", cursor: "pointer",
+              transition: "border-color 0.15s" }}
+            onClick={() => setOpen(open === p.company ? null : p.company)}
+          >
+            <div style={{ padding: "16px 18px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: C.text }}>{p.company}</div>
+                <Tag color={p.outcomeColor}>{p.outcome.split(" ")[0].toUpperCase()}</Tag>
+              </div>
+              <div style={{ fontSize: 10, color: C.textDim, fontFamily: "JetBrains Mono, monospace",
+                marginBottom: 8 }}>{p.pivot}</div>
+              <div style={{ fontSize: 10, color: C.textDim, fontFamily: "JetBrains Mono, monospace" }}>
+                ANNOUNCED {p.announced}
+              </div>
+            </div>
+
+            {open === p.company && (
+              <div style={{ borderTop: `1px solid ${C.border}`, padding: "16px 18px",
+                display: "flex", flexDirection: "column", gap: 14 }}>
+                <div>
+                  <Label color={C.textDim}>MONTH 18 REALITY</Label>
+                  <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.7 }}>{p.month18}</div>
+                </div>
+                <div>
+                  <Label color={C.red}>WHAT KILLED / SAVED IT</Label>
+                  <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.7 }}>{p.killer}</div>
+                </div>
+                <div style={{ padding: "12px 14px", background: C.accentDim,
+                  border: `1px solid ${C.accent}28`, borderRadius: 4 }}>
+                  <Label color={C.accent}>PANASONIC PARALLEL</Label>
+                  <div style={{ fontSize: 12, color: C.text, lineHeight: 1.7 }}>{p.parallel}</div>
+                </div>
+                <div style={{ padding: "8px 12px", background: C.surface,
+                  border: `1px solid ${C.border}`, borderRadius: 4 }}>
+                  <Label color={C.textDim}>THE LESSON</Label>
+                  <div style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.6, fontStyle: "italic" }}>
+                    {p.lesson}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── TAB: 90-DAY PLAYBOOK ───────────────────────────────── */
+function PlaybookTab() {
+  const [open, setOpen] = useState(null);
+
+  return (
+    <div>
+      <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 24, lineHeight: 1.7, maxWidth: 600 }}>
+        A 90-day sequencing framework for Panasonic Go — designed to work with the existing org structure, not around it. Three phases. Nine actions. Each grounded in a specific pattern from comparable transformations.
+      </div>
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
+        {NINETY.map((phase, pi) => (
+          <div key={pi} style={{ flex: "1 1 220px", minWidth: 210 }}>
+            {/* Phase header */}
+            <div style={{ padding: "14px 16px",
+              background: phase.color + "12",
+              border: `1px solid ${phase.color}30`,
+              borderRadius: "6px 6px 0 0", marginBottom: 0 }}>
+              <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 9,
+                color: phase.color, letterSpacing: 2, marginBottom: 6 }}>{phase.phase}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 6 }}>
+                {phase.label}
+              </div>
+              <div style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.6 }}>
+                {phase.focus}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div style={{ border: `1px solid ${phase.color}22`,
+              borderTop: "none", borderRadius: "0 0 6px 6px", overflow: "hidden" }}>
+              {phase.actions.map((a, ai) => {
+                const key = `${pi}-${ai}`;
+                const isOpen = open === key;
+                return (
+                  <div key={ai} style={{ borderTop: ai === 0 ? "none" : `1px solid ${C.border}` }}>
+                    <button
+                      onClick={() => setOpen(isOpen ? null : key)}
+                      style={{ width: "100%", background: isOpen ? C.surfaceAlt : "transparent",
+                        border: "none", textAlign: "left", padding: "12px 16px",
+                        cursor: "pointer", display: "flex", justifyContent: "space-between",
+                        alignItems: "center", gap: 8 }}
+                    >
+                      <div style={{ fontSize: 12, color: isOpen ? C.text : C.textMuted,
+                        fontWeight: isOpen ? 600 : 400, lineHeight: 1.4 }}>{a.title}</div>
+                      <div style={{ color: isOpen ? phase.color : C.textDim, flexShrink: 0,
+                        fontSize: 14, transform: isOpen ? "rotate(45deg)" : "none",
+                        transition: "transform 0.15s" }}>+</div>
+                    </button>
+                    {isOpen && (
+                      <div style={{ padding: "0 16px 14px", background: C.surfaceAlt }}>
+                        <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.7,
+                          marginBottom: 10 }}>{a.detail}</div>
+                        <div style={{ padding: "8px 12px",
+                          background: phase.color + "10",
+                          border: `1px solid ${phase.color}25`,
+                          borderRadius: 4 }}>
+                          <div style={{ fontSize: 9, color: phase.color, fontFamily: "JetBrains Mono, monospace",
+                            letterSpacing: 1.5, marginBottom: 4 }}>WHY NOW</div>
+                          <div style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.6 }}>
+                            {a.why}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Bottom callout */}
+      <div style={{ marginTop: 28, padding: "16px 20px",
+        background: C.surface, border: `1px solid ${C.border}`,
+        borderRadius: 6, maxWidth: 640 }}>
+        <Label color={C.textDim}>SEQUENCING LOGIC</Label>
+        <div style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.8 }}>
+          Days 1-30 must happen before 31-60 can work. You cannot run proof cycles if authority is undefined. You cannot kill the ambassador model before you have a replacement mechanism. You cannot change the signal without something real to point at. The sequence is not arbitrary — it's causal.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── SOURCES PANEL ─────────────────────────────────────── */
+function SourcesPanel({ sources }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div style={{ marginTop: 24, maxWidth: 640 }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          background: "none", border: `1px solid ${C.border}`,
+          borderRadius: 4, padding: "6px 14px", cursor: "pointer",
+          display: "flex", alignItems: "center", gap: 8,
+        }}
+      >
+        <span style={{ fontSize: 9, fontFamily: "JetBrains Mono, monospace",
+          color: C.textDim, letterSpacing: 2 }}>
+          {open ? "HIDE" : "VIEW"} SOURCES & METHODOLOGY
+        </span>
+        <span style={{ color: C.textDim, fontSize: 12,
+          transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
+          ▾
+        </span>
+      </button>
+
+      {open && (
+        <div style={{ marginTop: 12, padding: "16px 18px",
+          background: C.surface, border: `1px solid ${C.border}`,
+          borderRadius: 6 }}>
+          <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.7, marginBottom: 16,
+            fontStyle: "italic" }}>
+            Chart Y-axis represents a composite transformation momentum index — not a single reported metric.
+            Index components: analyst/investor confidence, enterprise customer revenue, internal adoption
+            indicators, and disclosed revenue share data. Exact values are approximations; relative
+            trajectories and inflection timing are the meaningful signal.
+          </div>
+          {sources.map((s) => (
+            <div key={s.company} style={{ marginBottom: 18 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <div style={{ width: 10, height: 2, background: s.color, borderRadius: 1, flexShrink: 0 }} />
+                <div style={{ fontSize: 11, fontWeight: 600, color: C.textMuted,
+                  fontFamily: "JetBrains Mono, monospace" }}>{s.company}</div>
+              </div>
+              {s.note && (
+                <div style={{ fontSize: 10, color: C.textDim, lineHeight: 1.6, marginBottom: 8, paddingLeft: 18 }}>
+                  {s.note}
+                </div>
+              )}
+              <div style={{ paddingLeft: 18, display: "flex", flexDirection: "column", gap: 5 }}>
+                {s.sources.map((src, i) => (
+                  <div key={i} style={{ display: "flex", gap: 10 }}>
+                    <span style={{ fontSize: 9, color: s.color, fontFamily: "JetBrains Mono, monospace",
+                      flexShrink: 0, paddingTop: 1 }}>—</span>
+                    <div>
+                      <span style={{ fontSize: 10, color: C.textMuted, fontWeight: 600 }}>{src.label}.</span>{" "}
+                      <span style={{ fontSize: 10, color: C.textDim }}>{src.detail}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── BRIGHT SPOTS DATA ──────────────────────────────────── */
+const BRIGHT_SPOTS = [
+  {
+    id: "blueyonder",
+    label: "Blue Yonder",
+    headline: "The only hardware company that bought its way to AI leadership — and it worked.",
+    stat: "$1.42B",
+    statLabel: "AI revenue, already real",
+    color: C.green,
+    detail: "Blue Yonder processes 25 billion supply chain predictions daily for 3,000 enterprise customers. At the equivalent stage of Hitachi's Lumada journey, Hitachi had no external AI revenue. Panasonic started with a market-proven, category-leading AI platform generating real revenue. This is an 8-year head start that cannot be bought by Siemens, Honeywell, or any hardware competitor that didn't make this acquisition.",
+    analog: "Hitachi at equivalent stage: ~$200M in nascent Lumada revenue, still proving the model. Panasonic: $1.42B, proven.",
+    unlock: "The unlock is not integration — it's positioning. 'The company behind Blue Yonder' is not yet part of Panasonic's investor narrative. It should be the first sentence.",
+  },
+  {
+    id: "energy",
+    label: "Energy × Data Centers",
+    headline: "The AI infrastructure story hiding inside the battery business.",
+    stat: "47%",
+    statLabel: "Profit growth, FY2025",
+    color: C.accent,
+    detail: "AI data centers are the fastest-growing energy infrastructure market on earth. Panasonic Energy's EV battery expertise, thermal management capability, and manufacturing scale translate directly into AI data center battery backup and UPS systems. Kansas factory AI optimization for EV batteries is producing measurable yield improvements right now — this is not a roadmap item. It is live, generating profit, and validated.",
+    analog: "Eaton and Vertiv built multi-billion dollar businesses on data center power infrastructure. Panasonic Energy has comparable or superior capability and is not yet positioned in that market.",
+    unlock: "Naming Energy's data center power business as a dedicated P&L with an explicit AI infrastructure narrative. This reframes a battery company as AI infrastructure — a completely different investor multiple.",
+  },
+  {
+    id: "anthropic",
+    label: "Anthropic Partnership",
+    headline: "The deepest AI research relationship available to any hardware company.",
+    stat: "Global Strategic",
+    statLabel: "Partnership tier",
+    color: "#7CB8D4",
+    detail: "Hitachi's AI partnerships: OpenAI enterprise license, Google Cloud. Siemens: Microsoft Azure, generic LLM integrations. Panasonic's Anthropic partnership was announced with Daniela Amodei on stage at CES — the President of the fastest-growing AI lab in the world. This is not a vendor relationship. The partnership covers both consumer (Umi) and enterprise (Claude across the group), and the relationship was built at the highest level of both organizations.",
+    analog: "In 2012, Microsoft invested $300M in Barnes & Noble's Nook. Nobody remembers it. In 2023, Microsoft invested $13B in OpenAI. The depth of the relationship — and the intention behind it — is what determines value. Panasonic's Anthropic relationship has the depth.",
+    unlock: "Formalizing an Anthropic integration roadmap across all 8 operating companies — not just Well and Connect. Each OC has a specific AI use case where frontier models create competitive advantage. Mapping these explicitly creates the strategic narrative.",
+  },
+  {
+    id: "ot",
+    label: "OT Expertise",
+    headline: "The moat that pure-play AI companies cannot cross.",
+    stat: "108 years",
+    statLabel: "Manufacturing depth",
+    color: C.orange,
+    detail: "Panasonic knows how factories work at a level no AI vendor can replicate. Predictive maintenance, quality control, yield optimization, supply chain orchestration — these require domain knowledge built over decades. Hitachi's Lumada lesson: OT + IT is the combination that wins in industrial AI. Pure-play AI vendors offer the technology. Panasonic offers the technology plus 108 years of manufacturing intuition encoded into processes, data, and people. That combination is inimitable.",
+    analog: "Mistral, Cohere, and every other AI vendor can sell models. None of them know what an anomaly sounds like on a Panasonic production line at 2am. That knowledge, combined with AI capability, is a competitive moat that compounds.",
+    unlock: "Explicitly positioning Panasonic's manufacturing expertise as the differentiating layer in every industrial AI offering — not as background, but as the product. 'Our AI knows manufacturing because we are manufacturing.'",
+  },
+  {
+    id: "install",
+    label: "1B Customer Touchpoints",
+    headline: "The distribution advantage no AI startup can afford to build.",
+    stat: "1B+",
+    statLabel: "Devices in homes globally",
+    color: C.blue,
+    detail: "Panasonic products are in over a billion homes. Every HVAC unit, every EV charger, every commercial kitchen, every security camera is a data endpoint and a distribution channel for AI-native services. No AI company — not Google, not Amazon, not OpenAI — has this installed base in physical infrastructure. This is exactly the asset Nest was supposed to unlock for Google. The difference: Panasonic owns the full stack from device to cloud.",
+    analog: "When Amazon launched Alexa, the killer insight wasn't the voice technology — it was distribution into 100M+ Prime households. Panasonic's installed base is 10x larger and reaches infrastructure categories Amazon has never touched.",
+    unlock: "Identifying 3 product categories in the installed base where AI-native services create a recurring revenue stream. HVAC optimization-as-a-service, EV charging intelligence, commercial kitchen energy management. Each is a multi-billion dollar category. None require selling into new markets.",
+  },
+];
+
+/* ─── TAB: BRIGHT SPOTS ──────────────────────────────────── */
+function BrightSpotsTab() {
+  const [open, setOpen] = useState(null);
+
+  return (
+    <div>
+      <div style={{ marginBottom: 24, maxWidth: 600 }}>
+        <div style={{ fontSize: 16, lineHeight: 1.75, color: C.text, marginBottom: 12 }}>
+          The Hard Truths are real. So is this: Panasonic enters this transformation with
+          assets that GE, Siemens, and Hitachi didn't have at the equivalent stage.
+        </div>
+        <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.7 }}>
+          The question isn't whether the assets exist. It's whether the organization can
+          compose them into a growth story before the critical window closes.
+          Each card below identifies an asset, its actual magnitude, and the specific
+          action that unlocks it.
+        </div>
+      </div>
+
+      {/* Asset cards */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+        {BRIGHT_SPOTS.map((s) => (
+          <div key={s.id} style={{ borderTop: `1px solid ${C.border}` }}>
+            <button
+              onClick={() => setOpen(open === s.id ? null : s.id)}
+              style={{
+                width: "100%", background: "none", border: "none",
+                cursor: "pointer", textAlign: "left",
+                padding: "18px 0",
+                display: "flex", gap: 20, alignItems: "flex-start",
+              }}
+            >
+              {/* Stat */}
+              <div style={{ width: 80, flexShrink: 0, textAlign: "right" }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: s.color,
+                  fontFamily: "JetBrains Mono, monospace", lineHeight: 1.1 }}>{s.stat}</div>
+                <div style={{ fontSize: 8, color: C.textDim, letterSpacing: 1,
+                  marginTop: 2, lineHeight: 1.4 }}>{s.statLabel.toUpperCase()}</div>
+              </div>
+              {/* Text */}
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 9,
+                  color: s.color, letterSpacing: 2, marginBottom: 5 }}>{s.label.toUpperCase()}</div>
+                <div style={{ fontSize: 14, color: C.text, lineHeight: 1.45 }}>{s.headline}</div>
+              </div>
+              {/* Toggle */}
+              <div style={{ color: open === s.id ? s.color : C.textDim, fontSize: 18,
+                flexShrink: 0, paddingTop: 2, transition: "transform 0.2s",
+                transform: open === s.id ? "rotate(45deg)" : "rotate(0deg)" }}>+</div>
+            </button>
+
+            {open === s.id && (
+              <div style={{ paddingBottom: 22, paddingLeft: 100 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 560 }}>
+                  <div style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.8 }}>
+                    {s.detail}
+                  </div>
+                  <div style={{ padding: "12px 16px",
+                    background: C.surfaceAlt, border: `1px solid ${C.border}`, borderRadius: 5 }}>
+                    <Label color={C.textDim}>COMPARABLE STAGE</Label>
+                    <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.7 }}>{s.analog}</div>
+                  </div>
+                  <div style={{ padding: "12px 16px",
+                    background: s.color + "0D", border: `1px solid ${s.color}30`, borderRadius: 5 }}>
+                    <Label color={s.color}>THE UNLOCK</Label>
+                    <div style={{ fontSize: 12, color: C.text, lineHeight: 1.7 }}>{s.unlock}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+        <div style={{ borderTop: `1px solid ${C.border}` }} />
+      </div>
+
+      {/* Closing statement */}
+      <div style={{ marginTop: 28, padding: "18px 22px",
+        background: C.accentDim, border: `1px solid ${C.accent}28`,
+        borderRadius: 6, maxWidth: 640 }}>
+        <Label>THE HONEST SYNTHESIS</Label>
+        <div style={{ fontSize: 14, lineHeight: 1.8, color: C.text }}>
+          GE had none of these. Hitachi had one (OT expertise). Siemens had two.
+          Microsoft had distribution and culture — but had to rebuild everything else.{" "}
+          <span style={{ color: C.accent }}>
+            Panasonic enters Month 12 with all five. The assets aren't the problem.
+          </span>
+        </div>
+        <div style={{ marginTop: 10, fontSize: 12, color: C.textMuted, lineHeight: 1.7 }}>
+          The constraint is organizational speed and incentive alignment — which is exactly
+          what can be changed. The 90-Day Playbook addresses the constraints. The assets compound on their own once the blockers are removed.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── MAIN APP ───────────────────────────────────────────── */
+const TABS = [
+  { label: "The Pivot Curve", id: "curve" },
+  { label: "Readiness Diagnostic", id: "diag" },
+  { label: "Hard Truths", id: "truths" },
+  { label: "Bright Spots", id: "bright" },
+  { label: "Pattern Files", id: "patterns" },
+  { label: "90-Day Playbook", id: "playbook" },
+];
+
+export default function PanasonicAdvisor() {
+  const [tab, setTab] = useState(0);
+
+  return (
+    <div style={{
+      background: C.bg, color: C.text,
+      minHeight: "100vh",
+      fontFamily: "'Newsreader', Georgia, serif",
+      display: "flex", flexDirection: "column",
+    }}>
+      {/* Google fonts */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+        * { box-sizing: border-box; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #2C2C34; border-radius: 2px; }
+        button:focus { outline: none; }
+      `}</style>
+
+      {/* Header */}
+      <div style={{
+        padding: "18px 32px 14px",
+        borderBottom: `1px solid ${C.border}`,
+        display: "flex", justifyContent: "space-between", alignItems: "flex-end",
+        flexWrap: "wrap", gap: 12,
+      }}>
+        <div>
+          <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 9,
+            color: C.accent, letterSpacing: 3, marginBottom: 7 }}>
+            HARDWARE → AI TRANSFORMATION PLAYBOOK
+          </div>
+          <h1 style={{ fontSize: 22, fontWeight: 400, margin: 0, letterSpacing: -0.5,
+            lineHeight: 1.2, color: C.text }}>
+            What GE, Hitachi, Siemens & Microsoft reveal
+            <br />about where Panasonic Go goes next
+          </h1>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontFamily: "JetBrains Mono, monospace" }}>
+            <div style={{ fontSize: 30, fontWeight: 700, color: C.accent, lineHeight: 1 }}>12</div>
+            <div style={{ fontSize: 8, color: C.textDim, letterSpacing: 2.5, marginTop: 2 }}>
+              MONTHS IN
+            </div>
+            <div style={{ fontSize: 8, color: C.textDim, letterSpacing: 1.5, marginTop: 3 }}>
+              CRITICAL WINDOW: 18–24
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{
+        display: "flex", borderBottom: `1px solid ${C.border}`,
+        padding: "0 32px", overflowX: "auto", flexShrink: 0,
+      }}>
+        {TABS.map((t, i) => (
+          <button key={i} onClick={() => setTab(i)} style={{
+            background: "none", border: "none", cursor: "pointer",
+            padding: "11px 18px",
+            fontSize: 10, fontFamily: "JetBrains Mono, monospace", letterSpacing: 0.8,
+            color: tab === i ? C.accent : C.textMuted,
+            borderBottom: `2px solid ${tab === i ? C.accent : "transparent"}`,
+            whiteSpace: "nowrap", transition: "color 0.15s",
+          }}>{t.label.toUpperCase()}</button>
+        ))}
+      </div>
+
+      {/* Content */}
+      <div style={{ flex: 1, overflow: "auto", padding: "28px 32px 48px" }}>
+        {tab === 0 && <PivotTab />}
+        {tab === 1 && <DiagnosticTab />}
+        {tab === 2 && <HardTruthsTab />}
+        {tab === 3 && <BrightSpotsTab />}
+        {tab === 4 && <PatternFilesTab />}
+        {tab === 5 && <PlaybookTab />}
+      </div>
+
       {/* Footer */}
       <div style={{
         borderTop: `1px solid ${C.border}`,
-        padding: "12px 28px",
-        display: "flex",
-        justifyContent: "space-between",
+        padding: "10px 32px",
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        flexShrink: 0,
       }}>
         <div style={{ fontSize: 10, color: C.textDim }}>
-          Built by Christian Spetz — <span style={{ color: C.accent }}>humaninthelead.ai</span>
+          Built by{" "}
+          <span style={{ color: C.accent }}>Christian Spetz</span>{" "}
+          — humaninthelead.ai
         </div>
-        <div style={{ fontSize: 9, color: C.textDim, fontFamily: "'JetBrains Mono', monospace" }}>
+        <div style={{ fontSize: 9, color: C.textDim, fontFamily: "JetBrains Mono, monospace" }}>
           Based on public information only
         </div>
       </div>
