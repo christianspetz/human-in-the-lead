@@ -6,6 +6,8 @@ import {
 import generatePPTX from "./generatePPTX";
 import { generateExecDeck, generateDetailedDeck } from "./generatePPTXv2";
 import AGENT_SPECS from "./agentSpecs";
+import Papa from "papaparse";
+import * as XLSX from "xlsx";
 
 /* Lazy-loaded companion components (graceful fallback if not yet created) */
 const BlueprintReconciler = React.lazy(() => import("./BlueprintReconciler").catch(() => ({ default: () => null })));
@@ -1173,6 +1175,14 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
   const [financialsConfidence, setFinancialsConfidence] = useState({});
   const [financialsError, setFinancialsError] = useState(null);
 
+  // Workforce Census
+  const [censusData, setCensusData] = useState(initialData?.censusData || null);
+  const [censusStep, setCensusStep] = useState(null); // null | "mapping" | "done"
+  const [censusRawHeaders, setCensusRawHeaders] = useState([]);
+  const [censusRawRows, setCensusRawRows] = useState([]);
+  const [censusMapping, setCensusMapping] = useState({});
+  const [censusCostType, setCensusCostType] = useState("loaded"); // "loaded" | "base"
+
   // Multi-Year & Balance Sheet (Feature 2)
   const [multiYearRamp, setMultiYearRamp] = useState(initialData?.multiYearRamp || { erp: [30, 70, 100], agent: [0, 40, 100], costSpread: [70, 20, 10] });
   const [step5Tab, setStep5Tab] = useState("pnl"); // "pnl" | "balanceSheet"
@@ -1397,7 +1407,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
       procValues, procBenchmarks, questAnswers, baselineData, procScenarios,
       catalystResults, agentResults, uploadedMining, savedScenarios, valueRealization,
       companyFinancials, multiYearRamp, assessmentProfile, kpiSources,
-      processOwnership, vrAutoPopulated, scenarioLevel, lastStep: step,
+      censusData, processOwnership, vrAutoPopulated, scenarioLevel, lastStep: step,
     };
     try {
       await fetch(`/api/assessments/${assessmentId}`, {
@@ -1410,7 +1420,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
       showToast("Project saved");
     } catch (err) { console.error("Auto-save failed:", err); }
     setSaving(false);
-  }, [assessmentId, baseline, selectedProcs, selectedFunction, procValues, procBenchmarks, questAnswers, baselineData, procScenarios, catalystResults, agentResults, uploadedMining, savedScenarios, valueRealization, companyFinancials, multiYearRamp, assessmentProfile, processOwnership, vrAutoPopulated, scenarioLevel, step, showToast]);
+  }, [assessmentId, baseline, selectedProcs, selectedFunction, procValues, procBenchmarks, questAnswers, baselineData, procScenarios, catalystResults, agentResults, uploadedMining, savedScenarios, valueRealization, companyFinancials, multiYearRamp, assessmentProfile, censusData, processOwnership, vrAutoPopulated, scenarioLevel, step, showToast]);
 
   // Auto-save every 30 seconds when data changes
   useEffect(() => {
@@ -1418,7 +1428,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(saveToServer, 30000);
     return () => clearTimeout(saveTimer.current);
-  }, [baseline, selectedProcs, procValues, procBenchmarks, questAnswers, baselineData, procScenarios, catalystResults, agentResults, uploadedMining, savedScenarios, valueRealization, companyFinancials, multiYearRamp, assessmentProfile, processOwnership, vrAutoPopulated, scenarioLevel, step]);
+  }, [baseline, selectedProcs, procValues, procBenchmarks, questAnswers, baselineData, procScenarios, catalystResults, agentResults, uploadedMining, savedScenarios, valueRealization, companyFinancials, multiYearRamp, assessmentProfile, censusData, processOwnership, vrAutoPopulated, scenarioLevel, step]);
 
   // Auto-save when user advances a step
   const prevStepRef = useRef(step);
@@ -4464,6 +4474,281 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                               if (draftEBITDA) d.ebitda = draftEBITDA;
                               confirmFinancials(d);
                             }} style={{ fontSize: 12, padding: "8px 20px", borderRadius: 8, background: GOLD, border: "none", color: "#111", cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>Confirm & Apply</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* ─── Sub-step ⑤ — Workforce Census (Optional) ─── */}
+            {(() => {
+              const hasCensus = !!censusData;
+
+              const CENSUS_FIELDS = [
+                { key: "department", label: "Department / Function", required: true },
+                { key: "role", label: "Role / Job Title", required: true },
+                { key: "location", label: "Location", required: true },
+                { key: "cost", label: "Annual Cost (fully loaded or base)", required: true },
+                { key: "fte", label: "FTE %", required: false },
+                { key: "skip", label: "Skip this column", required: false },
+              ];
+              const AUTO_MAP = {
+                department: /^(department|function|dept|division|business.?unit|org|group)$/i,
+                role: /^(role|job.?title|title|position|designation)$/i,
+                location: /^(location|city|country|office|region|site)$/i,
+                cost: /^(annual.?salary|salary|base.?salary|total.?comp|fully.?loaded|annual.?cost|compensation|pay|total.?cost)$/i,
+                fte: /^(fte|fte.?%|full.?time|headcount|hours)$/i,
+              };
+
+              const handleCensusFile = (file) => {
+                const isExcel = /\.xlsx?$/i.test(file.name);
+                if (isExcel) {
+                  const reader = new FileReader();
+                  reader.onload = (evt) => {
+                    try {
+                      const wb = XLSX.read(new Uint8Array(evt.target.result), { type: "array" });
+                      const ws = wb.Sheets[wb.SheetNames[0]];
+                      const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+                      if (rows.length < 2) { showToast("File appears empty"); return; }
+                      const headers = rows[0].map(h => String(h || "").trim());
+                      const dataRows = rows.slice(1).filter(r => r.some(c => c != null && c !== ""));
+                      setCensusRawHeaders(headers);
+                      setCensusRawRows(dataRows.slice(0, 50000));
+                      const autoMap = {};
+                      headers.forEach((h, i) => {
+                        for (const [field, re] of Object.entries(AUTO_MAP)) {
+                          if (re.test(h) && !Object.values(autoMap).includes(field)) { autoMap[i] = field; break; }
+                        }
+                      });
+                      setCensusMapping(autoMap);
+                      setCensusCostType("loaded");
+                      setCensusStep("mapping");
+                    } catch (err) { showToast("Failed to parse Excel: " + err.message); }
+                  };
+                  reader.readAsArrayBuffer(file);
+                } else {
+                  Papa.parse(file, {
+                    header: false,
+                    skipEmptyLines: true,
+                    complete: (result) => {
+                      if (result.data.length < 2) { showToast("File appears empty"); return; }
+                      const headers = result.data[0].map(h => String(h || "").trim());
+                      const dataRows = result.data.slice(1).slice(0, 50000);
+                      setCensusRawHeaders(headers);
+                      setCensusRawRows(dataRows);
+                      const autoMap = {};
+                      headers.forEach((h, i) => {
+                        for (const [field, re] of Object.entries(AUTO_MAP)) {
+                          if (re.test(h) && !Object.values(autoMap).includes(field)) { autoMap[i] = field; break; }
+                        }
+                      });
+                      setCensusMapping(autoMap);
+                      setCensusCostType("loaded");
+                      setCensusStep("mapping");
+                    },
+                    error: (err) => showToast("Failed to parse CSV: " + err.message),
+                  });
+                }
+              };
+
+              const confirmCensusMapping = () => {
+                const colIdx = {};
+                Object.entries(censusMapping).forEach(([i, field]) => { if (field !== "skip") colIdx[field] = parseInt(i); });
+                if (colIdx.department == null || colIdx.role == null || colIdx.location == null || colIdx.cost == null) {
+                  showToast("Map at least Department, Role, Location, and Cost columns");
+                  return;
+                }
+                const costMult = censusCostType === "base" ? 1.3 : 1.0;
+                const parsed = [];
+                const byDept = {};
+                let totalFTE = 0, totalCost = 0;
+                for (const row of censusRawRows) {
+                  const dept = String(row[colIdx.department] || "").trim();
+                  const role = String(row[colIdx.role] || "").trim();
+                  const loc = String(row[colIdx.location] || "").trim();
+                  const rawCost = parseFloat(String(row[colIdx.cost] || "0").replace(/[,$]/g, "")) || 0;
+                  const cost = rawCost * costMult;
+                  const fte = colIdx.fte != null ? (parseFloat(row[colIdx.fte]) || 1.0) : 1.0;
+                  if (!dept && !role) continue;
+                  parsed.push({ department: dept, role, location: loc, cost, fte });
+                  totalFTE += fte;
+                  totalCost += cost * fte;
+                  if (!byDept[dept]) byDept[dept] = { name: dept, headcount: 0, fte: 0, totalCost: 0 };
+                  byDept[dept].headcount += 1;
+                  byDept[dept].fte += fte;
+                  byDept[dept].totalCost += cost * fte;
+                }
+                const deptArray = Object.values(byDept)
+                  .map(d => ({ ...d, avgCost: d.fte > 0 ? Math.round(d.totalCost / d.fte) : 0 }))
+                  .sort((a, b) => b.totalCost - a.totalCost);
+                const result = {
+                  loaded: true,
+                  totalEmployees: parsed.length,
+                  totalFTE: Math.round(totalFTE * 10) / 10,
+                  totalCost: Math.round(totalCost),
+                  costType: censusCostType,
+                  byDepartment: deptArray,
+                  rows: parsed,
+                };
+                setCensusData(result);
+                setCensusStep("done");
+              };
+
+              const clearCensus = () => {
+                setCensusData(null);
+                setCensusStep(null);
+                setCensusRawHeaders([]);
+                setCensusRawRows([]);
+                setCensusMapping({});
+              };
+
+              const fmtCost = (v) => v != null && isFinite(v) ? "$" + Math.round(v).toLocaleString() : "—";
+
+              return (
+                <div style={{ marginBottom: 16, padding: 20, background: t.card, border: `1px solid ${hasCensus ? PURPLE + "44" : PURPLE + "22"}`, borderLeft: `4px solid ${PURPLE}`, borderRadius: 12 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+                    <div style={{ fontSize: 28, fontFamily: SERIF, color: PURPLE, fontWeight: 700, lineHeight: 1 }}>⑤</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: t.tx, marginBottom: 4 }}>Workforce Census</div>
+                        <span style={{ fontSize: 10, padding: "1px 8px", borderRadius: 4, background: t.bg, border: `1px solid ${t.bdr}`, color: t.mut, fontWeight: 600 }}>Optional</span>
+                      </div>
+                      <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.6, marginBottom: 10 }}>Upload employee data to replace benchmark labor costs with actuals.</div>
+
+                      {/* Loaded banner */}
+                      {hasCensus && censusStep === "done" && (
+                        <div>
+                          <div style={{ padding: "10px 16px", background: GREEN + "15", border: `1px solid ${GREEN}33`, borderRadius: 8, marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}>
+                            <span style={{ color: GREEN, fontWeight: 700 }}>✓</span>
+                            <span style={{ fontSize: 13, color: GREEN, fontWeight: 600 }}>Census loaded — {censusData.totalEmployees.toLocaleString()} employees, {censusData.totalFTE} FTE, {fmtCost(censusData.totalCost)} total cost</span>
+                            <div style={{ flex: 1 }} />
+                            <button onClick={clearCensus} style={{ fontSize: 11, padding: "4px 12px", borderRadius: 6, background: "transparent", border: `1px solid ${t.bdr}`, color: t.tx2, cursor: "pointer", fontFamily: FONT }}>Clear</button>
+                          </div>
+                          {/* Department breakdown */}
+                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 8 }}>
+                            <thead>
+                              <tr>
+                                <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 10, textTransform: "uppercase" }}>Department</th>
+                                <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "right", color: t.mut, fontSize: 10, textTransform: "uppercase" }}>Headcount</th>
+                                <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "right", color: t.mut, fontSize: 10, textTransform: "uppercase" }}>FTE</th>
+                                <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "right", color: t.mut, fontSize: 10, textTransform: "uppercase" }}>Total Cost</th>
+                                <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "right", color: t.mut, fontSize: 10, textTransform: "uppercase" }}>Avg / FTE</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {censusData.byDepartment.slice(0, 15).map((d, i) => (
+                                <tr key={i}>
+                                  <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx, fontWeight: 600 }}>{d.name || "(blank)"}</td>
+                                  <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", color: t.tx2 }}>{d.headcount}</td>
+                                  <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", color: t.tx2 }}>{d.fte.toFixed(1)}</td>
+                                  <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: PURPLE }}>{fmtCost(d.totalCost)}</td>
+                                  <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: t.tx2 }}>{fmtCost(d.avgCost)}</td>
+                                </tr>
+                              ))}
+                              {censusData.byDepartment.length > 15 && (
+                                <tr><td colSpan={5} style={{ padding: "5px 10px", color: t.mut, fontSize: 11, fontStyle: "italic" }}>+ {censusData.byDepartment.length - 15} more departments</td></tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+
+                      {/* Upload prompt */}
+                      {!hasCensus && !censusStep && (
+                        <div onClick={() => document.getElementById("census-upload").click()} style={{ ...cardStyle, padding: "20px 16px", cursor: "pointer", textAlign: "center", border: `1px dashed ${PURPLE}44`, maxWidth: 280 }}>
+                          <div style={{ fontSize: 24, marginBottom: 8 }}>👥</div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: t.tx, marginBottom: 4 }}>Upload Census File</div>
+                          <div style={{ fontSize: 11, color: t.mut }}>CSV or Excel (.xlsx)</div>
+                          <input id="census-upload" type="file" accept=".csv,.xlsx,.xls" onChange={e => { const f = e.target.files[0]; if (f) handleCensusFile(f); }} style={{ display: "none" }} />
+                        </div>
+                      )}
+
+                      {/* Column mapping step */}
+                      {censusStep === "mapping" && (
+                        <div style={{ marginTop: 8 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: t.tx, marginBottom: 8 }}>Map Columns ({censusRawRows.length.toLocaleString()} rows detected)</div>
+
+                          <div style={{ marginBottom: 8, display: "flex", gap: 12, alignItems: "center" }}>
+                            <span style={{ fontSize: 12, color: t.tx2 }}>Cost column contains:</span>
+                            <label style={{ fontSize: 12, color: t.tx, cursor: "pointer" }}>
+                              <input type="radio" name="censusCostType" checked={censusCostType === "loaded"} onChange={() => setCensusCostType("loaded")} style={{ marginRight: 4 }} />
+                              Fully loaded cost
+                            </label>
+                            <label style={{ fontSize: 12, color: t.tx, cursor: "pointer" }}>
+                              <input type="radio" name="censusCostType" checked={censusCostType === "base"} onChange={() => setCensusCostType("base")} style={{ marginRight: 4 }} />
+                              Base salary (will apply 1.3x)
+                            </label>
+                          </div>
+
+                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 10 }}>
+                            <thead>
+                              <tr>
+                                <th style={{ padding: "6px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 10 }}>File Column</th>
+                                <th style={{ padding: "6px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 10 }}>Maps To</th>
+                                <th style={{ padding: "6px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 10 }}>Sample Values</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {censusRawHeaders.map((h, i) => (
+                                <tr key={i}>
+                                  <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx, fontWeight: 600, fontFamily: "monospace", fontSize: 11 }}>{h}</td>
+                                  <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}40` }}>
+                                    <select
+                                      value={censusMapping[i] || "skip"}
+                                      onChange={e => setCensusMapping(prev => ({ ...prev, [i]: e.target.value }))}
+                                      style={{ fontSize: 11, padding: "3px 6px", borderRadius: 4, border: `1px solid ${t.bdr}`, background: t.card, color: censusMapping[i] && censusMapping[i] !== "skip" ? PURPLE : t.mut, fontFamily: FONT }}
+                                    >
+                                      {CENSUS_FIELDS.map(f => <option key={f.key} value={f.key}>{f.label}{f.required ? " *" : ""}</option>)}
+                                    </select>
+                                  </td>
+                                  <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx2, fontSize: 11, fontFamily: "monospace" }}>
+                                    {censusRawRows.slice(0, 3).map(r => String(r[i] || "")).filter(Boolean).join(", ").substring(0, 80)}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+
+                          {/* Preview of first 5 rows with mapping applied */}
+                          {(() => {
+                            const mapped = Object.entries(censusMapping).filter(([, v]) => v !== "skip");
+                            if (mapped.length === 0) return null;
+                            const previewRows = censusRawRows.slice(0, 5);
+                            return (
+                              <div style={{ marginBottom: 10 }}>
+                                <div style={{ fontSize: 10, color: t.mut, fontWeight: 700, textTransform: "uppercase", marginBottom: 4 }}>Preview (first 5 rows)</div>
+                                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                                  <thead>
+                                    <tr>
+                                      {mapped.map(([colIdx, field]) => (
+                                        <th key={colIdx} style={{ padding: "4px 8px", borderBottom: `2px solid ${PURPLE}33`, textAlign: "left", color: PURPLE, fontSize: 10 }}>
+                                          {CENSUS_FIELDS.find(f => f.key === field)?.label || field}
+                                        </th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {previewRows.map((row, ri) => (
+                                      <tr key={ri}>
+                                        {mapped.map(([colIdx, field]) => (
+                                          <td key={colIdx} style={{ padding: "3px 8px", borderBottom: `1px solid ${t.bdr}30`, color: t.tx2, fontFamily: field === "cost" ? "monospace" : "inherit" }}>
+                                            {String(row[parseInt(colIdx)] || "—")}
+                                          </td>
+                                        ))}
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            );
+                          })()}
+
+                          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                            <button onClick={() => { setCensusStep(null); setCensusRawHeaders([]); setCensusRawRows([]); }} style={{ fontSize: 12, padding: "8px 20px", borderRadius: 8, background: "transparent", border: `1px solid ${t.bdr}`, color: t.tx2, cursor: "pointer", fontFamily: FONT }}>Cancel</button>
+                            <button onClick={confirmCensusMapping} style={{ fontSize: 12, padding: "8px 20px", borderRadius: 8, background: PURPLE, border: "none", color: "#111", cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>Confirm Mapping</button>
                           </div>
                         </div>
                       )}
