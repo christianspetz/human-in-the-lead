@@ -1636,6 +1636,8 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
   const VRP_DIMS = ["people", "processes", "data", "technology", "governance", "operatingModel"];
   const VRP_DIM_LABELS = { people: "People", processes: "Processes", data: "Data", technology: "Technology", governance: "Governance", operatingModel: "Operating Model" };
 
+  const companyName = assessmentProfile.companyName || baseline.company || "Demo Company";
+
   const autoPopulateVRP = useCallback(async () => {
     if (vrAutoPopulated) return;
     setVrAutoPopulated(true);
@@ -2456,9 +2458,6 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
   // ═══════════════════════════════════════════════════
   // V2: CHOOSE PAGE — Dual Entry Point
   // ═══════════════════════════════════════════════════
-  // Sync assessmentProfile → baseline
-  const companyName = assessmentProfile.companyName || baseline.company || "Demo Company";
-
   // ═══════════════════════════════════════════════════
   // ASSESSMENT SETUP PAGE
   // ═══════════════════════════════════════════════════
