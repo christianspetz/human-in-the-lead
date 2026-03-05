@@ -708,6 +708,59 @@ const SAP_MODULE_NAMES = {
   "S/4 Close Cockpit": "Close Management", "FICO": "Finance & Controlling",
 };
 
+/* ═══════════════════════════════════════════════════════
+   SAP LEVER MAP — explicit causal link per KPI
+   ═══════════════════════════════════════════════════════ */
+const SAP_LEVER_MAP = {
+  "o2c-001": { lever: { name: "Intelligent Credit Management", capability: "Automated credit scoring using customer data and bureau APIs — eliminates manual credit analyst review for standard requests", module: "FSCM-CR", deploymentType: "S/4HANA Migration" }, kpis: { "Credit evaluation cycle time": "Top quartile for companies with FSCM-CR automated scoring enabled. Manual processes median: 4.2 days.", "Auto-approval rate": "Top quartile for companies with FSCM-CR automated scoring and risk-tiered approval workflows active.", "Bad debt write-off rate": "Top quartile for companies with ML-based credit scoring and continuous monitoring enabled." } },
+  "o2c-002": { lever: { name: "Dynamic Credit Limit Management", capability: "AI-driven dynamic credit limits adjust based on real-time payment behavior, financial health signals, and market conditions", module: "FSCM-CR", deploymentType: "S/4HANA Migration" }, kpis: { "Credit limit review frequency": "Top quartile for companies with automated continuous credit monitoring. Manual review median: 180 days.", "Credit limit utilization": "Top quartile for companies with dynamic limits actively adjusting to customer behavior." } },
+  "o2c-003": { lever: { name: "Intelligent Credit Block Resolution", capability: "Automated credit block triage with risk-tiered approval workflows and customer self-service portal", module: "FI-AR", deploymentType: "S/4HANA Migration" }, kpis: { "Blocked order resolution time": "Top quartile for companies with automated credit block workflows. Manual triage median: 8 hours.", "% orders blocked for credit": "Top quartile for companies with predictive credit scoring reducing false blocks." } },
+  "o2c-004": { lever: { name: "Automated Billing", capability: "Rule-based billing engine with contract-price validation eliminates manual billing errors at source", module: "SD-BIL", deploymentType: "S/4HANA Migration" }, kpis: { "Invoice accuracy rate": "Top quartile for companies with SD-BIL contract compliance rules fully configured.", "Billing cycle time": "Top quartile for companies with automated billing triggered by goods issue confirmation.", "Cost per invoice generated": "Top quartile for companies with touchless billing and automated output management." } },
+  "o2c-005": { lever: { name: "Multi-Channel E-Invoicing", capability: "Auto-detects customer format preference (EDI, XML, PDF, e-invoice), converts and transmits with receipt confirmation", module: "SD-BIL", deploymentType: "S/4HANA Migration" }, kpis: { "E-invoicing adoption rate": "Top quartile for companies with multi-channel e-invoicing and auto-format conversion active.", "Invoice delivery success rate": "Top quartile for companies with automated delivery confirmation and retry logic." } },
+  "o2c-006": { lever: { name: "Smart Dispute Resolution", capability: "AI-powered dispute classification and root cause analysis with automated routing to responsible teams", module: "FI-AR", deploymentType: "S/4HANA Migration" }, kpis: { "Dispute resolution cycle time": "Top quartile for companies with AI dispute triage and auto-routing enabled. Manual median: 25 days.", "Dispute rate": "Top quartile for companies with root cause analysis reducing repeat disputes.", "Cost per dispute resolved": "Top quartile for companies with automated dispute classification and suggested resolutions." } },
+  "o2c-007": { lever: { name: "Automated Cash Application", capability: "ML-powered payment-to-invoice matching eliminates manual reconciliation — handles exceptions only", module: "FI-AR", deploymentType: "S/4HANA Migration" }, kpis: { "Cash application automation rate": "Top quartile for companies with FI-AR auto-match enabled (>85% match rate). Manual: 40% median.", "Cash application cycle time": "Top quartile for companies with FI-AR auto-match enabled. Manual: 6.2 days median.", "Unapplied cash as % of revenue": "Top quartile for companies with ML-powered cash application and exception-only handling." } },
+  "o2c-008": { lever: { name: "Collections Worklist Automation", capability: "Automated dunning, prioritized collections worklist, and payment prediction — removes reactive collections management", module: "FI-AR", deploymentType: "S/4HANA Migration" }, kpis: { "Days Sales Outstanding (DSO)": "Top quartile for companies with automated dunning and payment prediction active.", "Collections effectiveness index": "Top quartile for companies with AI-prioritized collections worklist enabled.", "Cost per collection contact": "Top quartile for companies with automated personalized dunning communications.", "% AR > 90 days past due": "Top quartile for companies with predictive collections and early intervention active." } },
+  "o2c-009": { lever: { name: "Deduction Classification Engine", capability: "ML pattern recognition identifies root causes across trade promotions, logistics claims, and pricing errors", module: "FI-AR", deploymentType: "S/4HANA Migration" }, kpis: { "Deduction resolution cycle time": "Top quartile for companies with automated deduction classification. Manual median: 35 days.", "Invalid deduction recovery rate": "Top quartile for companies with ML-based deduction validation against trade agreements.", "Deduction backlog value": "Top quartile for companies with automated deduction triage and resolution workflows." } },
+  "o2c-010": { lever: { name: "Predictive Provisioning", capability: "ML-based expected credit loss estimation per IFRS 9/CECL with automated provisioning and write-off workflows", module: "FI-AR", deploymentType: "S/4HANA Migration" }, kpis: { "Write-off as % of revenue": "Top quartile for companies with predictive provisioning models active. Manual median: 0.35%.", "Aging bucket accuracy": "Top quartile for companies with automated aging analysis and continuous monitoring." } },
+  "o2c-011": { lever: { name: "Automated Refund Processing", capability: "Policy-based refund validation with automated credit memo creation and approval routing", module: "FI-AR", deploymentType: "S/4HANA Migration" }, kpis: { "Refund processing cycle time": "Top quartile for companies with automated refund workflows. Manual median: 7 days.", "Refund accuracy rate": "Top quartile for companies with rule-based refund validation and fraud detection." } },
+  "o2c-012": { lever: { name: "Intelligent Order Capture", capability: "Multi-channel order ingestion with automated validation against pricing, availability, and credit rules", module: "SD-SLS", deploymentType: "S/4HANA Migration" }, kpis: { "Order entry cycle time": "Top quartile for companies with multi-channel auto-capture enabled. Manual median: 15 minutes.", "Touchless order rate": "Top quartile for companies with automated order validation and zero-touch processing.", "Order accuracy rate": "Top quartile for companies with rule-based order validation at point of entry." } },
+  "o2c-013": { lever: { name: "Advanced ATP", capability: "Real-time global inventory check with intelligent allocation based on customer priority, margin, and supply constraints", module: "SD-SLS", deploymentType: "S/4HANA Migration" }, kpis: { "Available-to-promise accuracy": "Top quartile for companies with aATP and global inventory visibility active.", "Order fill rate": "Top quartile for companies with intelligent allocation and real-time ATP." } },
+  "o2c-014": { lever: { name: "Dynamic Pricing Intelligence", capability: "AI-powered pricing engine with dynamic discounting, customer-specific agreements, and margin guardrails", module: "SD-BF", deploymentType: "Optimization" }, kpis: { "Pricing accuracy rate": "Top quartile for companies with centralized pricing hub and automated condition management.", "Manual pricing overrides": "Top quartile for companies with AI-validated pricing and automated guardrails." } },
+  "o2c-015": { lever: { name: "Order Change Impact Analysis", capability: "Automated downstream impact assessment on fulfillment, production, and billing with team notifications", module: "SD-SLS", deploymentType: "S/4HANA Migration" }, kpis: { "Order change processing time": "Top quartile for companies with automated impact analysis and self-service modifications.", "Cancellation rate": "Top quartile for companies with proactive order management and customer communication." } },
+  "o2c-016": { lever: { name: "Warehouse Execution Optimization", capability: "AI-optimized wave planning, pick-path optimization, and automated packing with real-time labor allocation", module: "EWM", deploymentType: "S/4HANA Migration" }, kpis: { "Perfect order rate": "Top quartile for companies with EWM and AI-optimized warehouse execution.", "Order-to-ship cycle time": "Top quartile for companies with automated wave planning and pick-path optimization.", "Warehouse cost per order": "Top quartile for companies with EWM labor management and automated packing." } },
+  "o2c-017": { lever: { name: "Dynamic Route Optimization", capability: "Real-time route planning using traffic, capacity, weather, and cost data with predictive ETAs", module: "TM", deploymentType: "Optimization" }, kpis: { "On-time delivery rate": "Top quartile for companies with TM dynamic routing and predictive ETA active.", "Freight cost as % of revenue": "Top quartile for companies with automated route optimization and carrier management." } },
+  "o2c-018": { lever: { name: "Returns Processing Automation", capability: "Policy-based return authorization with AI reason code analysis and predictive return forecasting", module: "SD-SLS", deploymentType: "S/4HANA Migration" }, kpis: { "Return processing cycle time": "Top quartile for companies with automated return authorization and processing.", "Return rate": "Top quartile for companies with AI-driven return root cause analysis active.", "Return cost per unit": "Top quartile for companies with automated reverse logistics and restocking." } },
+  "o2c-019": { lever: { name: "Automated Revenue Accounting", capability: "IFRS 15/ASC 606 compliant automated recognition — eliminates manual journal entries and period-end bottlenecks", module: "RAR", deploymentType: "S/4HANA Migration" }, kpis: { "Revenue recognition automation rate": "Top quartile for companies with RAR fully deployed and integrated with SD billing.", "Revenue adjustments post-close": "Top quartile for companies with automated revenue recognition and contract analytics." } },
+  "o2c-020": { lever: { name: "Contract Intelligence", capability: "NLP-powered contract creation from templates with automated compliance checks and smart clause risk scoring", module: "SD-CAS", deploymentType: "Optimization" }, kpis: { "Contract creation cycle time": "Top quartile for companies with NLP-assisted contract drafting and automated approvals.", "Contract compliance rate": "Top quartile for companies with automated contract compliance monitoring." } },
+  "o2c-021": { lever: { name: "Trade Promotion Management", capability: "Automated rebate calculation, accrual, and settlement with AI-driven promotion effectiveness analysis", module: "SD-CAS", deploymentType: "S/4HANA Migration" }, kpis: { "Rebate accrual accuracy": "Top quartile for companies with automated rebate tracking and settlement.", "Trade promotion ROI": "Top quartile for companies with AI-driven promotion effectiveness analysis.", "Rebate settlement cycle time": "Top quartile for companies with automated period-end rebate settlement." } },
+  "o2c-022": { lever: { name: "Centralized Pricing Hub", capability: "Automated condition record management with real-time price propagation and margin guardrail validation", module: "SD-BF", deploymentType: "S/4HANA Migration" }, kpis: { "Pricing master data accuracy": "Top quartile for companies with centralized pricing and automated validation.", "Price list update cycle time": "Top quartile for companies with real-time price propagation across systems." } },
+  "o2c-023": { lever: { name: "Margin Analytics", capability: "Real-time margin waterfall analysis by customer, product, and channel with AI-driven leakage pattern detection", module: "CO-PA", deploymentType: "Optimization" }, kpis: { "Gross margin by customer": "Top quartile for companies with CO-PA real-time profitability analysis.", "Price realization rate": "Top quartile for companies with margin waterfall analysis and leakage detection." } },
+  "o2c-024": { lever: { name: "Predictive Cash Forecasting", capability: "ML-based cash receipt forecasting using payment history, customer behavior, and macro signals", module: "TRM", deploymentType: "Optimization" }, kpis: { "Cash forecast accuracy (30-day)": "Top quartile for companies with ML-powered cash forecasting. Manual median: 75%.", "Cash forecast cycle time": "Top quartile for companies with automated rolling 13-week forecast generation." } },
+  "o2c-025": { lever: { name: "Intelligent Bank Reconciliation", capability: "Automated bank statement import and ML-powered transaction matching with pattern-based investigation", module: "FI-BL", deploymentType: "S/4HANA Migration" }, kpis: { "Bank reconciliation automation rate": "Top quartile for companies with ML-powered bank reconciliation. Manual median: 60%.", "Reconciliation cycle time": "Top quartile for companies with automated bank statement processing and matching." } },
+  "o2c-026": { lever: { name: "O2C Control Tower", capability: "Real-time KPI monitoring with anomaly detection, automated root cause analysis, and predictive alerts", module: "BW/4HANA", deploymentType: "Optimization" }, kpis: { "Report generation cycle time": "Top quartile for companies with real-time O2C dashboarding. Manual median: 4 hours.", "KPI exception detection time": "Top quartile for companies with automated anomaly detection and alerting." } },
+  "o2c-027": { lever: { name: "Process Mining Intelligence", capability: "Continuous process mining with bottleneck identification, deviation analysis, and digital twin simulation", module: "Signavio", deploymentType: "Optimization" }, kpis: { "Process conformance rate": "Top quartile for companies with continuous process mining and optimization active.", "Rework rate": "Top quartile for companies with process mining-driven improvement programs." } },
+  "r2r-001": { lever: { name: "Automated Journal Entries", capability: "Rule-based recurring and reversing journal entries with automated posting — humans only handle exceptions", module: "FI-GL", deploymentType: "S/4HANA Migration" }, kpis: { "Journal entry automation rate": "Top quartile for companies with >70% automated journal entry rules configured.", "JE error rate": "Top quartile for companies with rule-based JE validation and anomaly detection." } },
+  "r2r-002": { lever: { name: "Intercompany Hub", capability: "Centralized intercompany matching and dispute resolution — eliminates bilateral email reconciliation", module: "FI-GL", deploymentType: "S/4HANA Migration" }, kpis: { "Intercompany matching rate": "Top quartile for companies with ICR module active across all legal entities." } },
+  "r2r-003": { lever: { name: "Continuous Account Reconciliation", capability: "Auto-extracts subledger and GL balances, identifies reconciling items, and certifies clean accounts", module: "FI-GL", deploymentType: "S/4HANA Migration" }, kpis: { "Reconciliation automation rate": "Top quartile for companies with automated reconciliation and auto-certification.", "Reconciling items aging (days)": "Top quartile for companies with continuous reconciliation and pattern-based investigation." } },
+  "r2r-004": { lever: { name: "Financial Close Automation", capability: "Automated close task sequencing, dependency management, and status tracking — replaces spreadsheet-based close management", module: "FI-GL", deploymentType: "S/4HANA Migration" }, kpis: { "Days to close": "Top quartile for companies with Close Cockpit and automated intercompany reconciliation active.", "Close task automation rate": "Top quartile for companies with automated close task orchestration and dependency management." } },
+  "r2r-005": { lever: { name: "Smart Accruals Engine", capability: "ML-based accrual estimation with automated posting, reversal, and actual vs. accrued reconciliation", module: "FI-GL", deploymentType: "S/4HANA Migration" }, kpis: { "Accrual reversal rate": "Top quartile for companies with ML-driven accrual estimation and automated reversals." } },
+  "r2r-006": { lever: { name: "Automated Consolidation", capability: "Automated subsidiary collection, consolidation rules application, currency translation, and elimination processing", module: "Group Reporting", deploymentType: "S/4HANA Migration" }, kpis: { "Consolidation cycle time": "Top quartile for companies with automated group reporting and elimination processing.", "Manual adjustments in consolidation": "Top quartile for companies with rule-based consolidation and automated eliminations." } },
+  "r2r-007": { lever: { name: "Embedded Analytics", capability: "Real-time financial reporting from live transactional data — eliminates data extraction, staging, and manual formatting", module: "SAC", deploymentType: "Optimization" }, kpis: { "Report generation time": "Top quartile for companies with SAC embedded reporting replacing BW batch extracts." } },
+  "r2r-008": { lever: { name: "Smart Asset Lifecycle", capability: "Auto-capitalizes assets from PO/project data, runs depreciation on schedule, and continuously reconciles to GL", module: "FI-AA", deploymentType: "S/4HANA Migration" }, kpis: { "Asset capitalization accuracy": "Top quartile for companies with automated asset capitalization and depreciation." } },
+  "r2r-009": { lever: { name: "Automated Cost Allocation", capability: "Automated allocation runs, standard product costing, and variance analysis with activity-based adjustments", module: "CO-PC", deploymentType: "S/4HANA Migration" }, kpis: { "Cost allocation cycle time": "Top quartile for companies with automated cost allocation and material ledger." } },
+  "r2r-010": { lever: { name: "Intelligent Tax Engine", capability: "Automated tax determination, provision calculation, and return preparation across jurisdictions", module: "FI-TX", deploymentType: "S/4HANA Migration" }, kpis: { "Tax filing accuracy": "Top quartile for companies with automated tax determination and compliance reporting." } },
+  "p2p-001": { lever: { name: "Guided Buying", capability: "Catalog-driven purchasing with automated approval routing — eliminates maverick buying and manual PO creation", module: "MM-PUR", deploymentType: "S/4HANA Migration" }, kpis: { "Requisition-to-PO cycle time": "Top quartile for companies with guided buying and automated approval workflows fully deployed.", "Auto-approval rate": "Top quartile for companies with rule-based auto-approval for catalog purchases." } },
+  "p2p-002": { lever: { name: "Intelligent PO Management", capability: "Automated PO creation, supplier confirmation via portal/EDI, and delivery tracking with amendment management", module: "MM-PUR", deploymentType: "S/4HANA Migration" }, kpis: { "PO accuracy rate": "Top quartile for companies with automated PO creation and validation.", "Cost per PO": "Top quartile for companies with touchless PO processing. Manual median: $45 per PO." } },
+  "p2p-003": { lever: { name: "3-Way Match Automation", capability: "Tolerance-based PO-GR-IR matching with intelligent exception routing and resolution suggestions", module: "MM-IV", deploymentType: "S/4HANA Migration" }, kpis: { "3-way match rate": "Top quartile for companies with automated 3-way matching and exception handling.", "GR processing time": "Top quartile for companies with streamlined goods receipt and auto-posting." } },
+  "p2p-004": { lever: { name: "Intelligent Invoice Processing", capability: "AI-powered invoice capture, 3-way match, and exception handling — eliminates manual data entry", module: "MM-IV", deploymentType: "S/4HANA Migration" }, kpis: { "Touchless invoice rate": "Top quartile for companies with IDP and automated 3-way match enabled. Manual processing: $12-18 per invoice.", "Cost per invoice processed": "Top quartile for companies with AI-powered OCR and touchless processing.", "Invoice exception rate": "Top quartile for companies with ML-based exception resolution and auto-learning." } },
+  "p2p-005": { lever: { name: "Payment Optimization", capability: "Intelligent payment proposals optimizing timing for discount capture while managing cash position", module: "FI-AP", deploymentType: "S/4HANA Migration" }, kpis: { "On-time payment rate": "Top quartile for companies with automated payment proposals and bank communication.", "Early payment discount capture": "Top quartile for companies with dynamic payment timing optimization.", "Days payable outstanding (DPO)": "Top quartile for companies with payment optimization and cash management active." } },
+  "p2p-006": { lever: { name: "Dynamic Discounting", capability: "Automated early payment offers based on cash position — captures supplier discounts systematically", module: "FSCM", deploymentType: "Optimization" }, kpis: { "Supply chain financing adoption": "Top quartile for companies with dynamic discounting and supplier finance platforms active." } },
+  "p2p-007": { lever: { name: "Supplier Intelligence", capability: "Automated performance data collection, weighted scorecard generation, and external risk signal monitoring", module: "SLC", deploymentType: "Optimization" }, kpis: { "Supplier scorecard coverage": "Top quartile for companies with automated supplier performance monitoring.", "Strategic supplier spend coverage": "Top quartile for companies with full Ariba integration and category management active." } },
+  "p2p-008": { lever: { name: "Contract Lifecycle Management", capability: "NLP-assisted contract drafting, automated compliance monitoring, and maverick spend auditing", module: "Ariba", deploymentType: "Optimization" }, kpis: { "Contract utilization rate": "Top quartile for companies with full CLM and spend analytics integration." } },
+};
+const getSapLever = (procId) => SAP_LEVER_MAP[procId] || null;
+const getBenchmarkContext = (procId, kpiName) => { const e = SAP_LEVER_MAP[procId]; return e ? (e.kpis[kpiName] || null) : null; };
+
 const getSapModuleLabel = (code) => {
   const c = (code || "").trim();
   const parts = c.split(/\s*\/\s*/);
@@ -5313,227 +5366,25 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                         <button onClick={async () => {
                           setVrLoading(prev => ({ ...prev, [dim.key]: true }));
-                          const fullP = 'System: You are a transformation impact analyst. Generate specific impacts for the ' + dim.label + ' dimension. Return JSON: { keyPoints: [string], actions: [string] }. User: Processes: ' + selProcs.map(p => p.label).slice(0, 10).join(", ") + '. ERP value: 
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
-              <button onClick={() => setStep(5)} style={btnSecondary}>← Value Calculation</button>
-              <button onClick={() => setStep(7)} style={btnPrimary}>Action Plan →</button>
-            </div>
-          </div>
-        )}
-
-        {/* ═══════════════════════════════════════════════
-            STEP 7 — Phase 0 Action Plan
-           ═══════════════════════════════════════════════ */}
-        {step === 7 && (
-          <div>
-            {stepHeader(7, "Phase 0 Action Plan", "Download deliverables, share with stakeholders, and define next steps.")}
-
-            {/* Hero Stats */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 10, marginBottom: 28 }}>
-              {[
-                { l: "Combined Value", v: fd(valResult.combined), c: "#FFFFFF", large: true, dollar: true },
-                { l: "ERP Value", v: fd(valResult.total), c: GOLD, dollar: true },
-                { l: "Agent Uplift", v: fd(valResult.agentTotal), c: GREEN, dollar: true },
-                { l: "Processes", v: selProcs.length, c: BLUE },
-                { l: "KPIs Assessed", v: totalKPIs, c: PURPLE },
-                { l: "Peer Group", v: `${baseline.industry || "Mfg"} ${baseline.revenueBand || "$1-5B"}`, c: "#AAA" },
-              ].map(k => (
-                <div key={k.l} style={{ background: `${k.c}0C`, border: `1px solid ${k.c}22`, borderRadius: 10, padding: "14px 16px", textAlign: "center" }}>
-                  <div style={{ fontSize: 10, color: k.c, textTransform: "uppercase", letterSpacing: ".5px", fontWeight: 600, marginBottom: 4 }}>{k.l}</div>
-                  <div style={{ fontSize: k.large ? 28 : 22, fontFamily: SERIF, color: k.c, fontWeight: k.large ? 700 : 400, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>{k.v}{k.dollar && <span title={`${k.l}: gap × base amount × addressable% × scenario factor`} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 14, height: 14, borderRadius: "50%", background: k.c + "20", color: k.c, fontSize: 8, fontWeight: 700, cursor: "help", flexShrink: 0 }}>i</span>}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* ─── Blueprint Coverage ─── */}
-            {(() => {
-              const tierCounts = {};
-              BLUEPRINT_TIERS.forEach(bt => tierCounts[bt.id] = 0);
-              selProcs.forEach(p => (p.blueprintTiers || []).forEach(tid => { tierCounts[tid] = (tierCounts[tid] || 0) + 1; }));
-              const coveredCount = BLUEPRINT_TIERS.filter(bt => tierCounts[bt.id] > 0).length;
-              const maxCount = Math.max(...Object.values(tierCounts), 1);
-              const missing = BLUEPRINT_TIERS.filter(bt => tierCounts[bt.id] === 0).map(bt => bt.name);
-              return (
-                <div style={{ marginBottom: 28 }}>
-                  <div style={labelStyle}>EY.ai Value Blueprint Coverage</div>
-                  <div style={{ ...cardStyle, padding: 20 }}>
-                    <div style={{ display: "grid", gap: 6 }}>
-                      {BLUEPRINT_TIERS.map(bt => {
-                        const count = tierCounts[bt.id] || 0;
-                        const pct = count > 0 ? Math.round((count / maxCount) * 100) : 0;
-                        return (
-                          <div key={bt.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                            <span style={{ fontSize: 14, minWidth: 22, textAlign: "center" }}>{bt.icon}</span>
-                            <span style={{ fontSize: 11, fontWeight: 600, color: count > 0 ? bt.color : t.mut, minWidth: 110 }}>{bt.name}</span>
-                            <div style={{ flex: 1, height: 14, background: t.bg, borderRadius: 7, overflow: "hidden" }}>
-                              {count > 0 && <div style={{ width: pct + "%", height: "100%", background: bt.color, borderRadius: 7, transition: "width 0.3s" }} />}
-                            </div>
-                            <span style={{ fontSize: 11, fontWeight: 600, color: count > 0 ? t.tx : t.mut, minWidth: 28, textAlign: "right" }}>{count}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div style={{ fontSize: 11, color: t.tx2, marginTop: 14 }}>Assessment covers <span style={{ color: GOLD, fontWeight: 700 }}>{coveredCount} of 7</span> tiers across {selProcs.length} processes</div>
-                    {missing.length > 0 && <div style={{ fontSize: 11, color: t.mut, marginTop: 6, fontStyle: "italic" }}>Consider expanding scope to address: {missing.join(", ")}</div>}
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Downloads — Primary action first */}
-            <div style={labelStyle}>Deliverables</div>
-            <div style={{ ...cardStyle, textAlign: "center", padding: 24, marginBottom: 12 }}>
-              <div style={{ fontSize: 32, marginBottom: 8 }}>📊</div>
-              <div style={{ fontSize: 18, fontFamily: SERIF, fontWeight: 700, color: GOLD, marginBottom: 6 }}>Executive Deck (4 slides)</div>
-              <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.5, marginBottom: 14 }}>Board-ready: value summary, P&L, decision leakage, next steps</div>
-                <button onClick={() => generateExecDeck({ baseline, selProcs, valResult, scenarioLevel, procValues, procBenchmarks, agentResults, baselineData, selectedFunction, totalKPIs, FUNCTIONS, PROC_MAP, getQuartile, BLUEPRINT_TIERS, valueRealization, processOwners: processOwnership, companyFinancials, multiYearRamp })} style={{ ...btnPrimary, padding: "14px 24px", fontSize: 15, width: "100%", background: GOLD }}>
-                  ↓ Download Executive PPTX
-                </button>
-              </div>
-              <div onClick={() => setMoreOptionsOpen(prev => ({ ...prev, step7downloads: !prev.step7downloads }))} style={{ fontSize: 12, color: t.mut, cursor: "pointer", marginBottom: 8 }}>{moreOptionsOpen.step7downloads ? "▾ Fewer options" : "▸ More downloads"}</div>
-              {moreOptionsOpen.step7downloads && (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 28 }}>
-                <button onClick={() => generateDetailedDeck({ baseline, selProcs, valResult, scenarioLevel, procValues, procBenchmarks, agentResults, baselineData, selectedFunction, totalKPIs, FUNCTIONS, PROC_MAP, getQuartile, BLUEPRINT_TIERS, valueRealization, processOwners: processOwnership, companyFinancials, multiYearRamp })} style={{ ...btnSecondary, padding: "10px 16px", fontSize: 12 }}>
-                  ↓ Detailed PPTX (10 slides)
-                </button>
-                <button onClick={generatePhase0Report} style={{ ...btnSecondary, padding: "10px 16px", fontSize: 12 }}>
-                  ↓ Phase 0 Report (HTML)
-                </button>
-                <button onClick={exportSessionJSON} style={{ ...btnSecondary, padding: "10px 16px", fontSize: 12 }}>
-                  ↓ Export JSON
-                </button>
-                <button onClick={() => generatePPTX({ baseline, selProcs, valResult, scenarioLevel, procValues, procBenchmarks, agentResults, baselineData, selectedFunction, totalKPIs, FUNCTIONS, PROC_MAP, getQuartile, BLUEPRINT_TIERS })} style={{ ...btnSecondary, padding: "10px 16px", fontSize: 12 }}>
-                  ↓ Legacy PPTX (v1)
-                </button>
-              </div>
-              )}
-
-            {/* Share Section */}
-            {assessmentId && isOwner && (
-              <>
-                <div style={labelStyle}>Share Assessment</div>
-                <div style={{ ...cardStyle, marginBottom: 24, padding: 20 }}>
-                  <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                    <input value={shareEmail} onChange={e => setShareEmail(e.target.value)} placeholder="email@example.com"
-                      onKeyDown={e => e.key === "Enter" && handleShare()}
-                      style={{ flex: 1, padding: "10px 12px", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 8, color: t.tx, fontFamily: FONT, fontSize: 13, outline: "none" }} />
-                    <select value={shareRole} onChange={e => setShareRole(e.target.value)}
-                      style={{ padding: "10px", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 8, color: t.tx, fontFamily: FONT, fontSize: 12 }}>
-                      <option value="viewer">Viewer</option>
-                      <option value="editor">Editor</option>
-                    </select>
-                    <button onClick={handleShare} disabled={shareLoading || !shareEmail.trim()}
-                      style={{ padding: "10px 20px", borderRadius: 8, background: PURPLE, border: "none", color: "#fff", fontFamily: FONT, fontWeight: 600, fontSize: 13, cursor: shareLoading ? "wait" : "pointer", opacity: shareEmail.trim() ? 1 : 0.4 }}>
-                      Share
-                    </button>
-                  </div>
-                  <button onClick={() => { navigator.clipboard.writeText(window.location.href); }}
-                    style={{ padding: "8px 16px", borderRadius: 6, background: t.bg, border: `1px solid ${t.bdr}`, color: t.tx2, fontFamily: FONT, fontSize: 11, cursor: "pointer" }}>
-                    Copy Assessment Link
-                  </button>
-                </div>
-              </>
-            )}
-
-            {/* Next Steps — Auto-generated */}
-            <div style={labelStyle}>Recommended Next Steps</div>
-            <div style={{ ...cardStyle, padding: 20, marginBottom: 24 }}>
-              {(() => {
-                const topE2E = (() => { const e2eVals = {}; valResult.impacts.forEach(i => { e2eVals[i.e2e] = (e2eVals[i.e2e] || 0) + i.value; }); const sorted = Object.entries(e2eVals).sort((a, b) => b[1] - a[1]); return sorted[0]; })();
-                const topAgent = valResult.impacts.filter(i => (i.agentValue || 0) > 0).sort((a, b) => (b.agentValue || 0) - (a.agentValue || 0))[0];
-                const bottomQuartile = (() => { let count = 0; selProcs.forEach(p => { (p.kpis || []).forEach((kpi, ki) => { const current = procValues[p.id]?.[`kpi_current_${ki}`] ?? kpi.current; const bench = procBenchmarks[p.id]?.[`bench_${ki}`] ?? kpi.benchmark; const q = getQuartile(current, bench, kpi); if (q && q.score < 1.5) count++; }); }); return count; })();
-                const leastData = selProcs.filter(p => !Object.keys(baselineData).some(k => k.startsWith(p.id))).length;
-
-                const biggestProc = valResult.impacts[0];
-                const highFeasAgents = selProcs.filter(p => AGENT_SPECS[p.id] && AGENT_SPECS[p.id].feasibility >= 80);
-
-                const actionSteps = [];
-                if (topE2E) actionSteps.push({ action: `Prioritize ${topE2E[0]} for Phase 1`, rationale: `$${topE2E[1].toFixed(1)}M addressable — largest value concentration`, owner: "Executive Sponsor", timeline: "Week 1-2", priority: "High", c: GOLD });
-                if (biggestProc) actionSteps.push({ action: `Validate ${biggestProc.label} baseline with process owner`, rationale: `$${biggestProc.value.toFixed(1)}M at stake — confirm KPI assumptions before design`, owner: "Process Owner", timeline: "Week 1-3", priority: "High", c: GOLD });
-                if (topAgent) actionSteps.push({ action: `Deploy AI agent for ${topAgent.label}`, rationale: `$${topAgent.agentValue.toFixed(1)}M incremental uplift${highFeasAgents.length > 0 ? ` — ${highFeasAgents.length} high-feasibility candidates` : ""}`, owner: "Technology Lead", timeline: "Week 4-8", priority: "Medium", c: GREEN });
-                if (bottomQuartile > 0) actionSteps.push({ action: `Address ${bottomQuartile} bottom quartile KPIs`, rationale: "Largest headroom for improvement vs. industry benchmarks", owner: "Process Owners", timeline: "Week 2-6", priority: "High", c: RED });
-                if (leastData > 0) actionSteps.push({ action: `Collect baseline for ${leastData} processes with missing data`, rationale: "Missing data reduces confidence — schedule SME workshops", owner: "Project Lead", timeline: "Week 1-2", priority: "High", c: PURPLE });
-                actionSteps.push({ action: "Initiate Phase 1 detailed design", rationale: "Translate findings into wave plan, requirements, and roadmap", owner: "Project Lead", timeline: "Week 2-4", priority: "High", c: BLUE });
-
-                return (
-                  <div style={{ display: "grid", gap: 10 }}>
-                    {actionSteps.map((s, i) => {
-                      const pColor = s.priority === "High" ? GOLD : s.priority === "Medium" ? GREEN : BLUE;
-                      return (
-                        <div key={i} style={{ padding: "14px 16px", background: s.c + "08", border: `1px solid ${s.c}22`, borderRadius: 10, display: "grid", gridTemplateColumns: "1fr auto", gap: 8 }}>
-                          <div>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: t.tx, marginBottom: 4 }}>{i + 1}. {s.action}</div>
-                            <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.5, marginBottom: 6 }}>{s.rationale}</div>
-                            <div style={{ fontSize: 11, color: t.mut }}>Owner: {s.owner} | {s.timeline}</div>
-                          </div>
-                          <div style={{ padding: "4px 12px", borderRadius: 6, background: pColor + "20", color: pColor, fontSize: 11, fontWeight: 700, height: "fit-content", textTransform: "uppercase" }}>{s.priority}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
-            </div>
-
-            {/* Saved Scenarios */}
-            {savedScenarios.length > 0 && (
-              <>
-                <div style={labelStyle}>Saved Scenarios</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 8, marginBottom: 20 }}>
-                  {savedScenarios.map((sc, i) => (
-                    <div key={i} style={{ ...cardStyle, textAlign: "center" }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: t.tx }}>{sc.name}</div>
-                      <div style={{ fontSize: 22, fontFamily: SERIF, color: GOLD, margin: "6px 0" }}>{fd(sc.value)}</div>
-                      <div style={{ fontSize: 11, color: t.mut }}>{sc.count} processes · {sc.level}</div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
-              <button onClick={() => setStep(6)} style={btnSecondary}>← Value Realization</button>
-            </div>
-          </div>
-        )}
-
-      </div>
-
-      {/* ─── TOAST NOTIFICATIONS ─── */}
-      {toasts.length > 0 && (
-        <div style={{ position: "fixed", bottom: 80, right: 24, zIndex: 9999, display: "flex", flexDirection: "column", gap: 8 }}>
-          {toasts.map(toast => (
-            <div key={toast.id} style={{ padding: "10px 18px", background: GREEN + "20", border: `1px solid ${GREEN}44`, borderRadius: 10, color: GREEN, fontSize: 13, fontFamily: FONT, fontWeight: 600, animation: "fadeIn 0.2s ease-in", backdropFilter: "blur(8px)" }}>
-              {toast.message}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ─── CALC EXPLAINER DRAWER ─── */}
-      {calcExplainer && <CalcExplainerDrawer data={calcExplainer} onClose={() => { setCalcExplainer(null); setChallengeResult(null); }} mode={mode} />}
-
-      {/* ─── FOOTER ─── */}
-      <div style={{ borderTop: `1px solid ${t.bdr}`, background: mode === "dark" ? "#131312" : "#EFEBE3", padding: "6px 24px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 10, color: t.mut, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>PrismL4</span>
-        <div style={{ height: 10, width: 1, background: t.bdr }} />
-        <span style={{ fontSize: 10, color: t.sub }}>Bottom-Up Value Identification Engine</span>
-        <div style={{ flex: 1 }} />
-        <span style={{ fontSize: 10, color: t.sub }}>humaninthelead.ai</span>
-      </div>
-    </div>
-  );
-}
- + (valResult.total?.toFixed(1) || "0") + 'M. Company: ' + companyName + '. Generate for: ' + dim.label;
-                          callCatalyst(dim.key, fullP, (fn) => { fn(prev => { const r = prev[dim.key]; if (typeof r === "string") { try { const m = r.match(/{[sS]*}/); if (m) { const p = JSON.parse(m[0]); const fld = { people: "roleChanges", processes: "processesRedesigned", data: "dataGaps", technology: "integrationNeeds", governance: "decisionRights", operatingModel: "structuralChanges" }[dim.key]; if (p.keyPoints) setValueRealization(vr => ({ ...vr, [dim.key]: { ...(vr[dim.key] || {}), [fld]: Array.isArray(p.keyPoints) ? p.keyPoints.join("
-") : p.keyPoints } })); } } catch(_){} } setVrLoading(vl => ({ ...vl, [dim.key]: false })); return prev; }); }, setVrLoading);
-                        }} disabled={vrLoading[dim.key]} style={{ padding: "6px 14px", borderRadius: 8, background: dim.color + "15", border: `1px solid ${dim.color}30`, color: dim.color, fontFamily: FONT, fontSize: 11, fontWeight: 600, cursor: vrLoading[dim.key] ? "wait" : "pointer" }}>
+                          const fullP = "System: You are a transformation impact analyst. Generate specific impacts for the " + dim.label + " dimension. Return JSON with keyPoints array and actions array. User: Processes: " + selProcs.map(p => p.label).slice(0, 10).join(", ") + ". ERP value: " + (valResult.total ? "$" + valResult.total.toFixed(1) + "M" : "TBD") + ". Company: " + companyName + ". Generate for: " + dim.label;
+                          callCatalyst(dim.key, fullP, (fn) => {
+                            fn(prev => {
+                              const r = prev[dim.key];
+                              if (typeof r === "string") {
+                                try {
+                                  const m = r.match(/\{[\s\S]*\}/);
+                                  if (m) {
+                                    const parsed = JSON.parse(m[0]);
+                                    const fld = { people: "roleChanges", processes: "processesRedesigned", data: "dataGaps", technology: "integrationNeeds", governance: "decisionRights", operatingModel: "structuralChanges" }[dim.key];
+                                    if (parsed.keyPoints) setValueRealization(vr => ({ ...vr, [dim.key]: { ...(vr[dim.key] || {}), [fld]: Array.isArray(parsed.keyPoints) ? parsed.keyPoints.join("\n") : parsed.keyPoints } }));
+                                  }
+                                } catch (_e) { /* ignore parse errors */ }
+                              }
+                              setVrLoading(vl => ({ ...vl, [dim.key]: false }));
+                              return prev;
+                            });
+                          }, setVrLoading);
+                        }} disabled={vrLoading[dim.key]} style={{ padding: "6px 14px", borderRadius: 8, background: dim.color + "15", border: "1px solid " + dim.color + "30", color: dim.color, fontFamily: FONT, fontSize: 11, fontWeight: 600, cursor: vrLoading[dim.key] ? "wait" : "pointer" }}>
                           {vrLoading[dim.key] ? "Regenerating..." : "Regenerate"}
                         </button>
                         {!apiKey && catalystServer === false && <span style={{ fontSize: 10, color: t.mut, fontStyle: "italic" }}>Add API key to auto-populate</span>}
@@ -5616,14 +5467,14 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
               <div style={{ fontSize: 32, marginBottom: 8 }}>📊</div>
               <div style={{ fontSize: 18, fontFamily: SERIF, fontWeight: 700, color: GOLD, marginBottom: 6 }}>Executive Deck (4 slides)</div>
               <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.5, marginBottom: 14 }}>Board-ready: value summary, P&L, decision leakage, next steps</div>
-                <button onClick={() => generateExecDeck({ baseline, selProcs, valResult, scenarioLevel, procValues, procBenchmarks, agentResults, baselineData, selectedFunction, totalKPIs, FUNCTIONS, PROC_MAP, getQuartile, BLUEPRINT_TIERS, valueRealization, processOwners: processOwnership, companyFinancials, multiYearRamp })} style={{ ...btnPrimary, padding: "14px 24px", fontSize: 15, width: "100%", background: GOLD }}>
+                <button onClick={() => generateExecDeck({ baseline: { ...baseline, company: companyName }, selProcs, valResult, scenarioLevel, procValues, procBenchmarks, agentResults, baselineData, selectedFunction, totalKPIs, FUNCTIONS, PROC_MAP, getQuartile, BLUEPRINT_TIERS, valueRealization, processOwners: processOwnership, companyFinancials, multiYearRamp, assessmentProfile })} style={{ ...btnPrimary, padding: "14px 24px", fontSize: 15, width: "100%", background: GOLD }}>
                   ↓ Download Executive PPTX
                 </button>
               </div>
               <div onClick={() => setMoreOptionsOpen(prev => ({ ...prev, step7downloads: !prev.step7downloads }))} style={{ fontSize: 12, color: t.mut, cursor: "pointer", marginBottom: 8 }}>{moreOptionsOpen.step7downloads ? "▾ Fewer options" : "▸ More downloads"}</div>
               {moreOptionsOpen.step7downloads && (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 28 }}>
-                <button onClick={() => generateDetailedDeck({ baseline, selProcs, valResult, scenarioLevel, procValues, procBenchmarks, agentResults, baselineData, selectedFunction, totalKPIs, FUNCTIONS, PROC_MAP, getQuartile, BLUEPRINT_TIERS, valueRealization, processOwners: processOwnership, companyFinancials, multiYearRamp })} style={{ ...btnSecondary, padding: "10px 16px", fontSize: 12 }}>
+                <button onClick={() => generateDetailedDeck({ baseline: { ...baseline, company: companyName }, selProcs, valResult, scenarioLevel, procValues, procBenchmarks, agentResults, baselineData, selectedFunction, totalKPIs, FUNCTIONS, PROC_MAP, getQuartile, BLUEPRINT_TIERS, valueRealization, processOwners: processOwnership, companyFinancials, multiYearRamp, assessmentProfile })} style={{ ...btnSecondary, padding: "10px 16px", fontSize: 12 }}>
                   ↓ Detailed PPTX (10 slides)
                 </button>
                 <button onClick={generatePhase0Report} style={{ ...btnSecondary, padding: "10px 16px", fontSize: 12 }}>
