@@ -81,15 +81,12 @@ app.post('/api/catalyst', async (req, res) => {
   try {
     const { prompt, model, messages, max_tokens } = req.body;
 
-    // Use newer API version when structured messages are provided (needed for PDF document blocks)
-    const apiVersion = messages ? "2024-10-22" : "2023-06-01";
-
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-api-key": apiKey,
-        "anthropic-version": apiVersion,
+        "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
         model: model || "claude-sonnet-4-20250514",
