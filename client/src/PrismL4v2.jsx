@@ -4549,14 +4549,20 @@ The file content (base64 ${file.name.endsWith(".pdf") ? "PDF" : "Excel"}): ${bas
                         const currentVal = vals[`kpi_current_${ki}`];
                         const displayVal = currentVal ?? kpi.current ?? "";
                         const isDefault = currentVal == null && kpi.current != null;
+                        const kpiSrc = isDefault ? "default" : (kpiSources[proc.id]?.[`kpi_current_${ki}`] || (currentVal != null ? "manual" : null));
+                        const srcStyle = { default: { label: "est.", color: GOLD, bg: GOLD + "15", bdr: GOLD + "44" }, manual: { label: "manual", color: t.tx2, bg: "transparent", bdr: t.bdr }, questionnaire: { label: "questionnaire", color: GREEN, bg: GREEN + "15", bdr: GREEN + "44" }, mining: { label: "process mining", color: BLUE, bg: BLUE + "15", bdr: BLUE + "44" } }[kpiSrc];
                         return (
                         <div key={ki} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
                           <span style={{ fontSize: 12, color: t.tx2, flex: 1 }}>{kpi.name}</span>
-                          <input type="number" placeholder="Current" value={displayVal} onChange={e => setVal(`kpi_current_${ki}`, e.target.value === "" ? null : parseFloat(e.target.value))}
+                          <input type="number" placeholder="Current" value={displayVal} onChange={e => {
+                            const v = e.target.value === "" ? null : parseFloat(e.target.value);
+                            setVal(`kpi_current_${ki}`, v);
+                            if (v != null) setKpiSources(prev => ({ ...prev, [proc.id]: { ...(prev[proc.id] || {}), [`kpi_current_${ki}`]: "manual" } }));
+                          }}
                             disabled={viewMode === "client"}
                             style={{ width: 80, background: isDefault ? GOLD + "08" : t.bg, border: `1px solid ${isDefault ? GOLD + "44" : t.bdr}`, borderRadius: 4, padding: "3px 6px", color: isDefault ? GOLD : t.tx, fontFamily: "monospace", fontSize: 12, textAlign: "right" }} />
                           <span style={{ fontSize: 10, color: t.mut, minWidth: 30 }}>{kpi.unit}</span>
-                          {isDefault && <span style={{ fontSize: 8, color: GOLD, whiteSpace: "nowrap" }}>est.</span>}
+                          {srcStyle && <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, border: `1px solid ${srcStyle.bdr}`, background: srcStyle.bg, color: srcStyle.color, whiteSpace: "nowrap", fontWeight: 600 }}>{srcStyle.label}</span>}
                         </div>
                         );
                       })}
