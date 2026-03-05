@@ -861,6 +861,7 @@ const ConfidenceBadge = ({ level, style: extraStyle }) => {
 const InfoIcon = ({ onClick, color }) => (
   <span onClick={e => { e.stopPropagation(); onClick(e); }} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, borderRadius: "50%", background: (color || "#888") + "20", color: color || "#888", fontSize: 9, fontWeight: 700, cursor: "pointer", marginLeft: 4, flexShrink: 0, border: `1px solid ${(color || "#888")}33`, lineHeight: 1, userSelect: "none" }} title="View calculation breakdown">i</span>
 );
+const ExplainerIcon = InfoIcon;
 
 const CalcExplainerDrawer = ({ data, onClose, mode }) => {
   const t = TH[mode];
