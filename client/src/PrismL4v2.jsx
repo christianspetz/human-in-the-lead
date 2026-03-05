@@ -1578,6 +1578,28 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
 
   const valResult = useMemo(() => computeValue(), [computeValue]);
 
+  // Auto-populate procValues from KPI defaults when entering Step 3 or 5
+  // This ensures baseline values from Step 2 (and KPI defaults) pre-fill Step 3
+  useEffect(() => {
+    if (step === 3 || step === 5) {
+      setProcValues(prev => {
+        let updated = { ...prev };
+        let changed = false;
+        selProcs.forEach(proc => {
+          (proc.kpis || []).forEach((kpi, ki) => {
+            const key = `kpi_current_${ki}`;
+            const existing = updated[proc.id]?.[key];
+            if (existing == null && kpi.current != null) {
+              updated = { ...updated, [proc.id]: { ...(updated[proc.id] || {}), [key]: kpi.current } };
+              changed = true;
+            }
+          });
+        });
+        return changed ? updated : prev;
+      });
+    }
+  }, [step, selProcs]);
+
   // Step completion indicators
   const stepStatus = useMemo(() => ({
     1: selectedProcs.size > 0,
@@ -4266,15 +4288,21 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                     {/* KPI Baselines */}
                     <div style={{ ...labelStyle, marginTop: 8, fontSize: 10 }}>KPI Baselines</div>
                     <div style={{ display: "grid", gap: 4 }}>
-                      {(proc.kpis || []).map((kpi, ki) => (
+                      {(proc.kpis || []).map((kpi, ki) => {
+                        const currentVal = vals[`kpi_current_${ki}`];
+                        const displayVal = currentVal ?? kpi.current ?? "";
+                        const isDefault = currentVal == null && kpi.current != null;
+                        return (
                         <div key={ki} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
                           <span style={{ fontSize: 12, color: t.tx2, flex: 1 }}>{kpi.name}</span>
-                          <input type="number" placeholder="Current" value={vals[`kpi_current_${ki}`] ?? ""} onChange={e => setVal(`kpi_current_${ki}`, parseFloat(e.target.value) || null)}
+                          <input type="number" placeholder="Current" value={displayVal} onChange={e => setVal(`kpi_current_${ki}`, e.target.value === "" ? null : parseFloat(e.target.value))}
                             disabled={viewMode === "client"}
-                            style={{ width: 80, background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 4, padding: "3px 6px", color: t.tx, fontFamily: "monospace", fontSize: 12, textAlign: "right" }} />
+                            style={{ width: 80, background: isDefault ? GOLD + "08" : t.bg, border: `1px solid ${isDefault ? GOLD + "44" : t.bdr}`, borderRadius: 4, padding: "3px 6px", color: isDefault ? GOLD : t.tx, fontFamily: "monospace", fontSize: 12, textAlign: "right" }} />
                           <span style={{ fontSize: 10, color: t.mut, minWidth: 30 }}>{kpi.unit}</span>
+                          {isDefault && <span style={{ fontSize: 8, color: GOLD, whiteSpace: "nowrap" }}>est.</span>}
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 );
@@ -4954,11 +4982,11 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                   ))}</tr></thead>
                   <tbody>
                     {[
-                      { l: "Revenue", base: baseline.revenue, imp: revImpact, agent: agentRevImpact || 0 },
-                      { l: "COGS", base: baseline.cogs, imp: -cogsImpact, agent: -(agentCogsImpact || 0) },
-                      { l: "Gross Profit", base: baseline.revenue - baseline.cogs, imp: revImpact + cogsImpact, agent: (agentRevImpact || 0) + (agentCogsImpact || 0) },
-                      { l: "SG&A", base: baseline.sga, imp: -sgaImpact, agent: -(agentSgaImpact || 0) },
-                      { l: "EBITDA", base: baseline.ebitda, imp: revImpact + cogsImpact + sgaImpact, agent: (agentRevImpact || 0) + (agentCogsImpact || 0) + (agentSgaImpact || 0) },
+                      { l: "Revenue", base: baseline.revenue || 0, imp: revImpact, agent: agentRevImpact || 0 },
+                      { l: "COGS", base: baseline.cogs || 0, imp: -cogsImpact, agent: -(agentCogsImpact || 0) },
+                      { l: "Gross Profit", base: (baseline.revenue || 0) - (baseline.cogs || 0), imp: revImpact + cogsImpact, agent: (agentRevImpact || 0) + (agentCogsImpact || 0) },
+                      { l: "SG&A", base: baseline.sga || 0, imp: -sgaImpact, agent: -(agentSgaImpact || 0) },
+                      { l: "EBITDA", base: baseline.ebitda || 0, imp: revImpact + cogsImpact + sgaImpact, agent: (agentRevImpact || 0) + (agentCogsImpact || 0) + (agentSgaImpact || 0) },
                     ].map(row => (
                       <tr key={row.l} style={{ background: row.l === "EBITDA" ? GOLD + "08" : "transparent" }}>
                         <td style={{ padding: "6px 12px", borderBottom: `1px solid ${t.bdr}40`, color: row.l === "EBITDA" ? GOLD : t.tx2, fontWeight: row.l === "EBITDA" ? 700 : 400 }}>{row.l}</td>
@@ -4986,11 +5014,11 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                   </tr></thead>
                   <tbody>
                     {[
-                      { l: "Accounts Receivable", base: baseline.recv, imp: -valResult.balanceSheet.receivablesImpact, c: GREEN },
-                      { l: "Inventory", base: baseline.inventory, imp: -valResult.balanceSheet.inventoryImpact, c: GREEN },
-                      { l: "Accounts Payable", base: baseline.pay, imp: valResult.balanceSheet.payablesImpact, c: BLUE },
+                      { l: "Accounts Receivable", base: baseline.recv || 0, imp: -valResult.balanceSheet.receivablesImpact, c: GREEN },
+                      { l: "Inventory", base: baseline.inventory || 0, imp: -valResult.balanceSheet.inventoryImpact, c: GREEN },
+                      { l: "Accounts Payable", base: baseline.pay || 0, imp: valResult.balanceSheet.payablesImpact, c: BLUE },
                       { l: "Net Working Capital",
-                        base: baseline.recv + baseline.inventory - baseline.pay,
+                        base: (baseline.recv || 0) + (baseline.inventory || 0) - (baseline.pay || 0),
                         imp: -(valResult.balanceSheet.receivablesImpact + valResult.balanceSheet.inventoryImpact - valResult.balanceSheet.payablesImpact),
                         c: GOLD },
                     ].map(row => (
@@ -5300,8 +5328,12 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                             <span key={yi}>
                               Y{yi + 1}
                               <input type="number" value={ramp[cfg.key][yi]} onChange={e => {
-                                const newRamp = { ...multiYearRamp };
-                                newRamp[cfg.key] = [...newRamp[cfg.key]];
+                                const base = multiYearRamp || {};
+                                const newRamp = {
+                                  erp: base.erp ? [...base.erp] : [30, 70, 100],
+                                  agent: base.agent ? [...base.agent] : [0, 40, 100],
+                                  costSpread: base.costSpread ? [...base.costSpread] : [70, 20, 10],
+                                };
                                 newRamp[cfg.key][yi] = parseInt(e.target.value) || 0;
                                 setMultiYearRamp(newRamp);
                               }} style={{ width: 36, textAlign: "center", background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 4, padding: "2px 4px", color: cfg.c, fontFamily: "monospace", fontSize: 11, marginLeft: 2 }} />%
@@ -5370,10 +5402,11 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
               <button onClick={() => setStep(6)} style={btnPrimary}>Value Realization →</button>
             </div>
           </div>
-        ); } catch (err) { return (
+        ); } catch (err) { console.error("Step 5 render error:", err); return (
           <div style={{ padding: 24, background: "#D48A8A15", border: "1px solid #D48A8A33", borderRadius: 12 }}>
             <div style={{ fontSize: 16, fontWeight: 700, color: "#D48A8A", marginBottom: 8 }}>Value Calculation Error</div>
-            <pre style={{ fontSize: 11, color: t.tx2, overflow: "auto", marginBottom: 12 }}>{err?.message || "Unknown error"}</pre>
+            <pre style={{ fontSize: 11, color: t.tx2, overflow: "auto", marginBottom: 12, maxHeight: 200 }}>{err?.message || "Unknown error"}{"\n"}{err?.stack || ""}</pre>
+            <div style={{ fontSize: 12, color: t.mut, marginBottom: 12 }}>Processes: {selProcs.length}, Scenario: {scenarioLevel}, ProcValues keys: {Object.keys(procValues).length}, MultiYearRamp: {multiYearRamp ? "set" : "null"}</div>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => setStep(4)} style={btnSecondary}>← Back to Benchmark</button>
               <button onClick={() => { setScenarioLevel("Medium"); setProcScenarios({}); }} style={btnPrimary}>Reset Scenarios</button>
