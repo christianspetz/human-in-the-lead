@@ -836,8 +836,8 @@ const SOURCE_META = {
 /* ═══════════════════════════════════════════════════════
    HELPERS
    ═══════════════════════════════════════════════════════ */
-const fm = v => { if (!v && v !== 0) return "—"; const a = Math.abs(v), s = v < 0 ? "-" : ""; return a >= 1000 ? `${s}$${(a / 1000).toFixed(1)}B` : `${s}$${a.toFixed(0)}M`; };
-const fd = v => { if (Math.abs(v) < 0.5) return "—"; const s = v >= 0 ? "+" : ""; return Math.abs(v) >= 1000 ? `${s}$${(v / 1000).toFixed(1)}B` : `${s}$${v.toFixed(0)}M`; };
+const fm = v => { if (v == null || typeof v !== "number" || !isFinite(v)) return "—"; const a = Math.abs(v), s = v < 0 ? "-" : ""; return a >= 1000 ? `${s}$${(a / 1000).toFixed(1)}B` : `${s}$${a.toFixed(0)}M`; };
+const fd = v => { if (v == null || typeof v !== "number" || !isFinite(v)) return "—"; if (Math.abs(v) < 0.5) return "—"; const s = v >= 0 ? "+" : ""; return Math.abs(v) >= 1000 ? `${s}$${(v / 1000).toFixed(1)}B` : `${s}$${v.toFixed(0)}M`; };
 
 /* ═══════════════════════════════════════════════════════
    CALCULATION EXPLAINER — click-to-explain drawer + helpers
@@ -1304,6 +1304,28 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
     const bk = SMART_TO_BASELINE[qId];
     if (bk) setBaselineData(prev => ({ ...prev, [`${procId}_${bk}`]: value }));
     if (qId === "q-volume") setBaselineData(prev => ({ ...prev, [`${procId}_a_volumePeriod`]: "monthly" }));
+    // Sync relevant questionnaire answers into KPI current values
+    const numVal = parseFloat(value);
+    if (!isNaN(numVal)) {
+      const proc = PROC_MAP[procId];
+      if (proc?.kpis) {
+        proc.kpis.forEach((kpi, ki) => {
+          const kn = kpi.name.toLowerCase();
+          const shouldSync =
+            (qId === "q-automation" && (/auto|touchless|straight.?through|stp|no.?touch/i.test(kpi.name)) && kpi.unit === "%") ||
+            (qId === "q-error-rate" && (/error|exception/i.test(kpi.name)) && kpi.unit === "%") ||
+            (qId === "q-rework" && (/rework/i.test(kpi.name)) && kpi.unit === "%") ||
+            (qId === "q-cycle" && (/cycle time|resolution time|processing time|turnaround/i.test(kpi.name)) && (kpi.unit === "days" || kpi.unit === "hours"));
+          if (shouldSync) {
+            setProcValues(prev => {
+              const existing = prev[procId]?.[`kpi_current_${ki}`];
+              if (existing != null) return prev; // don't overwrite manual entry
+              return { ...prev, [procId]: { ...(prev[procId] || {}), [`kpi_current_${ki}`]: numVal } };
+            });
+          }
+        });
+      }
+    }
   }, []);
 
   const setSmartUnit = useCallback((procId, qId, unit) => {
@@ -1412,10 +1434,10 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
   const effectiveFinancials = useMemo(() => {
     if (companyFinancials) {
       return {
-        revenue: companyFinancials.revenue || baseline.revenue,
-        cogs: companyFinancials.cogs || baseline.cogs,
-        sga: companyFinancials.sga || baseline.sga,
-        ebitda: companyFinancials.ebitda || baseline.ebitda,
+        revenue: companyFinancials.revenue || baseline.revenue || 0,
+        cogs: companyFinancials.cogs || baseline.cogs || 0,
+        sga: companyFinancials.sga || baseline.sga || 0,
+        ebitda: companyFinancials.ebitda || baseline.ebitda || 0,
         annualPayroll: companyFinancials.annualPayroll || null,
         headcount: companyFinancials.headcount || null,
         financeHeadcount: companyFinancials.financeHeadcount || null,
@@ -1423,7 +1445,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
         anchored: true,
       };
     }
-    return { revenue: baseline.revenue, cogs: baseline.cogs, sga: baseline.sga, ebitda: baseline.ebitda, source: "Revenue band estimate", anchored: false };
+    return { revenue: baseline.revenue || 0, cogs: baseline.cogs || 0, sga: baseline.sga || 0, ebitda: baseline.ebitda || 0, source: "Revenue band estimate", anchored: false };
   }, [companyFinancials, baseline]);
 
   // Value computation for Step 7
@@ -4782,7 +4804,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
         {/* ═══════════════════════════════════════════════
             STEP 5 — Value Calculation
            ═══════════════════════════════════════════════ */}
-        {step === 5 && (
+        {step === 5 && (() => { try { return (
           <div>
             {stepHeader(5, "Value Calculation", "Review the gap analysis and choose a scenario level.")}
 
@@ -5209,23 +5231,24 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                 const tv = valResult.total || 0;
                 const agTot = valResult.agentTotal || 0;
                 const bsh = valResult.balanceSheet || { totalWorkingCapital: 0 };
-                const ramp = multiYearRamp || { erp: [30, 70, 100], agent: [0, 40, 100], costSpread: [70, 20, 10] };
+                const _r = multiYearRamp || {};
+                const ramp = { erp: _r.erp || [30, 70, 100], agent: _r.agent || [0, 40, 100], costSpread: _r.costSpread || [70, 20, 10] };
 
                 // Calculate per-year values
-                const y1ERP = tv * ramp.erp[0] / 100;
-                const y2ERP = tv * ramp.erp[1] / 100;
-                const y3ERP = tv * ramp.erp[2] / 100;
-                const y1Agent = agTot * ramp.agent[0] / 100;
-                const y2Agent = agTot * ramp.agent[1] / 100;
-                const y3Agent = agTot * ramp.agent[2] / 100;
+                const y1ERP = tv * (ramp.erp[0] || 0) / 100;
+                const y2ERP = tv * (ramp.erp[1] || 0) / 100;
+                const y3ERP = tv * (ramp.erp[2] || 0) / 100;
+                const y1Agent = agTot * (ramp.agent[0] || 0) / 100;
+                const y2Agent = agTot * (ramp.agent[1] || 0) / 100;
+                const y3Agent = agTot * (ramp.agent[2] || 0) / 100;
 
                 // Implementation costs from agent specs
                 const totalImplCost = selProcs.reduce((s, p) => s + (AGENT_SPECS[p.id]?.implCost || 0), 0) / 1000; // convert K to M
                 const erpImplCost = tv * 0.15; // rough ERP implementation as 15% of annual value (industry standard)
                 const totalCost = totalImplCost + erpImplCost;
-                const y1Cost = totalCost * ramp.costSpread[0] / 100;
-                const y2Cost = totalCost * ramp.costSpread[1] / 100;
-                const y3Cost = totalCost * ramp.costSpread[2] / 100;
+                const y1Cost = totalCost * (ramp.costSpread[0] || 0) / 100;
+                const y2Cost = totalCost * (ramp.costSpread[1] || 0) / 100;
+                const y3Cost = totalCost * (ramp.costSpread[2] || 0) / 100;
 
                 const y1Net = y1ERP + y1Agent - y1Cost;
                 const y2Net = y2ERP + y2Agent - y2Cost;
@@ -5246,7 +5269,9 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
 
                 // Breakeven calculation
                 const monthlyNet = (y1Net + y2Net + y3Net) / 36;
-                const breakEvenMonths = y1Net < 0 ? Math.ceil(Math.abs(y1Net) / ((y2Net + y3Net) / 24)) + 12 : Math.ceil(y1Cost / ((y1ERP + y1Agent) / 12));
+                const _beDiv1 = (y2Net + y3Net) / 24;
+                const _beDiv2 = (y1ERP + y1Agent) / 12;
+                const breakEvenMonths = y1Net < 0 ? (_beDiv1 > 0 ? Math.ceil(Math.abs(y1Net) / _beDiv1) + 12 : 0) : (_beDiv2 > 0 ? Math.ceil(y1Cost / _beDiv2) : 0);
 
                 // Chart data
                 const chartData = [
@@ -5325,8 +5350,8 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                         <LineChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke={t.bdr} />
                           <XAxis dataKey="month" tick={{ fill: t.tx2, fontSize: 11 }} tickFormatter={v => `M${v}`} axisLine={{ stroke: t.bdr }} />
-                          <YAxis tick={{ fill: t.mut, fontSize: 11, fontFamily: "monospace" }} axisLine={{ stroke: t.bdr }} tickFormatter={v => `$${v.toFixed(0)}M`} />
-                          <Tooltip contentStyle={{ background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 8, fontSize: 13, color: t.tx }} formatter={v => [`$${v.toFixed(1)}M`, "Cumulative Net"]} />
+                          <YAxis tick={{ fill: t.mut, fontSize: 11, fontFamily: "monospace" }} axisLine={{ stroke: t.bdr }} tickFormatter={v => typeof v === "number" && isFinite(v) ? `$${v.toFixed(0)}M` : "$0M"} />
+                          <Tooltip contentStyle={{ background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 8, fontSize: 13, color: t.tx }} formatter={v => [typeof v === "number" && isFinite(v) ? `$${v.toFixed(1)}M` : "—", "Cumulative Net"]} />
                           <ReferenceLine y={0} stroke={RED} strokeDasharray="3 3" />
                           <Line type="monotone" dataKey="value" stroke={GOLD} strokeWidth={2} dot={{ fill: GOLD, r: 4 }} />
                         </LineChart>
@@ -5345,7 +5370,16 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
               <button onClick={() => setStep(6)} style={btnPrimary}>Value Realization →</button>
             </div>
           </div>
-        )}
+        ); } catch (err) { return (
+          <div style={{ padding: 24, background: "#D48A8A15", border: "1px solid #D48A8A33", borderRadius: 12 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#D48A8A", marginBottom: 8 }}>Value Calculation Error</div>
+            <pre style={{ fontSize: 11, color: t.tx2, overflow: "auto", marginBottom: 12 }}>{err?.message || "Unknown error"}</pre>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setStep(4)} style={btnSecondary}>← Back to Benchmark</button>
+              <button onClick={() => { setScenarioLevel("Medium"); setProcScenarios({}); }} style={btnPrimary}>Reset Scenarios</button>
+            </div>
+          </div>
+        ); } })()}
 
         {/* ═══════════════════════════════════════════════
             STEP 6 — Value Realization Plan
