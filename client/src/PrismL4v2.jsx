@@ -836,8 +836,8 @@ const SOURCE_META = {
 /* ═══════════════════════════════════════════════════════
    HELPERS
    ═══════════════════════════════════════════════════════ */
-const fm = v => { if (!v && v !== 0) return "—"; const a = Math.abs(v), s = v < 0 ? "-" : ""; return a >= 1000 ? `${s}$${(a / 1000).toFixed(1)}B` : `${s}$${a.toFixed(0)}M`; };
-const fd = v => { if (Math.abs(v) < 0.5) return "—"; const s = v >= 0 ? "+" : ""; return Math.abs(v) >= 1000 ? `${s}$${(v / 1000).toFixed(1)}B` : `${s}$${v.toFixed(0)}M`; };
+const fm = v => { if (v == null || typeof v !== "number" || !isFinite(v)) return "—"; const a = Math.abs(v), s = v < 0 ? "-" : ""; return a >= 1000 ? `${s}$${(a / 1000).toFixed(1)}B` : `${s}$${a.toFixed(0)}M`; };
+const fd = v => { if (v == null || typeof v !== "number" || !isFinite(v)) return "—"; if (Math.abs(v) < 0.5) return "—"; const s = v >= 0 ? "+" : ""; return Math.abs(v) >= 1000 ? `${s}$${(v / 1000).toFixed(1)}B` : `${s}$${v.toFixed(0)}M`; };
 
 /* ═══════════════════════════════════════════════════════
    CALCULATION EXPLAINER — click-to-explain drawer + helpers
@@ -1007,6 +1007,14 @@ const SMART_QUESTIONS = {
       showWhen: (a) => a["q-pain"] === "Data quality issues" || a["q-pain"] === "System integration gaps" },
     { id: "q-reporting-freq", question: "How often is this data reported to management?", type: "dropdown", options: ["Real-time", "Daily", "Weekly", "Monthly", "Quarterly", "Ad-hoc only"], category: "leakage",
       showWhen: () => true },
+    { id: "q-decision-who", question: "Who makes decisions based on this data?", type: "dropdown", options: ["Frontline staff", "Team leads / supervisors", "Middle management", "Senior leadership", "Cross-functional committee", "No one — data not used for decisions"], category: "leakage",
+      showWhen: () => true },
+    { id: "q-decision-gap", question: "What decisions CANNOT be made because this data is missing or unreliable?", type: "text", category: "leakage",
+      showWhen: () => true },
+    { id: "q-freed-capacity", question: "If this process were fully automated, what would you do with the freed capacity?", type: "text", category: "leakage",
+      showWhen: () => true },
+    { id: "q-data-quality-issue", question: "What is the biggest data quality issue in this process today?", type: "text", category: "leakage",
+      showWhen: () => true },
     { id: "q-data-source", question: "Is there a single source of truth?", type: "dropdown", options: ["Yes — one system", "Partially — master + satellites", "No — multiple disconnected sources"], category: "leakage",
       showWhen: (a) => a["q-data-quality"] && !a["q-data-quality"].startsWith("Excellent") },
     { id: "q-manual-data", question: "What % of decisions rely on manually gathered data?", type: "number", unit: "%", category: "leakage", range: [0, 100],
@@ -1022,7 +1030,9 @@ const SMART_TO_BASELINE = {
   "q-ftes": "a_ftes", "q-volume": "a_volume", "q-automation": "a_automation",
   "q-rework": "a_rework", "q-cycle": "a_cycleTime", "q-error-rate": "a_errorRate",
   "q-bottleneck": "a_bottleneck", "q-data-quality": "b_dataQuality",
-  "q-reporting-freq": "b_reportFreq", "q-data-source": "b_ssot",
+  "q-reporting-freq": "b_reportFreq", "q-decision-who": "b_decisionWho",
+  "q-decision-gap": "b_decisionGap", "q-freed-capacity": "b_freedCapacity",
+  "q-data-quality-issue": "b_dataQualityIssue", "q-data-source": "b_ssot",
   "q-manual-data": "b_manualPct", "q-leakage-est": "b_leakage",
 };
 
@@ -1087,7 +1097,7 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
   const [agentResults, setAgentResults] = useState(initialData?.agentResults || {});
 
   // Calculations (Step 7)
-  const [scenarioLevel, setScenarioLevel] = useState("Medium");
+  const [scenarioLevel, setScenarioLevel] = useState(initialData?.scenarioLevel || "Medium");
   const [savedScenarios, setSavedScenarios] = useState(initialData?.savedScenarios || []);
 
   // Value Realization Plan (Step 6)
@@ -1127,6 +1137,9 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
   // Questionnaire upload & process mining
   const [uploadedMining, setUploadedMining] = useState(initialData?.uploadedMining || {});
 
+  // KPI value source tracking: { [procId]: { [kpiKey]: "manual" | "questionnaire" | "mining" | "default" } }
+  const [kpiSources, setKpiSources] = useState(initialData?.kpiSources || {});
+
   // Paste responses modal
   const [showPasteModal, setShowPasteModal] = useState(false);
   const [pasteText, setPasteText] = useState("");
@@ -1154,7 +1167,7 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
   // Company Financials (Feature 1)
   const [companyFinancials, setCompanyFinancials] = useState(initialData?.companyFinancials || null);
   const [financialsEntryMode, setFinancialsEntryMode] = useState(null); // "upload" | "manual"
-  const [financialsDraft, setFinancialsDraft] = useState({ revenue: "", cogs: "", grossProfit: "", sga: "", ebitda: "", headcount: "", financeHeadcount: "", annualPayroll: "", fiscalYear: "", currency: "USD", companyName: "", source: "manual" });
+  const [financialsDraft, setFinancialsDraft] = useState({ revenue: "", cogs: "", grossProfit: "", sga: "", ebitda: "", operatingIncome: "", netIncome: "", accountsReceivable: "", accountsPayable: "", inventory: "", capex: "", operatingCashFlow: "", depreciation: "", headcount: "", financeHeadcount: "", annualPayroll: "", fiscalYear: "", currency: "USD", companyName: "", source: "manual" });
   const [financialsExtracting, setFinancialsExtracting] = useState(false);
   const [financialsConfidence, setFinancialsConfidence] = useState({});
 
@@ -1304,6 +1317,33 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
     const bk = SMART_TO_BASELINE[qId];
     if (bk) setBaselineData(prev => ({ ...prev, [`${procId}_${bk}`]: value }));
     if (qId === "q-volume") setBaselineData(prev => ({ ...prev, [`${procId}_a_volumePeriod`]: "monthly" }));
+    // Sync relevant questionnaire answers into KPI current values
+    const numVal = parseFloat(value);
+    if (!isNaN(numVal)) {
+      const proc = PROC_MAP[procId];
+      if (proc?.kpis) {
+        proc.kpis.forEach((kpi, ki) => {
+          const kn = kpi.name.toLowerCase();
+          const shouldSync =
+            (qId === "q-automation" && (/auto|touchless|straight.?through|stp|no.?touch/i.test(kpi.name)) && kpi.unit === "%") ||
+            (qId === "q-error-rate" && (/error|exception/i.test(kpi.name)) && kpi.unit === "%") ||
+            (qId === "q-rework" && (/rework/i.test(kpi.name)) && kpi.unit === "%") ||
+            (qId === "q-cycle" && (/cycle time|resolution time|processing time|turnaround/i.test(kpi.name)) && (kpi.unit === "days" || kpi.unit === "hours"));
+          if (shouldSync) {
+            setProcValues(prev => {
+              const existing = prev[procId]?.[`kpi_current_${ki}`];
+              if (existing != null) return prev; // don't overwrite manual entry
+              return { ...prev, [procId]: { ...(prev[procId] || {}), [`kpi_current_${ki}`]: numVal } };
+            });
+            setKpiSources(prev => {
+              const existing = prev[procId]?.[`kpi_current_${ki}`];
+              if (existing && existing !== "default") return prev;
+              return { ...prev, [procId]: { ...(prev[procId] || {}), [`kpi_current_${ki}`]: "questionnaire" } };
+            });
+          }
+        });
+      }
+    }
   }, []);
 
   const setSmartUnit = useCallback((procId, qId, unit) => {
@@ -1354,7 +1394,8 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
       baseline, selectedProcs: [...selectedProcs], selectedFunction,
       procValues, procBenchmarks, questAnswers, baselineData, procScenarios,
       catalystResults, agentResults, uploadedMining, savedScenarios, valueRealization,
-      companyFinancials, multiYearRamp, assessmentProfile, lastStep: step,
+      companyFinancials, multiYearRamp, assessmentProfile, kpiSources,
+      processOwnership, vrAutoPopulated, scenarioLevel, lastStep: step,
     };
     try {
       await fetch(`/api/assessments/${assessmentId}`, {
@@ -1364,9 +1405,10 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
         body: JSON.stringify({ data, companyName: assessmentProfile.companyName || baseline.company }),
       });
       setLastSaved(new Date());
+      showToast("Project saved");
     } catch (err) { console.error("Auto-save failed:", err); }
     setSaving(false);
-  }, [assessmentId, baseline, selectedProcs, selectedFunction, procValues, procBenchmarks, questAnswers, baselineData, procScenarios, catalystResults, agentResults, uploadedMining, savedScenarios, valueRealization, companyFinancials, multiYearRamp, assessmentProfile, step]);
+  }, [assessmentId, baseline, selectedProcs, selectedFunction, procValues, procBenchmarks, questAnswers, baselineData, procScenarios, catalystResults, agentResults, uploadedMining, savedScenarios, valueRealization, companyFinancials, multiYearRamp, assessmentProfile, processOwnership, vrAutoPopulated, scenarioLevel, step, showToast]);
 
   // Auto-save every 30 seconds when data changes
   useEffect(() => {
@@ -1374,7 +1416,16 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(saveToServer, 30000);
     return () => clearTimeout(saveTimer.current);
-  }, [baseline, selectedProcs, procValues, procBenchmarks, questAnswers, baselineData, procScenarios, catalystResults, agentResults, uploadedMining, savedScenarios, valueRealization, companyFinancials, multiYearRamp, assessmentProfile, step]);
+  }, [baseline, selectedProcs, procValues, procBenchmarks, questAnswers, baselineData, procScenarios, catalystResults, agentResults, uploadedMining, savedScenarios, valueRealization, companyFinancials, multiYearRamp, assessmentProfile, processOwnership, vrAutoPopulated, scenarioLevel, step]);
+
+  // Auto-save when user advances a step
+  const prevStepRef = useRef(step);
+  useEffect(() => {
+    if (step !== prevStepRef.current) {
+      prevStepRef.current = step;
+      saveToServer();
+    }
+  }, [step, saveToServer]);
 
   // ═══ Share helpers ═══
   const fetchShares = useCallback(async () => {
@@ -1412,10 +1463,10 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
   const effectiveFinancials = useMemo(() => {
     if (companyFinancials) {
       return {
-        revenue: companyFinancials.revenue || baseline.revenue,
-        cogs: companyFinancials.cogs || baseline.cogs,
-        sga: companyFinancials.sga || baseline.sga,
-        ebitda: companyFinancials.ebitda || baseline.ebitda,
+        revenue: companyFinancials.revenue || baseline.revenue || 0,
+        cogs: companyFinancials.cogs || baseline.cogs || 0,
+        sga: companyFinancials.sga || baseline.sga || 0,
+        ebitda: companyFinancials.ebitda || baseline.ebitda || 0,
         annualPayroll: companyFinancials.annualPayroll || null,
         headcount: companyFinancials.headcount || null,
         financeHeadcount: companyFinancials.financeHeadcount || null,
@@ -1423,7 +1474,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
         anchored: true,
       };
     }
-    return { revenue: baseline.revenue, cogs: baseline.cogs, sga: baseline.sga, ebitda: baseline.ebitda, source: "Revenue band estimate", anchored: false };
+    return { revenue: baseline.revenue || 0, cogs: baseline.cogs || 0, sga: baseline.sga || 0, ebitda: baseline.ebitda || 0, source: "Revenue band estimate", anchored: false };
   }, [companyFinancials, baseline]);
 
   // Value computation for Step 7
@@ -1555,6 +1606,28 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
   }, [selProcs, procValues, procBenchmarks, scenarioLevel, procScenarios, baseline, effectiveFinancials]);
 
   const valResult = useMemo(() => computeValue(), [computeValue]);
+
+  // Auto-populate procValues from KPI defaults when entering Step 3 or 5
+  // This ensures baseline values from Step 2 (and KPI defaults) pre-fill Step 3
+  useEffect(() => {
+    if (step === 3 || step === 5) {
+      setProcValues(prev => {
+        let updated = { ...prev };
+        let changed = false;
+        selProcs.forEach(proc => {
+          (proc.kpis || []).forEach((kpi, ki) => {
+            const key = `kpi_current_${ki}`;
+            const existing = updated[proc.id]?.[key];
+            if (existing == null && kpi.current != null) {
+              updated = { ...updated, [proc.id]: { ...(updated[proc.id] || {}), [key]: kpi.current } };
+              changed = true;
+            }
+          });
+        });
+        return changed ? updated : prev;
+      });
+    }
+  }, [step, selProcs]);
 
   // Step completion indicators
   const stepStatus = useMemo(() => ({
@@ -1768,6 +1841,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
     const qHint = (q) => {
       if (q.options) return q.options.join(" / ");
       if (q.type === "rating") return q.labels.join(" / ");
+      if (q.type === "text") return "Free text";
       if (q.unit) return `Enter ${q.unit}` + (q.range ? ` (${q.range[0]}-${q.range[1]})` : "");
       if (q.type === "number_with_unit") return `Enter number (${q.units.join(" or ")})`;
       return "";
@@ -2082,6 +2156,77 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
       setQuestAnswers(newAnswers);
       setBaselineData(newBaseline);
       setUploadedMining(newMining);
+
+      // Sync questionnaire answers into procValues (mimics setSmartAnswer KPI sync)
+      const newProcVals = {};
+      const newSources = {};
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i];
+        const procId = row[0];
+        if (!procId || !PROC_MAP[procId]) continue;
+        const proc = PROC_MAP[procId];
+        if (!proc?.kpis) continue;
+        ALL_SMART_QS.forEach((q, qi) => {
+          const val = row[qStartIdx + qi];
+          if (!val) return;
+          const numVal = parseFloat(val);
+          if (isNaN(numVal)) return;
+          proc.kpis.forEach((kpi, ki) => {
+            const shouldSync =
+              (q.id === "q-automation" && (/auto|touchless|straight.?through|stp|no.?touch/i.test(kpi.name)) && kpi.unit === "%") ||
+              (q.id === "q-error-rate" && (/error|exception/i.test(kpi.name)) && kpi.unit === "%") ||
+              (q.id === "q-rework" && (/rework/i.test(kpi.name)) && kpi.unit === "%") ||
+              (q.id === "q-cycle" && (/cycle time|resolution time|processing time|turnaround/i.test(kpi.name)) && (kpi.unit === "days" || kpi.unit === "hours"));
+            if (shouldSync) {
+              if (!newProcVals[procId]) newProcVals[procId] = {};
+              if (!newSources[procId]) newSources[procId] = {};
+              newProcVals[procId][`kpi_current_${ki}`] = numVal;
+              newSources[procId][`kpi_current_${ki}`] = "questionnaire";
+            }
+          });
+        });
+        // Also sync mining data into procValues
+        const mData = newMining[procId];
+        if (mData) {
+          proc.kpis.forEach((kpi, ki) => {
+            const kn = kpi.name.toLowerCase();
+            let mVal = null;
+            if (mData.conformance != null && /conformance/i.test(kpi.name) && kpi.unit === "%") mVal = mData.conformance;
+            else if (mData.cycleTime != null && /cycle time|processing time|turnaround/i.test(kpi.name) && (kpi.unit === "days" || kpi.unit === "hours")) mVal = mData.cycleTime;
+            else if (mData.rework != null && /rework/i.test(kpi.name) && kpi.unit === "%") mVal = mData.rework;
+            if (mVal != null) {
+              if (!newProcVals[procId]) newProcVals[procId] = {};
+              if (!newSources[procId]) newSources[procId] = {};
+              newProcVals[procId][`kpi_current_${ki}`] = mVal;
+              newSources[procId][`kpi_current_${ki}`] = "mining";
+            }
+          });
+        }
+      }
+      if (Object.keys(newProcVals).length > 0) {
+        setProcValues(prev => {
+          let updated = { ...prev };
+          Object.entries(newProcVals).forEach(([procId, vals]) => {
+            Object.entries(vals).forEach(([key, val]) => {
+              if (updated[procId]?.[key] == null) {
+                updated = { ...updated, [procId]: { ...(updated[procId] || {}), [key]: val } };
+              }
+            });
+          });
+          return updated;
+        });
+        setKpiSources(prev => {
+          let updated = { ...prev };
+          Object.entries(newSources).forEach(([procId, srcs]) => {
+            Object.entries(srcs).forEach(([key, src]) => {
+              if (!updated[procId]?.[key] || updated[procId][key] === "default") {
+                updated = { ...updated, [procId]: { ...(updated[procId] || {}), [key]: src } };
+              }
+            });
+          });
+          return updated;
+        });
+      }
     };
     reader.readAsText(file);
     event.target.value = "";
@@ -2134,6 +2279,31 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
     }
     setBaselineData(newBaseline);
     setQuestAnswers(newQA);
+    // Sync pasted questionnaire answers into procValues
+    setProcValues(prev => {
+      let updated = { ...prev };
+      Object.keys(newQA).forEach(qaKey => {
+        const match = qaKey.match(/^(.+)_(q-.+)$/);
+        if (!match) return;
+        const [, procId, qId] = match;
+        const numVal = parseFloat(newQA[qaKey]);
+        if (isNaN(numVal)) return;
+        const proc = PROC_MAP[procId];
+        if (!proc?.kpis) return;
+        proc.kpis.forEach((kpi, ki) => {
+          const shouldSync =
+            (qId === "q-automation" && (/auto|touchless|straight.?through|stp|no.?touch/i.test(kpi.name)) && kpi.unit === "%") ||
+            (qId === "q-error-rate" && (/error|exception/i.test(kpi.name)) && kpi.unit === "%") ||
+            (qId === "q-rework" && (/rework/i.test(kpi.name)) && kpi.unit === "%") ||
+            (qId === "q-cycle" && (/cycle time|resolution time|processing time|turnaround/i.test(kpi.name)) && (kpi.unit === "days" || kpi.unit === "hours"));
+          if (shouldSync && updated[procId]?.[`kpi_current_${ki}`] == null) {
+            updated = { ...updated, [procId]: { ...(updated[procId] || {}), [`kpi_current_${ki}`]: numVal } };
+            setKpiSources(p => ({ ...p, [procId]: { ...(p[procId] || {}), [`kpi_current_${ki}`]: "questionnaire" } }));
+          }
+        });
+      });
+      return updated;
+    });
     setShowPasteModal(false);
     setPasteText("");
   };
@@ -2403,6 +2573,10 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
             leakage: {
               granularity: baselineData[`${proc.id}_b_granularity`] || null,
               reportFreq: baselineData[`${proc.id}_b_reportFreq`] || null,
+              decisionWho: baselineData[`${proc.id}_b_decisionWho`] || null,
+              decisionGap: baselineData[`${proc.id}_b_decisionGap`] || null,
+              freedCapacity: baselineData[`${proc.id}_b_freedCapacity`] || null,
+              dataQualityIssue: baselineData[`${proc.id}_b_dataQualityIssue`] || null,
               dataQuality: baselineData[`${proc.id}_b_dataQuality`] || null,
               manualPct: baselineData[`${proc.id}_b_manualPct`] || null,
               ssot: baselineData[`${proc.id}_b_ssot`] || null,
@@ -2888,7 +3062,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
           <div style={{ height: 16, width: 1, background: t.bdr }} />
           <div><span style={{ fontSize: 10, color: BLUE, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginRight: 4 }}>SAP</span><span style={{ fontSize: 18, fontFamily: SERIF, color: BLUE }}>{totalSAP}</span></div>
           <div style={{ height: 16, width: 1, background: t.bdr }} />
-          <div><span style={{ fontSize: 10, color: PURPLE, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginRight: 4 }}>Peer</span><span style={{ fontSize: 13, fontFamily: FONT, color: PURPLE, fontWeight: 500 }}>{baseline.industry || "Mfg"}, {baseline.revenueBand || "$1-5B"}</span></div>
+          <div><span style={{ fontSize: 10, color: PURPLE, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginRight: 4 }}>Peer</span><span style={{ fontSize: 13, fontFamily: FONT, color: PURPLE, fontWeight: 500 }}>{assessmentProfile.industry && assessmentProfile.revenueBand ? `${assessmentProfile.industry}, ${assessmentProfile.revenueBand}` : "Complete company setup"}</span></div>
           {valResult.total > 0 && <>
             <div style={{ height: 16, width: 1, background: t.bdr }} />
             <div><span style={{ fontSize: 10, color: GOLD, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginRight: 4 }}>Value</span><span style={{ fontSize: 18, fontFamily: SERIF, color: GOLD }}>{fd(valResult.total)}</span></div>
@@ -3232,7 +3406,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                   <span style={{ fontSize: 13, fontWeight: 600, color: sel ? t.tx : t.tx2, flex: 1 }}>{proc.label}</span>
                                 </div>
                                 <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginLeft: 28 }}>
-                                  {proc.kpis?.length > 0 && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: GREEN + "15", color: GREEN, fontWeight: 600 }}>{proc.kpis.length} KPIs</span>}
+                                  {proc.kpis?.length > 0 && <span title={proc.kpis.map(k => k.name).join("\n")} style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: GREEN + "15", color: GREEN, fontWeight: 600, cursor: "help" }}>{proc.kpis.length} KPIs</span>}
                                   {proc.sap?.[0] && <SapBadge module={proc.sap[0].module} />}
                                   {proc.valLevers?.[0] && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: ORANGE + "15", color: ORANGE }}>{proc.valLevers[0].vclass}</span>}
                                 </div>
@@ -3279,7 +3453,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                   <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}30`, fontFamily: "monospace", fontSize: 10, color: t.mut }}>{p.l4}</td>
                                   <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}30`, color: t.tx }}>{p.label}</td>
                                   <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}30` }}>
-                                    <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: GREEN + "15", color: GREEN, fontWeight: 600 }}>{p.kpis?.length || 0}</span>
+                                    <span title={p.kpis?.map(k => k.name).join("\n") || "No KPIs"} style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: GREEN + "15", color: GREEN, fontWeight: 600, cursor: "help" }}>{p.kpis?.length || 0}</span>
                                   </td>
                                   <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}30` }}>
                                     {p.sap?.[0] && <SapBadge module={p.sap[0].module} />}
@@ -3514,7 +3688,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                           }}>{sel ? "✓" : ""}</div>
                                           <span style={{ fontSize: 10, fontFamily: "monospace", color: t.mut, minWidth: 60 }}>{proc.l4}</span>
                                           <span style={{ fontSize: 12, color: sel ? t.tx : t.tx2, flex: 1, fontWeight: sel ? 500 : 400 }}>{proc.label}</span>
-                                          <span style={{ fontSize: 10, color: t.mut }}>{proc.kpis?.length || 0} KPIs</span>
+                                          <span title={proc.kpis?.map(k => k.name).join("\n") || "No KPIs"} style={{ fontSize: 10, color: t.mut, cursor: "help" }}>{proc.kpis?.length || 0} KPIs</span>
                                           {proc.sap?.[0] && <SapBadge module={proc.sap[0].module} />}
                                         </div>
                                       );
@@ -3776,6 +3950,9 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                             })}
                                             {questAnswers[`${focusProc}_${q.id}`] && <span style={{ fontSize: 10, color: GOLD, marginLeft: 4 }}>{q.labels[parseInt(questAnswers[`${focusProc}_${q.id}`]) - 1]}</span>}
                                           </div>
+                                        ) : q.type === "text" ? (
+                                          <textarea value={questAnswers[`${focusProc}_${q.id}`] || ""} onChange={e => setSmartAnswer(focusProc, q.id, e.target.value)}
+                                            placeholder="Enter your response..." rows={2} style={{ ...inputStyle, resize: "vertical", minHeight: 40 }} />
                                         ) : q.type === "number_with_unit" ? (
                                           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                                             <input type="number" value={questAnswers[`${focusProc}_${q.id}`] || ""} onChange={e => setSmartAnswer(focusProc, q.id, e.target.value)}
@@ -3863,7 +4040,11 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                       <div key={ki} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
                                         <span style={{ fontSize: 12, color: t.tx2, flex: 1 }}>{kpi.name}</span>
                                         <span style={{ fontSize: 10, color: t.mut, minWidth: 50, textAlign: "right" }}>Bench: {kpi.benchmark ?? "—"}</span>
-                                        <input type="number" placeholder="Current" value={vals[`kpi_current_${ki}`] ?? ""} onChange={e => setVal(`kpi_current_${ki}`, e.target.value === "" ? null : parseFloat(e.target.value))}
+                                        <input type="number" placeholder="Current" value={vals[`kpi_current_${ki}`] ?? ""} onChange={e => {
+                                          const v = e.target.value === "" ? null : parseFloat(e.target.value);
+                                          setVal(`kpi_current_${ki}`, v);
+                                          if (v != null) setKpiSources(prev => ({ ...prev, [proc.id]: { ...(prev[proc.id] || {}), [`kpi_current_${ki}`]: "manual" } }));
+                                        }}
                                           style={{ width: 80, background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 4, padding: "3px 6px", color: t.tx, fontFamily: "monospace", fontSize: 12, textAlign: "right" }} />
                                         <span style={{ fontSize: 10, color: t.mut, minWidth: 30 }}>{kpi.unit}</span>
                                       </div>
@@ -3917,6 +4098,41 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                 }
                               });
                               setUploadedMining(newMining);
+                              // Sync mining KPI values into procValues
+                              setProcValues(prev => {
+                                let updated = { ...prev };
+                                Object.entries(newMining).forEach(([procId, mData]) => {
+                                  const proc = PROC_MAP[procId];
+                                  if (!proc?.kpis) return;
+                                  proc.kpis.forEach((kpi, ki) => {
+                                    let mVal = null;
+                                    if (mData.conformance != null && /conformance/i.test(kpi.name) && kpi.unit === "%") mVal = mData.conformance;
+                                    else if (mData.cycleTime != null && /cycle time|processing time|turnaround/i.test(kpi.name) && (kpi.unit === "days" || kpi.unit === "hours")) mVal = mData.cycleTime;
+                                    else if (mData.rework != null && /rework/i.test(kpi.name) && kpi.unit === "%") mVal = mData.rework;
+                                    if (mVal != null && updated[procId]?.[`kpi_current_${ki}`] == null) {
+                                      updated = { ...updated, [procId]: { ...(updated[procId] || {}), [`kpi_current_${ki}`]: mVal } };
+                                    }
+                                  });
+                                });
+                                return updated;
+                              });
+                              setKpiSources(prev => {
+                                let updated = { ...prev };
+                                Object.entries(newMining).forEach(([procId, mData]) => {
+                                  const proc = PROC_MAP[procId];
+                                  if (!proc?.kpis) return;
+                                  proc.kpis.forEach((kpi, ki) => {
+                                    let mVal = null;
+                                    if (mData.conformance != null && /conformance/i.test(kpi.name) && kpi.unit === "%") mVal = mData.conformance;
+                                    else if (mData.cycleTime != null && /cycle time|processing time|turnaround/i.test(kpi.name) && (kpi.unit === "days" || kpi.unit === "hours")) mVal = mData.cycleTime;
+                                    else if (mData.rework != null && /rework/i.test(kpi.name) && kpi.unit === "%") mVal = mData.rework;
+                                    if (mVal != null) {
+                                      updated = { ...updated, [procId]: { ...(updated[procId] || {}), [`kpi_current_${ki}`]: "mining" } };
+                                    }
+                                  });
+                                });
+                                return updated;
+                              });
                             };
                             reader.readAsText(file);
                           }} style={{ display: "none" }} />
@@ -3969,6 +4185,21 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                 <input type="number" value={uploadedMining[signavioView]?.[f.key] ?? ""} onChange={e => {
                                   const v = parseFloat(e.target.value) || null;
                                   setUploadedMining(p => ({ ...p, [signavioView]: { ...(p[signavioView] || {}), [f.key]: v } }));
+                                  if (v != null) {
+                                    const mProc = PROC_MAP[signavioView];
+                                    if (mProc?.kpis) {
+                                      mProc.kpis.forEach((kpi, ki) => {
+                                        let match = false;
+                                        if (f.key === "conformance" && /conformance/i.test(kpi.name) && kpi.unit === "%") match = true;
+                                        else if (f.key === "cycleTime" && /cycle time|processing time|turnaround/i.test(kpi.name) && (kpi.unit === "days" || kpi.unit === "hours")) match = true;
+                                        else if (f.key === "rework" && /rework/i.test(kpi.name) && kpi.unit === "%") match = true;
+                                        if (match) {
+                                          setProcValues(prev => ({ ...prev, [signavioView]: { ...(prev[signavioView] || {}), [`kpi_current_${ki}`]: v } }));
+                                          setKpiSources(prev => ({ ...prev, [signavioView]: { ...(prev[signavioView] || {}), [`kpi_current_${ki}`]: "mining" } }));
+                                        }
+                                      });
+                                    }
+                                  }
                                 }} placeholder={f.placeholder}
                                   style={{ width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: "monospace", fontSize: 12, boxSizing: "border-box" }} />
                               </div>
@@ -4027,9 +4258,53 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                 const reader = new FileReader();
                 reader.onload = async (evt) => {
                   const base64 = evt.target.result.split(",")[1];
-                  const prompt = `You are a financial data extraction assistant. Extract the following line items from this financial document and return ONLY a JSON object with no other text: { "revenue": number, "cogs": number, "grossProfit": number, "sga": number, "ebitda": number, "headcount": number, "financeHeadcount": number, "annualPayroll": number, "fiscalYear": string, "currency": string, "companyName": string, "source": "uploaded", "segments": [] } Use null for any field not found. All monetary values in millions USD. If you see segment breakdowns, also return segments: [{name, revenue, ebitda}]. The file content (base64 ${file.name.endsWith(".pdf") ? "PDF" : "Excel"}): ${base64.slice(0, 50000)}`;
+                  const prompt = `You are a financial data extraction expert. Extract financial data from this document using FLEXIBLE LABEL MATCHING. Companies use different names for the same line items.
+
+FIELD DEFINITIONS & LABEL ALIASES (search for ANY of these labels):
+
+revenue: "Revenue", "Net Operating Revenues", "Net revenues", "Total revenues", "Total net revenues", "Net sales", "Sales"
+cogs: "Cost of goods sold", "Cost of sales", "Cost of revenues", "Cost of products sold"
+grossProfit: "Gross Profit", "Gross profit", "Gross margin" — OR CALCULATE as revenue minus cogs
+sga: "Selling, general and administrative expenses", "SG&A", "Selling, general & administrative", "Operating expenses" (if no COGS split)
+operatingIncome: "Operating Income", "Operating income", "Income from operations", "Operating profit"
+ebitda: CALCULATE as Operating Income + Depreciation & Amortization. Check BOTH the income statement AND the cash flow statement for depreciation. Never return "not found" if you have operating income and depreciation.
+netIncome: "Net Income Attributable to Shareowners", "Net Income", "Net income", "Net earnings", "Net income attributable to common shareholders"
+accountsReceivable: "Trade accounts receivable", "Accounts receivable, net", "Receivables", "Trade receivables"
+accountsPayable: "Accounts payable and accrued expenses", "Accounts payable", "Trade payables"
+inventory: "Inventories", "Inventory", "Merchandise inventories"
+capex: "Purchases of property, plant and equipment", "Capital expenditures", "Additions to property, plant and equipment"
+operatingCashFlow: "Net Cash Provided by Operating Activities", "Cash provided by operations", "Net cash from operating activities"
+depreciation: "Depreciation and amortization", "Depreciation", "D&A" — check BOTH income statement and cash flow statement
+headcount: "Number of employees", "Employees", "Associates", "Total employees"
+financeHeadcount: "Finance employees", "Finance FTEs" (rarely stated — use null if not found)
+annualPayroll: "Salaries and wages", "Employee compensation", "Personnel expenses" (rarely a single line — use null if not found)
+
+INSTRUCTIONS:
+- Prefer ANNUAL (full-year) figures over quarterly. Look for "Year Ended", "Fiscal Year", "Twelve Months Ended".
+- Numbers in financial statements are often stated "in millions" or "in billions" — convert ALL values to millions USD. If stated in billions, multiply by 1000. If stated in millions, use as-is.
+- If a field is not directly stated but CAN BE CALCULATED from other extracted values, calculate it and mark confidence as "calculated".
+- NEVER return "not found" if a reasonable calculation is possible.
+- For EBITDA: always attempt Operating Income + Depreciation & Amortization.
+- For Gross Profit: always attempt Revenue - COGS.
+
+Return ONLY a JSON object (no markdown, no other text) in this exact format:
+{
+  "fields": {
+    "revenue": { "value": <number in millions or null>, "sourceLabel": "<exact label found in document>", "confidence": "found"|"calculated"|"not found" },
+    "cogs": { ... }, "grossProfit": { ... }, "sga": { ... }, "operatingIncome": { ... },
+    "ebitda": { ... }, "netIncome": { ... }, "accountsReceivable": { ... },
+    "accountsPayable": { ... }, "inventory": { ... }, "capex": { ... },
+    "operatingCashFlow": { ... }, "depreciation": { ... },
+    "headcount": { ... }, "financeHeadcount": { ... }, "annualPayroll": { ... }
+  },
+  "fiscalYear": "<year string>",
+  "currency": "USD",
+  "companyName": "<company name>",
+  "segments": [{"name": "<segment>", "revenue": <number>, "ebitda": <number>}]
+}
+
+The file content (base64 ${file.name.endsWith(".pdf") ? "PDF" : "Excel"}): ${base64.slice(0, 50000)}`;
                   try {
-                    // Use the same callCatalyst pattern — server proxy first
                     const proxyRes = await fetch("/api/catalyst", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
@@ -4043,24 +4318,32 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                       const response = await fetch("https://api.anthropic.com/v1/messages", {
                         method: "POST",
                         headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
-                        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 2000, messages: [{ role: "user", content: prompt }] }),
+                        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 4000, messages: [{ role: "user", content: prompt }] }),
                       });
                       const data = await response.json();
                       text = data.content?.map(i => i.text || "").join("\n") || "";
                     }
-                    // Parse JSON from response
                     const jsonMatch = text.match(/\{[\s\S]*\}/);
                     if (jsonMatch) {
                       const parsed = JSON.parse(jsonMatch[0]);
-                      setFinancialsDraft(prev => ({ ...prev, ...parsed, source: "uploaded" }));
-                      // Set confidence per field
-                      const conf = {};
-                      Object.keys(parsed).forEach(k => {
-                        if (parsed[k] != null && parsed[k] !== "") conf[k] = "found";
-                        else conf[k] = "not_found";
-                      });
-                      setFinancialsConfidence(conf);
-                      setFinancialsEntryMode("manual"); // Show review table
+                      if (parsed.fields) {
+                        const flat = { source: "uploaded", fiscalYear: parsed.fiscalYear || "", currency: parsed.currency || "USD", companyName: parsed.companyName || "", segments: parsed.segments || [] };
+                        const conf = {};
+                        Object.entries(parsed.fields).forEach(([k, v]) => {
+                          flat[k] = v.value;
+                          conf[k] = { confidence: v.confidence || "not found", sourceLabel: v.sourceLabel || "" };
+                        });
+                        setFinancialsDraft(prev => ({ ...prev, ...flat }));
+                        setFinancialsConfidence(conf);
+                      } else {
+                        setFinancialsDraft(prev => ({ ...prev, ...parsed, source: "uploaded" }));
+                        const conf = {};
+                        Object.keys(parsed).forEach(k => {
+                          conf[k] = { confidence: parsed[k] != null && parsed[k] !== "" ? "found" : "not found", sourceLabel: "" };
+                        });
+                        setFinancialsConfidence(conf);
+                      }
+                      setFinancialsEntryMode("manual");
                     }
                   } catch (err) {
                     console.error("Financial extraction error:", err);
@@ -4117,22 +4400,35 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                         <div style={{ marginTop: 12 }}>
                           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                             <thead><tr>
-                              <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 11 }}>Line Item</th>
-                              <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "right", color: t.mut, fontSize: 11 }}>Value ($M / count)</th>
-                              <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 11 }}>Note</th>
-                              {Object.keys(financialsConfidence).length > 0 && <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "center", color: t.mut, fontSize: 11 }}>Status</th>}
+                              <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 11 }}>Field</th>
+                              <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "right", color: t.mut, fontSize: 11 }}>Extracted Value</th>
+                              {Object.keys(financialsConfidence).length > 0 && <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 11 }}>Source Label in Doc</th>}
+                              {Object.keys(financialsConfidence).length > 0 && <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "center", color: t.mut, fontSize: 11 }}>Confidence</th>}
+                              {Object.keys(financialsConfidence).length === 0 && <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 11 }}>Note</th>}
                             </tr></thead>
                             <tbody>
                               {[
-                                { key: "revenue", label: "Net Revenue", note: "Full year (most recent)", prefix: "$", suffix: "M" },
-                                { key: "cogs", label: "Cost of Goods", note: "", prefix: "$", suffix: "M" },
+                                { key: "revenue", label: "Revenue", note: "Full year (most recent)", prefix: "$", suffix: "M" },
+                                { key: "cogs", label: "Cost of Goods Sold", note: "", prefix: "$", suffix: "M" },
                                 { key: "grossProfit", label: "Gross Profit", note: "Auto-calculated", prefix: "$", suffix: "M", auto: true },
                                 { key: "sga", label: "SG&A", note: "", prefix: "$", suffix: "M" },
-                                { key: "ebitda", label: "EBITDA", note: "Auto-calculated if possible", prefix: "$", suffix: "M", auto: true },
+                                { key: "operatingIncome", label: "Operating Income", note: "", prefix: "$", suffix: "M" },
+                                { key: "ebitda", label: "EBITDA", note: "OpIncome + D&A", prefix: "$", suffix: "M", auto: true },
+                                { key: "netIncome", label: "Net Income", note: "", prefix: "$", suffix: "M" },
+                                { key: "depreciation", label: "Depreciation & Amort.", note: "", prefix: "$", suffix: "M" },
+                                { key: "operatingCashFlow", label: "Operating Cash Flow", note: "", prefix: "$", suffix: "M" },
+                                { key: "capex", label: "CapEx", note: "", prefix: "$", suffix: "M" },
+                                { key: "accountsReceivable", label: "Accounts Receivable", note: "", prefix: "$", suffix: "M" },
+                                { key: "accountsPayable", label: "Accounts Payable", note: "", prefix: "$", suffix: "M" },
+                                { key: "inventory", label: "Inventory", note: "", prefix: "$", suffix: "M" },
                                 { key: "headcount", label: "Total Headcount", note: "People", prefix: "", suffix: "" },
                                 { key: "financeHeadcount", label: "Finance FTEs", note: "People", prefix: "", suffix: "" },
                                 { key: "annualPayroll", label: "Annual Payroll", note: "Total loaded cost", prefix: "$", suffix: "M" },
-                              ].map(row => (
+                              ].map(row => {
+                                const confObj = financialsConfidence[row.key];
+                                const confLevel = confObj?.confidence || confObj;
+                                const sourceLabel = confObj?.sourceLabel || "";
+                                return (
                                 <tr key={row.key}>
                                   <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx, fontWeight: 500 }}>{row.label}</td>
                                   <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right" }}>
@@ -4145,29 +4441,34 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                       readOnly={row.auto && ((row.key === "grossProfit" && draftGP) || (row.key === "ebitda" && draftEBITDA))}
                                     />
                                   </td>
-                                  <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, fontSize: 11, color: t.mut }}>{row.note}</td>
-                                  {Object.keys(financialsConfidence).length > 0 && (
-                                    <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "center" }}>
-                                      <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: financialsConfidence[row.key] === "found" ? GREEN + "15" : financialsConfidence[row.key] === "estimated" ? GOLD + "15" : RED + "15", color: financialsConfidence[row.key] === "found" ? GREEN : financialsConfidence[row.key] === "estimated" ? GOLD : RED, fontWeight: 600 }}>
-                                        {financialsConfidence[row.key] === "found" ? "Found" : financialsConfidence[row.key] === "estimated" ? "Estimated" : "Not found"}
-                                      </span>
-                                    </td>
+                                  {Object.keys(financialsConfidence).length > 0 ? (
+                                    <>
+                                      <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, fontSize: 11, color: t.mut, maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={sourceLabel}>{sourceLabel || "—"}</td>
+                                      <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "center" }}>
+                                        <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: confLevel === "found" ? GREEN + "15" : confLevel === "calculated" ? GOLD + "15" : RED + "15", color: confLevel === "found" ? GREEN : confLevel === "calculated" ? GOLD : RED, fontWeight: 600 }}>
+                                          {confLevel === "found" ? "Found" : confLevel === "calculated" ? "Calculated" : "Not found"}
+                                        </span>
+                                      </td>
+                                    </>
+                                  ) : (
+                                    <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, fontSize: 11, color: t.mut }}>{row.note}</td>
                                   )}
                                 </tr>
-                              ))}
+                                );
+                              })}
                               <tr>
                                 <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx, fontWeight: 500 }}>Fiscal Year</td>
                                 <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right" }}>
                                   <input type="text" value={financialsDraft.fiscalYear || ""} onChange={e => setFinancialsDraft(prev => ({ ...prev, fiscalYear: e.target.value }))} placeholder="2025" style={{ width: 120, textAlign: "right", background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "4px 8px", color: t.tx, fontFamily: "monospace", fontSize: 13 }} />
                                 </td>
-                                <td colSpan={2} style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, fontSize: 11, color: t.mut }}>Year of financial data</td>
+                                <td colSpan={Object.keys(financialsConfidence).length > 0 ? 2 : 1} style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, fontSize: 11, color: t.mut }}>Year of financial data</td>
                               </tr>
                               <tr>
                                 <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx, fontWeight: 500 }}>Company Name</td>
                                 <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right" }}>
                                   <input type="text" value={financialsDraft.companyName || ""} onChange={e => setFinancialsDraft(prev => ({ ...prev, companyName: e.target.value }))} placeholder={baseline.company} style={{ width: 200, textAlign: "right", background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "4px 8px", color: t.tx, fontSize: 13 }} />
                                 </td>
-                                <td colSpan={2} style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, fontSize: 11, color: t.mut }}></td>
+                                <td colSpan={Object.keys(financialsConfidence).length > 0 ? 2 : 1} style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, fontSize: 11, color: t.mut }}></td>
                               </tr>
                             </tbody>
                           </table>
@@ -4244,15 +4545,21 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                     {/* KPI Baselines */}
                     <div style={{ ...labelStyle, marginTop: 8, fontSize: 10 }}>KPI Baselines</div>
                     <div style={{ display: "grid", gap: 4 }}>
-                      {(proc.kpis || []).map((kpi, ki) => (
+                      {(proc.kpis || []).map((kpi, ki) => {
+                        const currentVal = vals[`kpi_current_${ki}`];
+                        const displayVal = currentVal ?? kpi.current ?? "";
+                        const isDefault = currentVal == null && kpi.current != null;
+                        return (
                         <div key={ki} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
                           <span style={{ fontSize: 12, color: t.tx2, flex: 1 }}>{kpi.name}</span>
-                          <input type="number" placeholder="Current" value={vals[`kpi_current_${ki}`] ?? ""} onChange={e => setVal(`kpi_current_${ki}`, parseFloat(e.target.value) || null)}
+                          <input type="number" placeholder="Current" value={displayVal} onChange={e => setVal(`kpi_current_${ki}`, e.target.value === "" ? null : parseFloat(e.target.value))}
                             disabled={viewMode === "client"}
-                            style={{ width: 80, background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 4, padding: "3px 6px", color: t.tx, fontFamily: "monospace", fontSize: 12, textAlign: "right" }} />
+                            style={{ width: 80, background: isDefault ? GOLD + "08" : t.bg, border: `1px solid ${isDefault ? GOLD + "44" : t.bdr}`, borderRadius: 4, padding: "3px 6px", color: isDefault ? GOLD : t.tx, fontFamily: "monospace", fontSize: 12, textAlign: "right" }} />
                           <span style={{ fontSize: 10, color: t.mut, minWidth: 30 }}>{kpi.unit}</span>
+                          {isDefault && <span style={{ fontSize: 8, color: GOLD, whiteSpace: "nowrap" }}>est.</span>}
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 );
@@ -4361,7 +4668,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                     {procTab === "benchmarks" && (
                       <div>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                          <div style={{ fontSize: 11, color: t.tx2 }}>Benchmarks — <span style={{ color: GOLD, fontWeight: 600 }}>{baseline.industry || "Manufacturing"}, {baseline.revenueBand || "$1-5B"}</span> peer group</div>
+                          <div style={{ fontSize: 11, color: t.tx2 }}>{assessmentProfile.industry && assessmentProfile.revenueBand ? <>Benchmarks — <span style={{ color: GOLD, fontWeight: 600 }}>{assessmentProfile.industry}, {assessmentProfile.revenueBand}</span> peer group</> : <span style={{ color: t.mut, fontStyle: "italic" }}>Complete company setup to see peer benchmarks</span>}</div>
                           <button onClick={() => callCatalyst(proc.id,
                             `You are a benchmarking expert for ${baseline.industry} companies. For the process "${proc.label}" (APQC ${proc.l4}), provide TWO sections:\n\nSECTION 1 — TRADITIONAL BENCHMARKS\nProvide 3-5 specific benchmark suggestions from published sources. Include: KPI name, benchmark value with unit, source/year, and brief calculation methodology.\n\nSECTION 2 — AI AGENT IMPACT BENCHMARKS\nFor this same process, what efficiency gains have AI agents achieved? Include: agent type, % efficiency improvement, source/case study. Be specific and quantitative.`,
                             setCatalystResults, setCatalystLoading
@@ -4399,7 +4706,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                     {gap != null && <span style={{ fontSize: 14, fontFamily: "monospace", color: gap > 0 ? RED : GREEN, fontWeight: 700 }}>Gap: {gap.toFixed(1)}</span>}
                                     {quartile && (
-                                      <span title={`Peer group: ${baseline.industry || "Manufacturing"} ${baseline.revenueBand || "$1-5B"} (n=${peerN})`} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: quartile.color + "20", color: quartile.color, fontWeight: 700 }}>
+                                      <span title={`Peer group: ${assessmentProfile.industry || baseline.industry || "Manufacturing"} ${assessmentProfile.revenueBand || baseline.revenueBand || "$1-5B"} (n=${peerN})`} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: quartile.color + "20", color: quartile.color, fontWeight: 700 }}>
                                         {quartile.icon} {quartile.label} <span style={{ fontWeight: 400, opacity: 0.7 }}>n={peerN}</span>
                                       </span>
                                     )}
@@ -4782,7 +5089,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
         {/* ═══════════════════════════════════════════════
             STEP 5 — Value Calculation
            ═══════════════════════════════════════════════ */}
-        {step === 5 && (
+        {step === 5 && (() => { try { return (
           <div>
             {stepHeader(5, "Value Calculation", "Review the gap analysis and choose a scenario level.")}
 
@@ -4932,11 +5239,11 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                   ))}</tr></thead>
                   <tbody>
                     {[
-                      { l: "Revenue", base: baseline.revenue, imp: revImpact, agent: agentRevImpact || 0 },
-                      { l: "COGS", base: baseline.cogs, imp: -cogsImpact, agent: -(agentCogsImpact || 0) },
-                      { l: "Gross Profit", base: baseline.revenue - baseline.cogs, imp: revImpact + cogsImpact, agent: (agentRevImpact || 0) + (agentCogsImpact || 0) },
-                      { l: "SG&A", base: baseline.sga, imp: -sgaImpact, agent: -(agentSgaImpact || 0) },
-                      { l: "EBITDA", base: baseline.ebitda, imp: revImpact + cogsImpact + sgaImpact, agent: (agentRevImpact || 0) + (agentCogsImpact || 0) + (agentSgaImpact || 0) },
+                      { l: "Revenue", base: baseline.revenue || 0, imp: revImpact, agent: agentRevImpact || 0 },
+                      { l: "COGS", base: baseline.cogs || 0, imp: -cogsImpact, agent: -(agentCogsImpact || 0) },
+                      { l: "Gross Profit", base: (baseline.revenue || 0) - (baseline.cogs || 0), imp: revImpact + cogsImpact, agent: (agentRevImpact || 0) + (agentCogsImpact || 0) },
+                      { l: "SG&A", base: baseline.sga || 0, imp: -sgaImpact, agent: -(agentSgaImpact || 0) },
+                      { l: "EBITDA", base: baseline.ebitda || 0, imp: revImpact + cogsImpact + sgaImpact, agent: (agentRevImpact || 0) + (agentCogsImpact || 0) + (agentSgaImpact || 0) },
                     ].map(row => (
                       <tr key={row.l} style={{ background: row.l === "EBITDA" ? GOLD + "08" : "transparent" }}>
                         <td style={{ padding: "6px 12px", borderBottom: `1px solid ${t.bdr}40`, color: row.l === "EBITDA" ? GOLD : t.tx2, fontWeight: row.l === "EBITDA" ? 700 : 400 }}>{row.l}</td>
@@ -4964,11 +5271,11 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                   </tr></thead>
                   <tbody>
                     {[
-                      { l: "Accounts Receivable", base: baseline.recv, imp: -valResult.balanceSheet.receivablesImpact, c: GREEN },
-                      { l: "Inventory", base: baseline.inventory, imp: -valResult.balanceSheet.inventoryImpact, c: GREEN },
-                      { l: "Accounts Payable", base: baseline.pay, imp: valResult.balanceSheet.payablesImpact, c: BLUE },
+                      { l: "Accounts Receivable", base: baseline.recv || 0, imp: -valResult.balanceSheet.receivablesImpact, c: GREEN },
+                      { l: "Inventory", base: baseline.inventory || 0, imp: -valResult.balanceSheet.inventoryImpact, c: GREEN },
+                      { l: "Accounts Payable", base: baseline.pay || 0, imp: valResult.balanceSheet.payablesImpact, c: BLUE },
                       { l: "Net Working Capital",
-                        base: baseline.recv + baseline.inventory - baseline.pay,
+                        base: (baseline.recv || 0) + (baseline.inventory || 0) - (baseline.pay || 0),
                         imp: -(valResult.balanceSheet.receivablesImpact + valResult.balanceSheet.inventoryImpact - valResult.balanceSheet.payablesImpact),
                         c: GOLD },
                     ].map(row => (
@@ -5209,23 +5516,24 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                 const tv = valResult.total || 0;
                 const agTot = valResult.agentTotal || 0;
                 const bsh = valResult.balanceSheet || { totalWorkingCapital: 0 };
-                const ramp = multiYearRamp || { erp: [30, 70, 100], agent: [0, 40, 100], costSpread: [70, 20, 10] };
+                const _r = multiYearRamp || {};
+                const ramp = { erp: _r.erp || [30, 70, 100], agent: _r.agent || [0, 40, 100], costSpread: _r.costSpread || [70, 20, 10] };
 
                 // Calculate per-year values
-                const y1ERP = tv * ramp.erp[0] / 100;
-                const y2ERP = tv * ramp.erp[1] / 100;
-                const y3ERP = tv * ramp.erp[2] / 100;
-                const y1Agent = agTot * ramp.agent[0] / 100;
-                const y2Agent = agTot * ramp.agent[1] / 100;
-                const y3Agent = agTot * ramp.agent[2] / 100;
+                const y1ERP = tv * (ramp.erp[0] || 0) / 100;
+                const y2ERP = tv * (ramp.erp[1] || 0) / 100;
+                const y3ERP = tv * (ramp.erp[2] || 0) / 100;
+                const y1Agent = agTot * (ramp.agent[0] || 0) / 100;
+                const y2Agent = agTot * (ramp.agent[1] || 0) / 100;
+                const y3Agent = agTot * (ramp.agent[2] || 0) / 100;
 
                 // Implementation costs from agent specs
                 const totalImplCost = selProcs.reduce((s, p) => s + (AGENT_SPECS[p.id]?.implCost || 0), 0) / 1000; // convert K to M
                 const erpImplCost = tv * 0.15; // rough ERP implementation as 15% of annual value (industry standard)
                 const totalCost = totalImplCost + erpImplCost;
-                const y1Cost = totalCost * ramp.costSpread[0] / 100;
-                const y2Cost = totalCost * ramp.costSpread[1] / 100;
-                const y3Cost = totalCost * ramp.costSpread[2] / 100;
+                const y1Cost = totalCost * (ramp.costSpread[0] || 0) / 100;
+                const y2Cost = totalCost * (ramp.costSpread[1] || 0) / 100;
+                const y3Cost = totalCost * (ramp.costSpread[2] || 0) / 100;
 
                 const y1Net = y1ERP + y1Agent - y1Cost;
                 const y2Net = y2ERP + y2Agent - y2Cost;
@@ -5246,7 +5554,9 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
 
                 // Breakeven calculation
                 const monthlyNet = (y1Net + y2Net + y3Net) / 36;
-                const breakEvenMonths = y1Net < 0 ? Math.ceil(Math.abs(y1Net) / ((y2Net + y3Net) / 24)) + 12 : Math.ceil(y1Cost / ((y1ERP + y1Agent) / 12));
+                const _beDiv1 = (y2Net + y3Net) / 24;
+                const _beDiv2 = (y1ERP + y1Agent) / 12;
+                const breakEvenMonths = y1Net < 0 ? (_beDiv1 > 0 ? Math.ceil(Math.abs(y1Net) / _beDiv1) + 12 : 0) : (_beDiv2 > 0 ? Math.ceil(y1Cost / _beDiv2) : 0);
 
                 // Chart data
                 const chartData = [
@@ -5275,8 +5585,12 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                             <span key={yi}>
                               Y{yi + 1}
                               <input type="number" value={ramp[cfg.key][yi]} onChange={e => {
-                                const newRamp = { ...multiYearRamp };
-                                newRamp[cfg.key] = [...newRamp[cfg.key]];
+                                const base = multiYearRamp || {};
+                                const newRamp = {
+                                  erp: base.erp ? [...base.erp] : [30, 70, 100],
+                                  agent: base.agent ? [...base.agent] : [0, 40, 100],
+                                  costSpread: base.costSpread ? [...base.costSpread] : [70, 20, 10],
+                                };
                                 newRamp[cfg.key][yi] = parseInt(e.target.value) || 0;
                                 setMultiYearRamp(newRamp);
                               }} style={{ width: 36, textAlign: "center", background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 4, padding: "2px 4px", color: cfg.c, fontFamily: "monospace", fontSize: 11, marginLeft: 2 }} />%
@@ -5325,8 +5639,8 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                         <LineChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke={t.bdr} />
                           <XAxis dataKey="month" tick={{ fill: t.tx2, fontSize: 11 }} tickFormatter={v => `M${v}`} axisLine={{ stroke: t.bdr }} />
-                          <YAxis tick={{ fill: t.mut, fontSize: 11, fontFamily: "monospace" }} axisLine={{ stroke: t.bdr }} tickFormatter={v => `$${v.toFixed(0)}M`} />
-                          <Tooltip contentStyle={{ background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 8, fontSize: 13, color: t.tx }} formatter={v => [`$${v.toFixed(1)}M`, "Cumulative Net"]} />
+                          <YAxis tick={{ fill: t.mut, fontSize: 11, fontFamily: "monospace" }} axisLine={{ stroke: t.bdr }} tickFormatter={v => typeof v === "number" && isFinite(v) ? `$${v.toFixed(0)}M` : "$0M"} />
+                          <Tooltip contentStyle={{ background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 8, fontSize: 13, color: t.tx }} formatter={v => [typeof v === "number" && isFinite(v) ? `$${v.toFixed(1)}M` : "—", "Cumulative Net"]} />
                           <ReferenceLine y={0} stroke={RED} strokeDasharray="3 3" />
                           <Line type="monotone" dataKey="value" stroke={GOLD} strokeWidth={2} dot={{ fill: GOLD, r: 4 }} />
                         </LineChart>
@@ -5345,7 +5659,17 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
               <button onClick={() => setStep(6)} style={btnPrimary}>Value Realization →</button>
             </div>
           </div>
-        )}
+        ); } catch (err) { console.error("Step 5 render error:", err); return (
+          <div style={{ padding: 24, background: "#D48A8A15", border: "1px solid #D48A8A33", borderRadius: 12 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#D48A8A", marginBottom: 8 }}>Value Calculation Error</div>
+            <pre style={{ fontSize: 11, color: t.tx2, overflow: "auto", marginBottom: 12, maxHeight: 200 }}>{err?.message || "Unknown error"}{"\n"}{err?.stack || ""}</pre>
+            <div style={{ fontSize: 12, color: t.mut, marginBottom: 12 }}>Processes: {selProcs.length}, Scenario: {scenarioLevel}, ProcValues keys: {Object.keys(procValues).length}, MultiYearRamp: {multiYearRamp ? "set" : "null"}</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setStep(4)} style={btnSecondary}>← Back to Benchmark</button>
+              <button onClick={() => { setScenarioLevel("Medium"); setProcScenarios({}); }} style={btnPrimary}>Reset Scenarios</button>
+            </div>
+          </div>
+        ); } })()}
 
         {/* ═══════════════════════════════════════════════
             STEP 6 — Value Realization Plan
@@ -5371,7 +5695,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                 { id: "qualityIssues", label: "Quality issues", type: "tags", placeholder: "Add issue and press Enter" },
               ]},
               { key: "technology", label: "Technology", icon: "💻", color: PURPLE, fields: [
-                { id: "sapModules", label: "SAP modules", type: "prefilled", getValue: () => [...new Set(selProcs.flatMap(p => (p.sap || []).map(s => s.module)))].join(", ") || "None selected" },
+                { id: "sapModules", label: "SAP modules", type: "prefilled", getValue: () => [...new Set(selProcs.flatMap(p => (p.sap || []).map(s => s.module)))].map(m => { const n = SAP_MODULE_NAMES[m.split(/\s*\/\s*/)[0].trim()]; return n ? `${m} — ${n}` : m; }).join(", ") || "None selected" },
                 { id: "aiAgents", label: "AI agents", type: "prefilled", getValue: () => selProcs.filter(p => AGENT_SPECS[p.id]).map(p => p.label).slice(0, 5).join(", ") || "None generated" },
                 { id: "integrationNeeds", label: "Integration needs", type: "textarea", placeholder: "Describe integration requirements..." },
                 { id: "itInfrastructure", label: "IT infrastructure", type: "textarea", placeholder: "Infrastructure changes needed..." },
@@ -5505,7 +5829,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                 { l: "Agent Uplift", v: fd(valResult.agentTotal), c: GREEN, dollar: true },
                 { l: "Processes", v: selProcs.length, c: BLUE },
                 { l: "KPIs Assessed", v: totalKPIs, c: PURPLE },
-                { l: "Peer Group", v: `${baseline.industry || "Mfg"} ${baseline.revenueBand || "$1-5B"}`, c: "#AAA" },
+                { l: "Peer Group", v: assessmentProfile.industry && assessmentProfile.revenueBand ? `${assessmentProfile.industry} ${assessmentProfile.revenueBand}` : "Not configured", c: "#AAA" },
               ].map(k => (
                 <div key={k.l} style={{ background: `${k.c}0C`, border: `1px solid ${k.c}22`, borderRadius: 10, padding: "14px 16px", textAlign: "center" }}>
                   <div style={{ fontSize: 10, color: k.c, textTransform: "uppercase", letterSpacing: ".5px", fontWeight: 600, marginBottom: 4 }}>{k.l}</div>
