@@ -1,44 +1,382 @@
 import pptxgen from "pptxgenjs";
-import AGENT_SPECS from "./agentSpecs";
 
 /* ═══════════════════════════════════════════════════════
-   PPTX V2 — Executive (4 slides) + Detailed (10 slides)
-   Design: Dark #111110 only, Gold ERP, Green Agent, Georgia headings
-   Strict: 1 chart OR 1 table per slide, no methodology, no filler
+   PPTX V2 — MediGen-Style Executive Value Assessment
+   6 slides: Cover, What We Found, Where The Value Is,
+   How We Got There, What It Takes, Recommended Next Steps
    ═══════════════════════════════════════════════════════ */
 
-// Color constants (no # prefix for pptxgenjs)
-const C = {
-  bg: "111110", card: "1A1A18", bdr: "2A2A25",
-  white: "EEEAE4", gray: "888888", dkGray: "555555",
-  gold: "D4A853", green: "7CB9A8", blue: "7BA7CC",
-  purple: "C4A1D4", red: "D48A8A", orange: "D4A07A",
-  lightGold: "3D3520",
-};
+// Design tokens
+const NAVY = "0F1B2D";
+const WHITE_BG = "FFFFFF";
+const GOLD = "D4A853";
+const GOLD_LIGHT = "FDF6E8";
+const NAVY_TEXT = "1A2A3D";
+const GRAY = "6B7280";
+const GRAY_LIGHT = "E5E7EB";
+const GREEN = "16A34A";
+const FONT = "Calibri";
+const CONF_TEXT = "CONFIDENTIAL";
 
 const fmtD = v => {
   if (!v && v !== 0) return "$0M";
   const a = Math.abs(v), s = v < 0 ? "-" : "";
-  return a >= 1000 ? s + "$" + (a / 1000).toFixed(1) + "B" : s + "$" + a.toFixed(1) + "M";
+  return a >= 1000 ? s + "$" + (a / 1000).toFixed(1) + "B" : a >= 1 ? s + "$" + a.toFixed(1) + "M" : s + "$" + (a * 1000).toFixed(0) + "K";
 };
+const fmtPct = v => (v * 100).toFixed(0) + "%";
 const trunc = (s, n) => s && s.length > n ? s.slice(0, n) + "\u2026" : (s || "");
 const today = () => new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 
-/* ─── Slide helpers ─── */
 function setupPptx() {
   const pptx = new pptxgen();
   pptx.defineLayout({ name: "CUSTOM_16x9", width: 10, height: 5.625 });
   pptx.layout = "CUSTOM_16x9";
   return pptx;
 }
-const dkSl = pptx => { const s = pptx.addSlide(); s.background = { fill: C.bg }; return s; };
-const goldLn = (pptx, sl) => sl.addShape(pptx.shapes.RECTANGLE, { x: 0.5, y: 0.4, w: 9.0, h: 0.007, fill: { color: C.gold } });
-const addFtr = (sl, pg) => {
-  sl.addText("humaninthelead.ai  |  Confidential", { x: 0.5, y: 5.25, w: 5, h: 0.3, fontSize: 8, color: C.gray, fontFace: "Calibri" });
-  sl.addText(String(pg), { x: 9.0, y: 5.25, w: 0.5, h: 0.3, fontSize: 8, color: C.gray, fontFace: "Calibri", align: "right" });
-};
-const hd = (t, ex) => ({ text: t, options: { bold: true, fontSize: 10, color: C.white, fill: { color: C.bdr }, ...ex } });
-const cl = (t, ex) => ({ text: t, options: { fontSize: 10, color: C.white, ...ex } });
+
+// Footer with CONFIDENTIAL on every slide
+function addFooter(sl, isDark) {
+  const color = isDark ? "4A5568" : GRAY;
+  sl.addText(CONF_TEXT, { x: 0.5, y: 5.25, w: 3, h: 0.3, fontSize: 7, fontFace: FONT, color, bold: true, letterSpacing: 2 });
+  sl.addText("humaninthelead.ai", { x: 7.0, y: 5.25, w: 2.5, h: 0.3, fontSize: 7, fontFace: FONT, color, align: "right" });
+}
+
+/* ─── Slide 1: Cover ─── */
+function slideCover(pptx, { assessmentProfile, baseline, companyFinancials }) {
+  const s = pptx.addSlide();
+  s.background = { fill: NAVY };
+
+  const coName = assessmentProfile?.companyName || companyFinancials?.companyName || baseline?.company || "Company";
+
+  // Gold accent line
+  s.addShape(pptx.shapes.RECTANGLE, { x: 0.5, y: 2.55, w: 4.5, h: 0.004, fill: { color: GOLD } });
+
+  // Company name
+  s.addText(coName, { x: 0.5, y: 1.2, w: 6, h: 0.8, fontSize: 36, fontFace: FONT, color: "FFFFFF", bold: true });
+
+  // Subtitle
+  s.addText("Value Assessment", { x: 0.5, y: 2.7, w: 6, h: 0.6, fontSize: 24, fontFace: FONT, color: GOLD });
+
+  // Date
+  s.addText(today(), { x: 0.5, y: 3.4, w: 4, h: 0.4, fontSize: 14, fontFace: FONT, color: "8899AA" });
+
+  // Confidential badge
+  s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 0.5, y: 4.2, w: 1.6, h: 0.35, fill: { color: "1A2F45" }, rectRadius: 0.04, line: { color: "2A4055", width: 0.5 } });
+  s.addText(CONF_TEXT, { x: 0.5, y: 4.2, w: 1.6, h: 0.35, fontSize: 8, fontFace: FONT, color: "667788", align: "center", bold: true });
+
+  // Right side accent block
+  s.addShape(pptx.shapes.RECTANGLE, { x: 7.5, y: 0, w: 2.5, h: 5.625, fill: { color: "0A1520" } });
+  s.addText("Prepared by\nHuman in the Lead", { x: 7.6, y: 4.2, w: 2.3, h: 0.8, fontSize: 9, fontFace: FONT, color: "556677", align: "center", lineSpacingMultiple: 1.4 });
+
+  addFooter(s, true);
+}
+
+/* ─── Slide 2: What We Found — stat callouts ─── */
+function slideWhatWeFound(pptx, data) {
+  const { tv, agTot, combined, imps, assessmentProfile, companyFinancials, multiYearRamp } = data;
+  const s = pptx.addSlide();
+  s.background = { fill: WHITE_BG };
+
+  // Section header
+  s.addText("What We Found", { x: 0.5, y: 0.35, w: 9, h: 0.5, fontSize: 28, fontFace: FONT, color: NAVY_TEXT, bold: true });
+  s.addShape(pptx.shapes.RECTANGLE, { x: 0.5, y: 0.85, w: 1.2, h: 0.004, fill: { color: GOLD } });
+
+  const nProcs = imps.length;
+  const topProc = imps[0];
+
+  // Calculate payback period
+  const erpImplCost = tv * 0.15;
+  const ramp = multiYearRamp || { erp: [30, 70, 100], agent: [0, 40, 100] };
+  const yr1Value = (tv * ramp.erp[0] / 100) + (agTot * (ramp.agent?.[0] || 0) / 100);
+  const paybackMonths = yr1Value > 0 ? Math.ceil((erpImplCost / yr1Value) * 12) : 24;
+
+  // Stat callout cards — 4 across
+  const stats = [
+    { number: fmtD(combined), label: "Total Value\nPotential" },
+    { number: String(nProcs), label: "Processes\nAssessed" },
+    { number: topProc ? trunc(topProc.label, 18) : "N/A", label: "Top Process\nby Value", smallNum: true },
+    { number: paybackMonths <= 24 ? `${paybackMonths}mo` : "24mo+", label: "Estimated\nPayback Period" },
+  ];
+
+  const cardW = 2.0, gap = 0.4, startX = 0.5, startY = 1.4;
+  stats.forEach((stat, i) => {
+    const cx = startX + i * (cardW + gap);
+    // Card background
+    s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: cx, y: startY, w: cardW, h: 1.8, fill: { color: "F9FAFB" }, rectRadius: 0.08, line: { color: GRAY_LIGHT, width: 0.5 } });
+    // Gold top accent
+    s.addShape(pptx.shapes.RECTANGLE, { x: cx + 0.3, y: startY + 0.15, w: cardW - 0.6, h: 0.003, fill: { color: GOLD } });
+    // Number
+    s.addText(stat.number, { x: cx, y: startY + 0.3, w: cardW, h: 0.8, fontSize: stat.smallNum ? 18 : 40, fontFace: FONT, color: GOLD, bold: true, align: "center" });
+    // Label
+    s.addText(stat.label, { x: cx, y: startY + 1.15, w: cardW, h: 0.5, fontSize: 11, fontFace: FONT, color: GRAY, align: "center", lineSpacingMultiple: 1.3 });
+  });
+
+  // Breakdown strip at bottom
+  const stripY = 3.6;
+  s.addShape(pptx.shapes.RECTANGLE, { x: 0.5, y: stripY, w: 9.0, h: 0.003, fill: { color: GRAY_LIGHT } });
+
+  const breakdownItems = [
+    { label: "ERP Value", value: fmtD(tv), color: GOLD },
+    { label: "Agent Uplift", value: fmtD(agTot), color: GREEN },
+    { label: "Combined", value: fmtD(combined), color: NAVY_TEXT },
+  ];
+  breakdownItems.forEach((item, i) => {
+    const bx = 0.5 + i * 3.1;
+    s.addText(item.label, { x: bx, y: stripY + 0.15, w: 2.8, h: 0.25, fontSize: 10, fontFace: FONT, color: GRAY });
+    s.addText(item.value, { x: bx, y: stripY + 0.4, w: 2.8, h: 0.4, fontSize: 22, fontFace: FONT, color: item.color, bold: true });
+  });
+
+  // Industry context line
+  const ind = assessmentProfile?.industry || "";
+  const band = assessmentProfile?.revenueBand || "";
+  if (ind || band) {
+    s.addText(`Benchmarks: ${ind}${band ? " | " + band : ""} peer group`, { x: 0.5, y: 4.6, w: 9, h: 0.3, fontSize: 9, fontFace: FONT, color: GRAY, italic: true });
+  }
+
+  addFooter(s, false);
+}
+
+/* ─── Slide 3: Where The Value Is — process table ─── */
+function slideWhereValueIs(pptx, data, { selProcs, procValues, procBenchmarks }) {
+  const { imps } = data;
+  const s = pptx.addSlide();
+  s.background = { fill: WHITE_BG };
+
+  s.addText("Where The Value Is", { x: 0.5, y: 0.35, w: 9, h: 0.5, fontSize: 28, fontFace: FONT, color: NAVY_TEXT, bold: true });
+  s.addShape(pptx.shapes.RECTANGLE, { x: 0.5, y: 0.85, w: 1.2, h: 0.004, fill: { color: GOLD } });
+
+  // Build SAP lever lookup
+  const leverLookup = {};
+  selProcs.forEach(p => {
+    const sapMods = (p.sap || []).map(m => m.module).join(", ");
+    const capability = (p.kpis || [])[0]?.capability || "";
+    const valLever = p.valLevers?.[0];
+    leverLookup[p.id] = { module: sapMods, capability: trunc(capability, 25), fintype: valLever?.fintype || "" };
+  });
+
+  // Get baseline/target for first KPI of each process
+  const procDetails = imps.slice(0, 8).map(imp => {
+    const proc = selProcs.find(p => p.id === imp.id);
+    const pv = procValues[imp.id] || {};
+    const pb = procBenchmarks[imp.id] || {};
+    const firstKpi = proc?.kpis?.[0];
+    const current = pv["kpi_current_0"] ?? firstKpi?.current;
+    const bench = pb["bench_0"] ?? firstKpi?.benchmark;
+    const unit = firstKpi?.unit || "";
+    const lv = leverLookup[imp.id] || {};
+    return {
+      label: imp.label,
+      sapLever: lv.module || lv.capability || "S/4HANA",
+      baseline: current != null ? `${current}${unit}` : "—",
+      target: bench != null ? `${bench}${unit}` : "—",
+      value: imp.value + (imp.agentValue || 0),
+    };
+  });
+
+  if (procDetails.length > 0) {
+    // Table header
+    const hd = (t, ex) => ({ text: t, options: { bold: true, fontSize: 9, color: "FFFFFF", fill: { color: NAVY }, fontFace: FONT, ...ex } });
+    const cl = (t, ex) => ({ text: String(t), options: { fontSize: 9, color: NAVY_TEXT, fontFace: FONT, ...ex } });
+
+    const rows = [
+      [hd("Process"), hd("SAP Lever"), hd("Baseline", { align: "center" }), hd("Target", { align: "center" }), hd("Value", { align: "right" })],
+      ...procDetails.map((p, i) => {
+        const rowFill = i % 2 === 0 ? { fill: { color: "F9FAFB" } } : {};
+        return [
+          cl(trunc(p.label, 30), { bold: true, ...rowFill }),
+          cl(trunc(p.sapLever, 20), { color: GRAY, ...rowFill }),
+          cl(p.baseline, { align: "center", ...rowFill }),
+          cl(p.target, { align: "center", color: GREEN, ...rowFill }),
+          cl(fmtD(p.value), { align: "right", color: GOLD, bold: true, ...rowFill }),
+        ];
+      }),
+    ];
+    s.addTable(rows, { x: 0.5, y: 1.1, w: 9.0, colW: [2.8, 2.0, 1.3, 1.3, 1.6], border: { type: "solid", pt: 0.5, color: GRAY_LIGHT }, rowH: 0.38 });
+  }
+
+  addFooter(s, false);
+}
+
+/* ─── Slide 4: How We Got There — calculation transparency ─── */
+function slideHowWeGotThere(pptx, data, params) {
+  const { assessmentProfile, imps, tv, agTot } = data;
+  const s = pptx.addSlide();
+  s.background = { fill: NAVY };
+
+  s.addText("How We Got There", { x: 0.5, y: 0.35, w: 9, h: 0.5, fontSize: 28, fontFace: FONT, color: "FFFFFF", bold: true });
+  s.addShape(pptx.shapes.RECTANGLE, { x: 0.5, y: 0.85, w: 1.2, h: 0.004, fill: { color: GOLD } });
+  s.addText("Calculation transparency", { x: 0.5, y: 0.95, w: 9, h: 0.3, fontSize: 12, fontFace: FONT, color: "8899AA", italic: true });
+
+  const scenarioLevel = params.scenarioLevel || "Medium";
+  const multipliers = { High: "100%", Medium: "65%", Low: "35%" };
+  const ind = assessmentProfile?.industry || "Industry";
+  const band = assessmentProfile?.revenueBand || "";
+
+  // Four info cards in a 2x2 grid
+  const cards = [
+    { title: "Benchmark Source", content: `${ind}${band ? "\n" + band : ""}\npeer group`, icon: "01" },
+    { title: "Scenario Used", content: `${scenarioLevel}\n(${multipliers[scenarioLevel] || "65%"} of gap)`, icon: "02" },
+    { title: "Addressable %", content: `Default 80%\nadjusted per process\nwhere overridden`, icon: "03" },
+    { title: "Agent Uplift %", content: agTot > 0 ? `${fmtD(agTot)} incremental\nfrom ERP benchmark\nto agent benchmark` : "No agent scenarios\ngenerated yet", icon: "04" },
+  ];
+
+  const cardW = 4.1, cardH = 1.6, gapX = 0.5, gapY = 0.3;
+  cards.forEach((card, i) => {
+    const col = i % 2, row = Math.floor(i / 2);
+    const cx = 0.5 + col * (cardW + gapX);
+    const cy = 1.5 + row * (cardH + gapY);
+
+    s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: cx, y: cy, w: cardW, h: cardH, fill: { color: "142236" }, rectRadius: 0.08, line: { color: "1E3350", width: 0.5 } });
+
+    // Number badge
+    s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: cx + 0.15, y: cy + 0.15, w: 0.4, h: 0.35, fill: { color: GOLD }, rectRadius: 0.04 });
+    s.addText(card.icon, { x: cx + 0.15, y: cy + 0.15, w: 0.4, h: 0.35, fontSize: 10, fontFace: FONT, color: NAVY, bold: true, align: "center" });
+
+    // Title
+    s.addText(card.title, { x: cx + 0.7, y: cy + 0.15, w: cardW - 0.9, h: 0.35, fontSize: 13, fontFace: FONT, color: GOLD, bold: true });
+
+    // Content
+    s.addText(card.content, { x: cx + 0.7, y: cy + 0.55, w: cardW - 0.9, h: cardH - 0.7, fontSize: 11, fontFace: FONT, color: "B0BEC5", lineSpacingMultiple: 1.4 });
+  });
+
+  addFooter(s, true);
+}
+
+/* ─── Slide 5: What It Takes — People / Process / Technology / Data ─── */
+function slideWhatItTakes(pptx, data) {
+  const { valueRealization } = data;
+  const s = pptx.addSlide();
+  s.background = { fill: WHITE_BG };
+
+  s.addText("What It Takes", { x: 0.5, y: 0.35, w: 9, h: 0.5, fontSize: 28, fontFace: FONT, color: NAVY_TEXT, bold: true });
+  s.addShape(pptx.shapes.RECTANGLE, { x: 0.5, y: 0.85, w: 1.2, h: 0.004, fill: { color: GOLD } });
+  s.addText("Realization requirements across four dimensions", { x: 0.5, y: 0.95, w: 9, h: 0.3, fontSize: 12, fontFace: FONT, color: GRAY, italic: true });
+
+  const vr = valueRealization || {};
+
+  const dims = [
+    {
+      title: "People",
+      color: "3B82F6",
+      getItems: d => [
+        d.roleChanges || "Role changes TBD",
+        d.headcountDelta ? `Headcount delta: ${d.headcountDelta}` : null,
+        (d.skillsRequired || []).length > 0 ? `Skills: ${d.skillsRequired.join(", ")}` : null,
+      ].filter(Boolean),
+    },
+    {
+      title: "Process",
+      color: GREEN,
+      getItems: d => [
+        d.processesRedesigned || "Process redesign TBD",
+        d.processesRetired || null,
+        d.automationCandidates || null,
+      ].filter(Boolean),
+    },
+    {
+      title: "Technology",
+      color: "8B5CF6",
+      getItems: d => [
+        d.integrationNeeds || "Integration needs TBD",
+        d.itInfrastructure || null,
+        d.physicalFootprint || null,
+      ].filter(Boolean),
+    },
+    {
+      title: "Data",
+      color: GOLD,
+      getItems: d => [
+        d.dataGaps || "Data requirements TBD",
+        d.governanceNeeds || null,
+        (d.qualityIssues || []).length > 0 ? `Quality: ${d.qualityIssues.join(", ")}` : null,
+      ].filter(Boolean),
+    },
+  ];
+
+  const colW = 2.05, gap = 0.2, startY = 1.4, colH = 3.6;
+  dims.forEach((dim, i) => {
+    const cx = 0.5 + i * (colW + gap);
+
+    // Column card
+    s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: cx, y: startY, w: colW, h: colH, fill: { color: "F9FAFB" }, rectRadius: 0.08, line: { color: GRAY_LIGHT, width: 0.5 } });
+
+    // Colored header bar
+    s.addShape(pptx.shapes.RECTANGLE, { x: cx, y: startY, w: colW, h: 0.5, fill: { color: dim.color }, rectRadius: 0.08 });
+    // Fix bottom corners of header (overlay rectangle)
+    s.addShape(pptx.shapes.RECTANGLE, { x: cx, y: startY + 0.3, w: colW, h: 0.2, fill: { color: dim.color } });
+    s.addText(dim.title, { x: cx, y: startY, w: colW, h: 0.5, fontSize: 13, fontFace: FONT, color: "FFFFFF", bold: true, align: "center" });
+
+    // Content items
+    const items = vr[dim.title.toLowerCase()] || vr[dim.title.toLowerCase() + "es"] || vr[dim.title.toLowerCase().replace("process", "processes")];
+    const lines = items ? dim.getItems(items) : [`${dim.title} requirements not yet defined`];
+    const content = lines.map(l => typeof l === "string" ? trunc(l, 60) : "").filter(Boolean).join("\n\n");
+    s.addText(content || `${dim.title} requirements\nnot yet defined`, { x: cx + 0.12, y: startY + 0.6, w: colW - 0.24, h: colH - 0.7, fontSize: 9, fontFace: FONT, color: NAVY_TEXT, lineSpacingMultiple: 1.4 });
+  });
+
+  addFooter(s, false);
+}
+
+/* ─── Slide 6: Recommended Next Steps ─── */
+function slideNextSteps(pptx, data) {
+  const { imps, e2e, agTot, tv, multiYearRamp } = data;
+  const s = pptx.addSlide();
+  s.background = { fill: NAVY };
+
+  s.addText("Recommended Next Steps", { x: 0.5, y: 0.35, w: 9, h: 0.5, fontSize: 28, fontFace: FONT, color: "FFFFFF", bold: true });
+  s.addShape(pptx.shapes.RECTANGLE, { x: 0.5, y: 0.85, w: 1.2, h: 0.004, fill: { color: GOLD } });
+
+  const topE = Object.entries(e2e).sort((a, b) => b[1].value - a[1].value)[0];
+  const topProc = imps[0];
+  const nProcs = Math.min(imps.length, 5);
+
+  // Phase 1 scope
+  const phase1Scope = topE
+    ? `${topE[0]} — ${nProcs} processes, ${fmtD(topE[1].value)} addressable`
+    : `Top ${nProcs} processes by value`;
+
+  // Timeline
+  const ramp = multiYearRamp || { erp: [30, 70, 100] };
+  const timeline = "8-12 weeks to Phase 1 completion";
+
+  // Owner
+  const owner = "Executive Sponsor + Project Lead";
+
+  // Three step cards
+  const steps = [
+    { phase: "Phase 1", title: "Detailed Design", desc: `Scope: ${phase1Scope}\n\nDeep-dive top processes, validate benchmarks with process owners, build implementation roadmap`, timeline: "Weeks 1-4", color: GOLD },
+    { phase: "Phase 2", title: "Build & Configure", desc: `Configure S/4HANA for ${nProcs} priority processes${agTot > 0 ? "\n\nDeploy AI agent pilots for highest-feasibility candidates" : ""}`, timeline: "Weeks 4-10", color: "4A90D9" },
+    { phase: "Phase 3", title: "Realize Value", desc: `Go-live, measure against baseline KPIs, track value realization\n\nTarget: ${fmtD(tv * (ramp.erp[0] || 30) / 100)} Year 1 ERP value`, timeline: "Weeks 10-16", color: GREEN },
+  ];
+
+  const cardW = 2.8, gap = 0.3;
+  steps.forEach((step, i) => {
+    const cx = 0.5 + i * (cardW + gap);
+    const cy = 1.3;
+    const cardH = 3.4;
+
+    s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: cx, y: cy, w: cardW, h: cardH, fill: { color: "142236" }, rectRadius: 0.1, line: { color: "1E3350", width: 0.5 } });
+
+    // Phase badge
+    s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: cx + 0.15, y: cy + 0.15, w: 1.0, h: 0.32, fill: { color: step.color }, rectRadius: 0.05 });
+    s.addText(step.phase, { x: cx + 0.15, y: cy + 0.15, w: 1.0, h: 0.32, fontSize: 9, fontFace: FONT, color: step.color === GOLD ? NAVY : "FFFFFF", bold: true, align: "center" });
+
+    // Timeline right
+    s.addText(step.timeline, { x: cx + 1.3, y: cy + 0.15, w: cardW - 1.5, h: 0.32, fontSize: 9, fontFace: FONT, color: "8899AA", align: "right" });
+
+    // Title
+    s.addText(step.title, { x: cx + 0.15, y: cy + 0.6, w: cardW - 0.3, h: 0.4, fontSize: 16, fontFace: FONT, color: "FFFFFF", bold: true });
+
+    // Description
+    s.addText(step.desc, { x: cx + 0.15, y: cy + 1.1, w: cardW - 0.3, h: cardH - 1.3, fontSize: 10, fontFace: FONT, color: "B0BEC5", lineSpacingMultiple: 1.4 });
+  });
+
+  // Owner bar at bottom
+  s.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 4.85, w: 10, h: 0.78, fill: { color: "0A1520" } });
+  s.addText(`Owner: ${owner}  |  Timeline: ${timeline}`, { x: 0.5, y: 4.85, w: 5.5, h: 0.4, fontSize: 10, fontFace: FONT, color: "8899AA" });
+  s.addText("Phase 0 complete. Ready for Phase 1.", { x: 6.0, y: 4.85, w: 3.5, h: 0.4, fontSize: 10, fontFace: FONT, color: GOLD, align: "right" });
+
+  addFooter(s, true);
+}
 
 /* ═══════════════════════════════════════════════════════
    PRECOMPUTE shared data
@@ -55,556 +393,12 @@ function precompute({ baseline, selProcs, valResult, procValues, procBenchmarks,
   // E2E aggregation
   const e2e = {};
   imps.forEach(imp => {
-    if (!e2e[imp.e2e]) e2e[imp.e2e] = { procs: 0, value: 0, kpis: 0 };
+    if (!e2e[imp.e2e]) e2e[imp.e2e] = { procs: 0, value: 0 };
     e2e[imp.e2e].procs++;
     e2e[imp.e2e].value += imp.value;
-    const p = PROC_MAP[imp.id];
-    e2e[imp.e2e].kpis += p?.kpis?.length || 0;
   });
 
-  // Quartile data per process
-  const procQuartiles = {};
-  selProcs.forEach(proc => {
-    const pv = procValues[proc.id] || {}, pb = procBenchmarks[proc.id] || {};
-    const kqs = [];
-    (proc.kpis || []).forEach((kpi, ki) => {
-      const cur = pv["kpi_current_" + ki] ?? kpi.current;
-      const ben = pb["bench_" + ki] ?? kpi.benchmark;
-      const q = getQuartile(cur, ben, kpi);
-      kqs.push({ kpi, cur, ben, q });
-    });
-    procQuartiles[proc.id] = kqs;
-  });
-
-  // Quartile totals
-  let qT = 0, qA = 0, qL = 0, qTot = 0;
-  Object.values(procQuartiles).forEach(kqs => kqs.forEach(({ q }) => {
-    if (q) { qTot++; if (q.score >= 3) qT++; else if (q.score >= 2) qA++; else qL++; }
-  }));
-
-  // Decision leakage — processes with bottom quartile KPIs + high value
-  const leakage = imps
-    .filter(imp => {
-      const qs = procQuartiles[imp.id] || [];
-      return qs.some(({ q }) => q && q.score < 1.5);
-    })
-    .map(imp => {
-      const qs = procQuartiles[imp.id] || [];
-      const worstKpi = qs.filter(({ q }) => q && q.score < 1.5).sort((a, b) => (a.q?.score || 0) - (b.q?.score || 0))[0];
-      return { label: imp.label, l4: imp.l4, value: imp.value, reason: worstKpi ? `${worstKpi.kpi.name} at bottom quartile` : "Below benchmark" };
-    })
-    .sort((a, b) => b.value - a.value);
-
-  // Agent specs
-  const agentData = selProcs
-    .filter(p => AGENT_SPECS[p.id])
-    .map(p => {
-      const spec = AGENT_SPECS[p.id];
-      const imp = valResult.impacts.find(i => i.id === p.id);
-      return { label: p.label, l4: p.l4, ...spec, agV: imp?.agentValue || 0, feasibility: spec.feasibility };
-    })
-    .sort((a, b) => b.feasibility - a.feasibility);
-
-  // Top 3 processes by value
-  const top3 = imps.slice(0, 3);
-
-  return { imps, rv, cg, sg, tv, agTot, combined, bsh, fnName, e2e, procQuartiles, qT, qA, qL, qTot, leakage, agentData, top3, valueRealization, companyFinancials, multiYearRamp, assessmentProfile };
-}
-
-/* ═══════════════════════════════════════════════════════
-   EXECUTIVE DECK — 4 slides
-   ═══════════════════════════════════════════════════════ */
-function buildExecDeck(pptx, data, baseline) {
-  const { tv, agTot, combined, rv, cg, sg, top3, leakage, fnName, assessmentProfile } = data;
-  const dt = today();
-  let pg = 1;
-
-  // ── Slide 1: Cover ──
-  (() => {
-    const s = dkSl(pptx);
-    // Thin gold horizontal rule at vertical center
-    s.addShape(pptx.shapes.RECTANGLE, { x: 0.5, y: 2.8, w: 5.5, h: 0.005, fill: { color: C.gold } });
-    // Logo placeholder
-    s.addShape(pptx.shapes.RECTANGLE, { x: 0.5, y: 0.6, w: 1.8, h: 1.0, fill: { color: "2A2A25" }, rectRadius: 0.05 });
-    s.addText("Upload logo", { x: 0.5, y: 0.6, w: 1.8, h: 1.0, fontSize: 9, fontFace: "Calibri", color: C.gray, align: "center" });
-    // Company name, subtitle, date
-    const coName = assessmentProfile?.companyName || baseline.company || "Company";
-    const fy = assessmentProfile?.fiscalYear || "";
-    s.addText(coName, { x: 0.5, y: 3.1, w: 5.5, h: 0.7, fontSize: 36, fontFace: "Georgia", color: C.gold, bold: true });
-    s.addText("Phase 0 SAP S/4HANA Business Case", { x: 0.5, y: 3.8, w: 5.5, h: 0.35, fontSize: 18, fontFace: "Georgia", color: C.white });
-    s.addText(`${fy ? "FY" + fy + "  |  " : ""}${dt}`, { x: 0.5, y: 4.2, w: 5.5, h: 0.25, fontSize: 12, fontFace: "Calibri", color: C.dkGray });
-    s.addText("Prepared by Human in the Lead", { x: 0.5, y: 5.1, w: 5.5, h: 0.25, fontSize: 9, fontFace: "Calibri", color: C.dkGray });
-    // Right side: Three stacked value boxes
-    const vBoxX = 7.0, vBoxW = 2.5;
-    [
-      { label: "Combined Value", value: fmtD(combined), color: C.gold, y: 1.0, fontSize: 28 },
-      { label: "ERP Value", value: fmtD(tv), color: C.gold, y: 2.2, fontSize: 22 },
-      { label: "Agent Uplift", value: fmtD(agTot), color: C.green, y: 3.2, fontSize: 22 },
-    ].forEach(box => {
-      s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: vBoxX, y: box.y, w: vBoxW, h: 0.85, fill: { color: C.card }, rectRadius: 0.08, line: { color: C.bdr, width: 0.5 } });
-      s.addText(box.label, { x: vBoxX, y: box.y + 0.05, w: vBoxW, h: 0.25, fontSize: 9, fontFace: "Calibri", color: C.gray, align: "center", textTransform: "uppercase" });
-      s.addText(box.value, { x: vBoxX, y: box.y + 0.28, w: vBoxW, h: 0.5, fontSize: box.fontSize, fontFace: "Georgia", color: box.color, bold: true, align: "center" });
-    });
-    // Bottom right branding
-    s.addText("humaninthelead.ai", { x: 8.0, y: 5.2, w: 1.8, h: 0.25, fontSize: 10, fontFace: "Calibri", color: "444444", align: "right" });
-    pg++;
-  })();
-
-  // ── Slide 2: Value Summary — "The opportunity" ──
-  (() => {
-    const s = dkSl(pptx);
-    const cfName = baseline.companyFinancials?.companyName || baseline.company || "Company";
-    const cfYear = baseline.companyFinancials?.fiscalYear || "";
-    const nProcs = top3.length > 0 ? data.imps.length : 0;
-    s.addText("The opportunity", { x: 0.5, y: 0.35, w: 9.0, h: 0.5, fontSize: 28, fontFace: "Georgia", color: C.white });
-    const peerInd = assessmentProfile?.industry || baseline.industry || "industry";
-    const peerRev = assessmentProfile?.revenueBand || baseline.revenueBand || "";
-    s.addText(`Based on ${nProcs} processes assessed, ${cfName}${cfYear ? " FY" + cfYear : ""} financials, ${peerInd}${peerRev ? " " + peerRev : ""} peer benchmarks`, { x: 0.5, y: 0.85, w: 9.0, h: 0.3, fontSize: 12, fontFace: "Calibri", color: C.gray });
-
-    // Horizontal stacked bar: ERP (gold) + Agent (green stacked) = Total
-    const barY = 1.5, barH = 0.6, barMaxW = 7.5;
-    const erpW = combined > 0 ? Math.max((tv / combined) * barMaxW, 0.5) : barMaxW * 0.7;
-    const agW = combined > 0 ? Math.max((agTot / combined) * barMaxW, 0.3) : barMaxW * 0.3;
-    s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 0.5, y: barY, w: erpW, h: barH, fill: { color: C.gold }, rectRadius: 0.05 });
-    s.addText("ERP " + fmtD(tv), { x: 0.5, y: barY, w: erpW, h: barH, fontSize: 12, fontFace: "Calibri", color: C.bg, bold: true, align: "center" });
-    if (agTot > 0) {
-      s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 0.5 + erpW, y: barY, w: agW, h: barH, fill: { color: C.green }, rectRadius: 0.05 });
-      s.addText("Agent " + fmtD(agTot), { x: 0.5 + erpW, y: barY, w: agW, h: barH, fontSize: 12, fontFace: "Calibri", color: C.bg, bold: true, align: "center" });
-    }
-    s.addText(fmtD(combined), { x: 0.5 + erpW + agW + 0.15, y: barY, w: 1.5, h: barH, fontSize: 18, fontFace: "Georgia", color: C.white, bold: true });
-
-    // Table: top 3 processes with ERP + Agent split
-    if (top3.length > 0) {
-      const rows = [
-        [hd("Process"), hd("ERP Value", { align: "right" }), hd("Agent Uplift", { align: "right" }), hd("Total", { align: "right" })],
-        ...top3.map((imp, i) => {
-          const agV = imp.agentValue || 0;
-          const total = imp.value + agV;
-          const rowFill = i % 2 === 0 ? { fill: { color: C.card } } : {};
-          return [
-            cl(trunc(imp.label, 35), rowFill), cl(fmtD(imp.value), { align: "right", color: C.gold, ...rowFill }), cl(agV > 0 ? fmtD(agV) : "—", { align: "right", color: C.green, ...rowFill }), cl(fmtD(total), { align: "right", color: C.white, bold: true, ...rowFill }),
-          ];
-        }),
-      ];
-      s.addTable(rows, { x: 0.5, y: 2.4, w: 9.0, colW: [3.5, 2.0, 2.0, 1.5], border: { type: "solid", pt: 0.5, color: C.bdr }, rowH: 0.38 });
-    }
-
-    // P&L impact strip — colored boxes
-    s.addShape(pptx.shapes.RECTANGLE, { x: 0.5, y: 4.0, w: 9.0, h: 0.005, fill: { color: C.gold } });
-    const pnlItems = [
-      { label: "Revenue", value: fmtD(rv), prefix: "+", color: C.green },
-      { label: "COGS", value: fmtD(Math.abs(cg)), prefix: "-", color: C.green },
-      { label: "SG&A", value: fmtD(Math.abs(sg)), prefix: "-", color: C.green },
-      { label: "EBITDA", value: fmtD(rv + cg + sg), prefix: "+", color: C.gold },
-    ];
-    pnlItems.forEach((item, i) => {
-      const bx = 0.5 + i * 2.25, by = 4.1;
-      s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: bx, y: by, w: 2.0, h: 1.0, fill: { color: C.card }, rectRadius: 0.06, line: { color: C.bdr, width: 0.5 } });
-      s.addText(item.label, { x: bx, y: by + 0.08, w: 2.0, h: 0.22, fontSize: 10, fontFace: "Calibri", color: C.gray, align: "center" });
-      s.addText(item.prefix + item.value, { x: bx, y: by + 0.32, w: 2.0, h: 0.5, fontSize: 20, fontFace: "Georgia", color: item.color, bold: i === 3, align: "center" });
-    });
-    addFtr(s, pg++);
-  })();
-
-  // ── Slide 3: Decision Leakage ──
-  (() => {
-    const s = dkSl(pptx);
-    s.addText("Beyond the metrics \u2014 decisions this unlocks", { x: 0.5, y: 0.35, w: 9.0, h: 0.5, fontSize: 28, fontFace: "Georgia", color: C.white });
-    s.addText("Value is created when the right decision is made at the right time with the right data. Today, these decisions are at risk.", { x: 0.5, y: 0.85, w: 9.0, h: 0.4, fontSize: 14, fontFace: "Calibri", color: C.gray, italic: true });
-
-    const lk = leakage.slice(0, 4);
-    if (lk.length > 0) {
-      const rows = [
-        [hd("Decision"), hd("Why blocked today"), hd("Value at risk", { align: "right" })],
-        ...lk.map(l => [
-          cl(trunc(l.label, 30), { bold: true }), cl(trunc(l.reason, 40), { color: C.gold, fontSize: 10 }), cl(fmtD(l.value), { align: "right", color: C.green, bold: true }),
-        ]),
-      ];
-      s.addTable(rows, { x: 0.5, y: 1.5, w: 9.0, colW: [3.2, 3.8, 2.0], border: { type: "solid", pt: 0.5, color: C.bdr }, rowH: 0.45 });
-
-      // Insight box
-      const insightY = 1.5 + (lk.length + 1) * 0.45 + 0.4;
-      s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 1.5, y: insightY, w: 7.0, h: 0.7, fill: { color: C.card }, rectRadius: 0.08, line: { color: C.gold, width: 1 } });
-      s.addText("The transformation doesn\u2019t just improve metrics. It changes what\u2019s possible.", { x: 1.5, y: insightY, w: 7.0, h: 0.7, fontSize: 13, fontFace: "Georgia", color: C.gold, italic: true, align: "center" });
-    } else {
-      s.addText("No decision leakage identified \u2014 all KPIs are at or above benchmark.", { x: 0.5, y: 2.5, w: 9.0, h: 0.5, fontSize: 12, fontFace: "Calibri", color: C.gray, align: "center" });
-    }
-    addFtr(s, pg++);
-  })();
-
-  // ── Slide 4: Next Steps — side-by-side action cards ──
-  (() => {
-    const s = dkSl(pptx);
-    s.addText("Recommended next steps", { x: 0.5, y: 0.35, w: 9.0, h: 0.5, fontSize: 28, fontFace: "Georgia", color: C.white });
-
-    const topE = Object.entries(data.e2e).sort((a, b) => b[1].value - a[1].value)[0];
-    const topProc = data.imps[0];
-    const actions = [
-      { action: topE ? `Prioritize ${topE[0]}` : "Prioritize highest-value E2E flow", rationale: topE ? `${fmtD(topE[1].value)} addressable value — largest concentration of opportunity` : "Identify and focus on highest-value process area", owner: "Executive Sponsor", timeline: "Week 1-2", priority: "HIGH" },
-      { action: "Initiate Phase 1 detailed design", rationale: topProc ? `Deep-dive ${trunc(topProc.label, 25)} and top 3 processes for implementation roadmap` : "Design wave plan and detailed requirements", owner: "Project Lead", timeline: "Week 2-4", priority: "HIGH" },
-      { action: "Deploy AI agent pilots", rationale: agTot > 0 ? `${fmtD(agTot)} incremental value from agent automation — start with highest-feasibility candidates` : "Identify agent automation candidates from assessment", owner: "Technology Lead", timeline: "Week 4-8", priority: "MED" },
-    ];
-
-    const cardW = 2.8, gap = 0.3;
-    actions.forEach((a, i) => {
-      const bx = 0.5 + i * (cardW + gap), by = 1.2, cardH = 3.6;
-      s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: bx, y: by, w: cardW, h: cardH, fill: { color: C.card }, rectRadius: 0.1, line: { color: C.bdr, width: 0.5 } });
-      // Priority badge top-right
-      const pColor = a.priority === "HIGH" ? C.gold : a.priority === "MED" ? C.green : C.blue;
-      s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: bx + cardW - 1.0, y: by + 0.12, w: 0.85, h: 0.3, fill: { color: pColor }, rectRadius: 0.06 });
-      s.addText(a.priority, { x: bx + cardW - 1.0, y: by + 0.12, w: 0.85, h: 0.3, fontSize: 9, fontFace: "Calibri", color: C.bg, bold: true, align: "center" });
-      // Action title
-      s.addText(a.action, { x: bx + 0.15, y: by + 0.55, w: cardW - 0.3, h: 0.6, fontSize: 16, fontFace: "Calibri", color: C.white, bold: true });
-      // Owner
-      s.addText(a.owner, { x: bx + 0.15, y: by + 1.2, w: cardW - 0.3, h: 0.25, fontSize: 12, fontFace: "Calibri", color: C.gray });
-      // Timeline
-      s.addText(a.timeline, { x: bx + 0.15, y: by + 1.5, w: cardW - 0.3, h: 0.25, fontSize: 12, fontFace: "Georgia", color: C.gold });
-      // Rationale
-      s.addText(a.rationale, { x: bx + 0.15, y: by + 1.9, w: cardW - 0.3, h: 1.4, fontSize: 12, fontFace: "Calibri", color: C.dkGray, lineSpacingMultiple: 1.3 });
-    });
-
-    // Footer bar
-    s.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 5.0, w: 10, h: 0.625, fill: { color: C.card } });
-    s.addText("Phase 0 complete. Phase 1 detailed design available upon request.", { x: 0.5, y: 5.05, w: 5.5, h: 0.5, fontSize: 10, fontFace: "Calibri", color: C.gray });
-    s.addText("humaninthelead.ai \u00B7 Confidential", { x: 6.0, y: 5.05, w: 3.5, h: 0.5, fontSize: 10, fontFace: "Calibri", color: C.gray, align: "right" });
-    pg++;
-  })();
-}
-
-/* ═══════════════════════════════════════════════════════
-   DETAILED REPORT — 10 slides max
-   ═══════════════════════════════════════════════════════ */
-function buildDetailedDeck(pptx, data, baseline, { selProcs, procValues, procBenchmarks, agentResults, baselineData, PROC_MAP, getQuartile, scenarioLevel, totalKPIs, processOwners }) {
-  const { imps, rv, cg, sg, tv, agTot, combined, bsh, fnName, e2e, procQuartiles, qT, qA, qL, qTot, leakage, agentData, valueRealization, companyFinancials, multiYearRamp, assessmentProfile } = data;
-  const dt = today();
-  let pg = 1;
-
-  // ── Slide 1: Cover ──
-  (() => {
-    const s = dkSl(pptx); goldLn(pptx, s);
-    const dCoName = assessmentProfile?.companyName || baseline.company || "Company";
-    s.addText(dCoName, { x: 0.5, y: 1.0, w: 9.0, h: 0.9, fontSize: 40, fontFace: "Georgia", color: C.gold, bold: true });
-    s.addText("Phase 0 Detailed Report", { x: 0.5, y: 1.9, w: 9.0, h: 0.5, fontSize: 20, fontFace: "Georgia", color: C.white });
-    s.addText(fnName + "  |  " + dt + (assessmentProfile?.fiscalYear ? "  |  FY" + assessmentProfile.fiscalYear : ""), { x: 0.5, y: 2.6, w: 9.0, h: 0.3, fontSize: 11, fontFace: "Calibri", color: C.gray });
-    s.addText(fmtD(combined), { x: 0.5, y: 3.4, w: 9.0, h: 1.0, fontSize: 64, fontFace: "Georgia", color: C.gold, bold: true, align: "center" });
-    s.addText("Total Combined Value", { x: 0.5, y: 4.3, w: 9.0, h: 0.3, fontSize: 12, fontFace: "Calibri", color: C.gray, align: "center" });
-    pg++;
-  })();
-
-  // ── Slide 2: Scope — processes with owners ──
-  (() => {
-    const s = dkSl(pptx); goldLn(pptx, s);
-    s.addText("Assessment Scope", { x: 0.5, y: 0.5, w: 9.0, h: 0.4, fontSize: 24, fontFace: "Georgia", color: C.white });
-    s.addText(`${selProcs.length} processes across ${Object.keys(data.e2e).length} E2E flows — covering the full ${data.fnName} function`, { x: 0.5, y: 0.9, w: 9.0, h: 0.25, fontSize: 11, fontFace: "Calibri", color: C.gray, italic: true });
-
-    const rows = [
-      [hd("Process"), hd("L4 Code", { align: "center" }), hd("Owner"), hd("E2E Flow")],
-    ];
-    selProcs.slice(0, 12).forEach(p => {
-      const owner = processOwners?.[p.id] || {};
-      rows.push([
-        cl(trunc(p.label, 30)),
-        cl(p.l4, { align: "center", fontSize: 9, color: C.gray }),
-        cl(trunc(owner.name || "—", 20)),
-        cl(trunc(p.e2e || "—", 20), { fontSize: 9 }),
-      ]);
-    });
-    s.addTable(rows, { x: 0.5, y: 1.2, w: 9.0, colW: [3.0, 1.2, 2.4, 2.4], border: { type: "solid", pt: 0.5, color: C.bdr }, rowH: 0.32 });
-    addFtr(s, pg++);
-  })();
-
-  // ── Slide 3: Baseline Confidence grid ──
-  (() => {
-    const s = dkSl(pptx); goldLn(pptx, s);
-    s.addText("Baseline Confidence", { x: 0.5, y: 0.5, w: 9.0, h: 0.4, fontSize: 24, fontFace: "Georgia", color: C.white });
-    const lowConfCount = selProcs.filter(p => { const qs = procQuartiles[p.id] || []; const assessed = qs.filter(({ q }) => q).length; return qs.length === 0 || assessed / qs.length < 0.8; }).length;
-    s.addText(lowConfCount > 0 ? `${lowConfCount} of ${selProcs.length} processes have low confidence data \u2014 consider deep-dive baseline collection` : "All processes have strong baseline data \u2014 high confidence in value estimates", { x: 0.5, y: 0.9, w: 9.0, h: 0.25, fontSize: 11, fontFace: "Calibri", color: C.gray, italic: true });
-
-    const rows = [[hd("Process"), hd("Confidence", { align: "center" }), hd("KPIs", { align: "center" }), hd("Data Quality", { align: "center" })]];
-    selProcs.slice(0, 12).forEach(proc => {
-      const qs = procQuartiles[proc.id] || [];
-      const assessed = qs.filter(({ q }) => q).length;
-      const total = qs.length;
-      const topCount = qs.filter(({ q }) => q && q.score >= 3).length;
-      const level = total === 0 ? "Low" : assessed / total >= 0.8 ? (topCount / total >= 0.5 ? "High" : "Med") : "Low";
-      const lColor = level === "High" ? C.green : level === "Med" ? C.gold : C.red;
-      const dq = baselineData[proc.id + "_b_dataQuality"] || "—";
-      rows.push([
-        cl(trunc(proc.label, 30)),
-        cl(level, { align: "center", color: lColor, bold: true }),
-        cl(assessed + "/" + total, { align: "center" }),
-        cl(trunc(dq, 20), { align: "center", fontSize: 9 }),
-      ]);
-    });
-    s.addTable(rows, { x: 0.5, y: 1.2, w: 9.0, colW: [3.5, 1.5, 1.5, 2.5], border: { type: "solid", pt: 0.5, color: C.bdr }, rowH: 0.32 });
-    addFtr(s, pg++);
-  })();
-
-  // ── Slide 4: Decision leakage full analysis ──
-  (() => {
-    const s = dkSl(pptx); goldLn(pptx, s);
-    s.addText("Decision Leakage Analysis", { x: 0.5, y: 0.5, w: 9.0, h: 0.4, fontSize: 24, fontFace: "Georgia", color: C.white });
-    const leakTotal = leakage.reduce((s, l) => s + l.value, 0);
-    s.addText(leakage.length > 0 ? `${leakage.length} processes with blocked decisions \u2014 ${fmtD(leakTotal)} of value at risk from poor data or process gaps` : "No blocked decisions identified \u2014 current processes support decision-making adequately", { x: 0.5, y: 0.9, w: 9.0, h: 0.3, fontSize: 11, fontFace: "Calibri", color: C.gray, italic: true });
-
-    const lk = leakage.slice(0, 10);
-    if (lk.length > 0) {
-      const rows = [
-        [hd("Decision"), hd("L4"), hd("Why Blocked"), hd("Est. Value", { align: "right" })],
-        ...lk.map(l => [
-          cl(trunc(l.label, 25)), cl(l.l4, { fontSize: 9, color: C.gray }), cl(trunc(l.reason, 30), { fontSize: 9 }), cl(fmtD(l.value), { align: "right", color: C.gold, bold: true }),
-        ]),
-      ];
-      s.addTable(rows, { x: 0.5, y: 1.4, w: 9.0, colW: [2.8, 1.0, 3.2, 2.0], border: { type: "solid", pt: 0.5, color: C.bdr }, rowH: 0.35 });
-    } else {
-      s.addText("No decision leakage identified.", { x: 0.5, y: 2.5, w: 9.0, h: 0.5, fontSize: 12, fontFace: "Calibri", color: C.gray, align: "center" });
-    }
-    addFtr(s, pg++);
-  })();
-
-  // ── Slide 5: Benchmark positioning — quartile chart ──
-  (() => {
-    const s = dkSl(pptx); goldLn(pptx, s);
-    s.addText("Benchmark Positioning", { x: 0.5, y: 0.5, w: 9.0, h: 0.4, fontSize: 24, fontFace: "Georgia", color: C.white });
-    s.addText(qL > 0 ? `You are in the bottom quartile on ${qL} of ${qTot} KPIs \u2014 significant headroom exists` : `${qT} of ${qTot} KPIs in top quartile \u2014 limited performance gaps`, { x: 0.5, y: 0.9, w: 9.0, h: 0.25, fontSize: 11, fontFace: "Calibri", color: C.gray, italic: true });
-
-    if (qTot > 0) {
-      // Horizontal quartile chart per process (up to 8)
-      const procLabels = [];
-      const topVals = [], avgVals = [], lowVals = [];
-      selProcs.slice(0, 8).forEach(proc => {
-        const qs = procQuartiles[proc.id] || [];
-        let t = 0, a = 0, l = 0;
-        qs.forEach(({ q }) => { if (q) { if (q.score >= 3) t++; else if (q.score >= 2) a++; else l++; } });
-        procLabels.push(trunc(proc.label, 20));
-        topVals.push(t);
-        avgVals.push(a);
-        lowVals.push(l);
-      });
-      s.addChart(pptx.charts.BAR, [
-        { name: "Top Quartile", labels: procLabels, values: topVals },
-        { name: "Average", labels: procLabels, values: avgVals },
-        { name: "Bottom Quartile", labels: procLabels, values: lowVals },
-      ], {
-        x: 0.5, y: 1.2, w: 9.0, h: 3.8, showTitle: false, barDir: "bar",
-        barGrouping: "stacked", showValue: false,
-        catAxisLabelColor: C.gray, catAxisLabelFontSize: 9,
-        valAxisLabelColor: C.gray, valAxisLabelFontSize: 9,
-        catAxisLineShow: false, valAxisLineShow: false,
-        valGridLine: { color: C.bdr, size: 0.5 },
-        chartColors: [C.green, C.gold, C.red],
-        showLegend: true, legendPos: "b", legendColor: C.gray, legendFontSize: 9,
-      });
-    } else {
-      s.addText("No benchmark data available.", { x: 0.5, y: 2.5, w: 9.0, h: 0.5, fontSize: 12, fontFace: "Calibri", color: C.gray, align: "center" });
-    }
-    addFtr(s, pg++);
-  })();
-
-  // ── Slide 6: ERP Value — table with SAP Lever column ──
-  (() => {
-    const s = dkSl(pptx); goldLn(pptx, s);
-    s.addText("ERP Value by Process", { x: 0.5, y: 0.5, w: 9.0, h: 0.4, fontSize: 24, fontFace: "Georgia", color: C.white });
-    const top2Val = imps.slice(0, 2).reduce((s, i) => s + i.value, 0);
-    const top2Pct = tv > 0 ? Math.round((top2Val / tv) * 100) : 0;
-    const top2Names = imps.slice(0, 2).map(i => trunc(i.label, 20)).join(" and ");
-    s.addText(top2Pct > 0 ? `${top2Names} represent ${top2Pct}% of total ERP opportunity` : "ERP value distributed across all assessed processes", { x: 0.5, y: 0.9, w: 9.0, h: 0.25, fontSize: 11, fontFace: "Calibri", color: C.gray, italic: true });
-
-    // Build SAP lever lookup from selProcs
-    const leverLookup = {};
-    selProcs.forEach(p => {
-      const sapMods = (p.sap || []).map(s => s.module).join(", ");
-      const capability = (p.kpis || [])[0]?.capability || "";
-      leverLookup[p.id] = { module: sapMods, capability: trunc(capability, 25) };
-    });
-
-    const top10 = imps.slice(0, 10);
-    if (top10.length > 0) {
-      const rows = [
-        [hd("Process"), hd("SAP Lever", { align: "left" }), hd("ERP Value", { align: "right" }), hd("Agent Uplift", { align: "right" }), hd("Total", { align: "right" })],
-        ...top10.map((imp, i) => {
-          const lv = leverLookup[imp.id] || {};
-          const agV = imp.agentValue || 0;
-          const total = imp.value + agV;
-          const rowFill = i % 2 === 0 ? { fill: { color: C.card } } : {};
-          return [
-            cl(trunc(imp.label, 28), { fontSize: 9, ...rowFill }),
-            { text: [
-              { text: lv.capability || "—", options: { fontSize: 9, color: C.white } },
-              { text: lv.module ? "\n" + lv.module : "", options: { fontSize: 8, color: C.blue, bold: true } },
-            ], options: { ...rowFill } },
-            cl(fmtD(imp.value), { align: "right", color: C.gold, bold: true, ...rowFill }),
-            cl(agV > 0 ? fmtD(agV) : "\u2014", { align: "right", color: C.green, ...rowFill }),
-            cl(fmtD(total), { align: "right", color: C.white, bold: true, ...rowFill }),
-          ];
-        }),
-      ];
-      s.addTable(rows, { x: 0.5, y: 1.2, w: 9.0, colW: [2.2, 2.5, 1.5, 1.5, 1.3], border: { type: "solid", pt: 0.5, color: C.bdr }, rowH: 0.38 });
-    }
-    addFtr(s, pg++);
-  })();
-
-  // ── Slide 7: Agent Uplift ──
-  (() => {
-    const s = dkSl(pptx); goldLn(pptx, s);
-    s.addText("AI Agent Uplift", { x: 0.5, y: 0.5, w: 9.0, h: 0.4, fontSize: 24, fontFace: "Georgia", color: C.white });
-    const autoCount = agentData.filter(a => a.agentType === "Autonomous").length;
-    const highFeas = agentData.filter(a => a.feasibility >= 80).length;
-    s.addText(agentData.length > 0 ? `${agentData.length} agent opportunities identified \u2014 ${highFeas} high feasibility, ${autoCount} fully autonomous` : "No AI agent scenarios generated \u2014 run Catalyst to identify opportunities", { x: 0.5, y: 0.9, w: 9.0, h: 0.25, fontSize: 11, fontFace: "Calibri", color: C.gray, italic: true });
-
-    if (agentData.length > 0) {
-      const rows = [
-        [hd("Process"), hd("Agent Type", { align: "center" }), hd("Feasibility", { align: "center" }), hd("Value", { align: "right" })],
-        ...agentData.slice(0, 10).map(a => {
-          const fCol = a.feasibility >= 80 ? C.green : a.feasibility >= 60 ? C.gold : C.orange;
-          return [
-            cl(trunc(a.label, 30)),
-            cl(a.agentType || "—", { align: "center", fontSize: 9, color: a.agentType === "Autonomous" ? C.green : a.agentType === "Hybrid" ? C.gold : C.blue }),
-            cl(String(a.feasibility || "—"), { align: "center", color: fCol, bold: true }),
-            cl(a.agV > 0 ? fmtD(a.agV) : "TBD", { align: "right", color: C.green, bold: true }),
-          ];
-        }),
-      ];
-      s.addTable(rows, { x: 0.5, y: 1.2, w: 9.0, colW: [3.5, 1.8, 1.7, 2.0], border: { type: "solid", pt: 0.5, color: C.bdr }, rowH: 0.35 });
-    } else {
-      s.addText("No AI agent scenarios generated. Run Catalyst to generate.", { x: 0.5, y: 2.5, w: 9.0, h: 0.5, fontSize: 12, fontFace: "Calibri", color: C.gray, align: "center" });
-    }
-    addFtr(s, pg++);
-  })();
-
-  // ── Slide 8: P&L Impact — income statement + balance sheet ──
-  (() => {
-    const s = dkSl(pptx); goldLn(pptx, s);
-    s.addText("P&L Impact", { x: 0.5, y: 0.5, w: 9.0, h: 0.4, fontSize: 24, fontFace: "Georgia", color: C.white });
-    const ebitdaImp = rv + cg + sg;
-    const ebitdaPct = baseline.ebitda > 0 ? Math.round((ebitdaImp / baseline.ebitda) * 100) : 0;
-    s.addText(ebitdaPct > 0 ? `${fmtD(ebitdaImp)} EBITDA improvement \u2014 ${ebitdaPct}% uplift on current baseline` : `${fmtD(ebitdaImp)} EBITDA improvement across revenue, COGS, and SG&A`, { x: 0.5, y: 0.9, w: 9.0, h: 0.25, fontSize: 11, fontFace: "Calibri", color: C.gray, italic: true });
-
-    const gf = { fill: { color: C.lightGold } };
-    // Income statement
-    s.addTable([
-      [hd("Line Item"), hd("Baseline", { align: "right" }), hd("Impact", { align: "right" }), hd("Improved", { align: "right" })],
-      [cl("Revenue"), cl(fmtD(baseline.revenue), { align: "right" }), cl(fmtD(rv), { align: "right", color: C.green, bold: true }), cl(fmtD(baseline.revenue + rv), { align: "right" })],
-      [cl("COGS"), cl(fmtD(baseline.cogs), { align: "right" }), cl(fmtD(cg), { align: "right", color: C.green, bold: true }), cl(fmtD(baseline.cogs - cg), { align: "right" })],
-      [cl("Gross Profit"), cl(fmtD(baseline.revenue - baseline.cogs), { align: "right" }), cl(fmtD(rv + cg), { align: "right", color: C.green, bold: true }), cl(fmtD(baseline.revenue - baseline.cogs + rv + cg), { align: "right" })],
-      [cl("SG&A"), cl(fmtD(baseline.sga), { align: "right" }), cl(fmtD(sg), { align: "right", color: C.green, bold: true }), cl(fmtD(baseline.sga - sg), { align: "right" })],
-      [cl("EBITDA", { bold: true, color: C.gold, ...gf }), cl(fmtD(baseline.ebitda), { align: "right", bold: true, color: C.gold, ...gf }), cl(fmtD(rv + cg + sg), { align: "right", bold: true, color: C.gold, ...gf }), cl(fmtD((baseline.ebitda || 0) + rv + cg + sg), { align: "right", bold: true, color: C.gold, ...gf })],
-    ], { x: 0.5, y: 1.1, w: 9.0, colW: [2.5, 2.0, 2.5, 2.0], border: { type: "solid", pt: 0.5, color: C.bdr }, rowH: 0.38 });
-
-    // 3-year cumulative waterfall
-    const ramp = multiYearRamp || { erp: [30, 70, 100], agent: [0, 40, 100], costSpread: [70, 20, 10] };
-    const totalImplCost = agentData.reduce((s, a) => s + (a.implCost || 0), 0) / 1000;
-    const erpImplCost = tv * 0.15;
-    const tCost = totalImplCost + erpImplCost;
-    s.addText("3-Year Value Waterfall", { x: 0.5, y: 3.6, w: 9.0, h: 0.3, fontSize: 14, fontFace: "Georgia", color: C.white, bold: true });
-    s.addTable([
-      [hd(""), hd("Year 1", { align: "right" }), hd("Year 2", { align: "right" }), hd("Year 3", { align: "right" }), hd("3-Year", { align: "right" })],
-      [cl("ERP Value"), cl(fmtD(tv * ramp.erp[0] / 100), { align: "right", color: C.gold }), cl(fmtD(tv * ramp.erp[1] / 100), { align: "right", color: C.gold }), cl(fmtD(tv * ramp.erp[2] / 100), { align: "right", color: C.gold }), cl(fmtD(tv * (ramp.erp[0] + ramp.erp[1] + ramp.erp[2]) / 100), { align: "right", color: C.gold, bold: true })],
-      [cl("Agent Uplift"), cl(fmtD(agTot * ramp.agent[0] / 100), { align: "right", color: C.green }), cl(fmtD(agTot * ramp.agent[1] / 100), { align: "right", color: C.green }), cl(fmtD(agTot * ramp.agent[2] / 100), { align: "right", color: C.green }), cl(fmtD(agTot * (ramp.agent[0] + ramp.agent[1] + ramp.agent[2]) / 100), { align: "right", color: C.green, bold: true })],
-      [cl("Working Capital", { color: C.blue }), cl(fmtD(bsh.totalWorkingCapital * 0.5), { align: "right", color: C.blue }), cl(fmtD(bsh.totalWorkingCapital * 0.8), { align: "right", color: C.blue }), cl(fmtD(bsh.totalWorkingCapital), { align: "right", color: C.blue }), cl(fmtD(bsh.totalWorkingCapital), { align: "right", color: C.blue, bold: true })],
-    ], { x: 0.5, y: 3.9, w: 9.0, colW: [2.0, 1.75, 1.75, 1.75, 1.75], border: { type: "solid", pt: 0.5, color: C.bdr }, rowH: 0.28 });
-    addFtr(s, pg++);
-  })();
-
-  // ── Slide 8b: Balance Sheet Impact ──
-  (() => {
-    const hasWC = bsh && bsh.totalWorkingCapital > 0;
-    if (!hasWC) { return; }
-    const s = dkSl(pptx); goldLn(pptx, s);
-    s.addText("Balance Sheet Impact", { x: 0.5, y: 0.5, w: 9.0, h: 0.4, fontSize: 24, fontFace: "Georgia", color: C.white });
-    s.addText(`${fmtD(bsh.totalWorkingCapital)} working capital released through DSO, DIO, and DPO improvements`, { x: 0.5, y: 0.9, w: 9.0, h: 0.25, fontSize: 11, fontFace: "Calibri", color: C.gray, italic: true });
-
-    // DSO/DIO/DPO calculations
-    const rev = baseline.revenue || 1;
-    const cogs = baseline.cogs || 1;
-    const currentDSO = baseline.recv > 0 ? Math.round(baseline.recv / rev * 365) : 45;
-    const currentDIO = baseline.inventory > 0 ? Math.round(baseline.inventory / cogs * 365) : 60;
-    const currentDPO = baseline.pay > 0 ? Math.round(baseline.pay / cogs * 365) : 35;
-    const dsoImp = rev > 0 ? Math.round(bsh.receivablesImpact / (rev / 365)) : 0;
-    const dioImp = cogs > 0 ? Math.round(bsh.inventoryImpact / (cogs / 365)) : 0;
-    const dpoImp = cogs > 0 ? Math.round(bsh.payablesImpact / (cogs / 365)) : 0;
-
-    s.addTable([
-      [hd("Metric"), hd("Current", { align: "right" }), hd("Improved", { align: "right" }), hd("Change", { align: "right" })],
-      [cl("DSO (Days)"), cl(String(currentDSO), { align: "right" }), cl(String(currentDSO - dsoImp), { align: "right" }), cl(`-${dsoImp} days`, { align: "right", color: C.green })],
-      [cl("DIO (Days)"), cl(String(currentDIO), { align: "right" }), cl(String(currentDIO - dioImp), { align: "right" }), cl(`-${dioImp} days`, { align: "right", color: C.green })],
-      [cl("DPO (Days)"), cl(String(currentDPO), { align: "right" }), cl(String(currentDPO + dpoImp), { align: "right" }), cl(`+${dpoImp} days`, { align: "right", color: C.green })],
-      [cl("Cash Conversion Cycle", { bold: true }), cl(String(currentDSO + currentDIO - currentDPO), { align: "right", bold: true }), cl(String((currentDSO - dsoImp) + (currentDIO - dioImp) - (currentDPO + dpoImp)), { align: "right", bold: true }), cl(`-${dsoImp + dioImp + dpoImp} days`, { align: "right", color: C.gold, bold: true })],
-    ], { x: 0.5, y: 1.2, w: 9.0, colW: [3.0, 2.0, 2.0, 2.0], border: { type: "solid", pt: 0.5, color: C.bdr }, rowH: 0.38 });
-
-    // Working capital headline
-    s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 2.5, y: 3.5, w: 5.0, h: 1.2, fill: { color: C.lightGold }, rectRadius: 0.1, line: { color: C.gold, width: 1 } });
-    s.addText("Working Capital Released", { x: 2.5, y: 3.6, w: 5.0, h: 0.3, fontSize: 12, fontFace: "Calibri", color: C.gray, align: "center" });
-    s.addText(fmtD(bsh.totalWorkingCapital), { x: 2.5, y: 3.9, w: 5.0, h: 0.7, fontSize: 36, fontFace: "Georgia", color: C.gold, bold: true, align: "center" });
-
-    // Source footnote
-    s.addText("Sources: DSO improvement from O2C cycle time KPIs; DIO from inventory KPIs; DPO from P2P process improvements.", { x: 0.5, y: 4.9, w: 9.0, h: 0.25, fontSize: 7, fontFace: "Calibri", color: C.dkGray, italic: true });
-    addFtr(s, pg++);
-  })();
-
-  // ── Slide 9: Value Realization Plan — 2×3 grid ──
-  (() => {
-    const s = dkSl(pptx); goldLn(pptx, s);
-    s.addText("Value Realization Plan", { x: 0.5, y: 0.5, w: 9.0, h: 0.4, fontSize: 24, fontFace: "Georgia", color: C.white });
-    const definedDims = ["people","processes","data","technology","governance","operatingModel"].filter(k => vr[k] && Object.values(vr[k]).some(v => v && (Array.isArray(v) ? v.length > 0 : true))).length;
-    s.addText(definedDims > 0 ? `${definedDims} of 6 realization dimensions defined \u2014 ${6 - definedDims > 0 ? (6 - definedDims) + " still need attention" : "all dimensions covered"}` : "Value realization dimensions not yet defined \u2014 complete in Step 6", { x: 0.5, y: 0.9, w: 9.0, h: 0.25, fontSize: 11, fontFace: "Calibri", color: C.gray, italic: true });
-
-    const vr = valueRealization || {};
-    const dims = [
-      { key: "people", label: "People", color: C.gold, getContent: d => [d.roleChanges, d.headcountDelta ? `Headcount delta: ${d.headcountDelta}` : "", (d.skillsRequired || []).join(", ")].filter(Boolean).join("\n") },
-      { key: "processes", label: "Processes", color: C.green, getContent: d => [d.processesRedesigned, d.processesRetired, d.automationCandidates].flat().filter(Boolean).join(", ") },
-      { key: "data", label: "Data", color: C.blue, getContent: d => [d.dataGaps, d.governanceNeeds, (d.qualityIssues || []).join(", ")].filter(Boolean).join("\n") },
-      { key: "technology", label: "Technology", color: C.purple, getContent: d => [d.integrationNeeds, d.itInfrastructure, d.physicalFootprint].filter(Boolean).join("\n") },
-      { key: "governance", label: "Governance", color: C.orange, getContent: d => [d.decisionRights, d.ownershipModel].filter(Boolean).join("\n") },
-      { key: "operatingModel", label: "Operating Model", color: C.red, getContent: d => [d.structuralChanges, d.reportingChanges, d.serviceModel].filter(Boolean).join("\n") },
-    ];
-
-    dims.forEach((dim, i) => {
-      const col = i % 3, row = Math.floor(i / 3);
-      const bx = 0.5 + col * 3.1, by = 1.2 + row * 2.0;
-      s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: bx, y: by, w: 2.8, h: 1.8, fill: { color: C.card }, rectRadius: 0.08, line: { color: C.bdr, width: 0.5 } });
-      s.addText(dim.label, { x: bx + 0.1, y: by + 0.05, w: 2.6, h: 0.3, fontSize: 12, fontFace: "Georgia", color: dim.color, bold: true });
-      s.addShape(pptx.shapes.RECTANGLE, { x: bx + 0.1, y: by + 0.35, w: 2.6, h: 0.004, fill: { color: dim.color } });
-      const content = vr[dim.key] ? dim.getContent(vr[dim.key]) : "Not yet defined";
-      s.addText(trunc(content, 120), { x: bx + 0.1, y: by + 0.45, w: 2.6, h: 1.25, fontSize: 8, fontFace: "Calibri", color: C.white, lineSpacingMultiple: 1.3 });
-    });
-    addFtr(s, pg++);
-  })();
-
-  // ── Slide 10: Action Plan with owners ──
-  (() => {
-    const s = dkSl(pptx); goldLn(pptx, s);
-    s.addText("Action Plan", { x: 0.5, y: 0.5, w: 9.0, h: 0.4, fontSize: 24, fontFace: "Georgia", color: C.white });
-    const topActionE2E = Object.entries(e2e).sort((a, b) => b[1].value - a[1].value)[0];
-    s.addText(topActionE2E ? `Focus on ${topActionE2E[0]} first \u2014 ${fmtD(topActionE2E[1].value)} at stake with ${topActionE2E[1].procs} processes in scope` : "5 prioritized actions to move from assessment to implementation", { x: 0.5, y: 0.9, w: 9.0, h: 0.25, fontSize: 11, fontFace: "Calibri", color: C.gray, italic: true });
-
-    const topE = Object.entries(e2e).sort((a, b) => b[1].value - a[1].value)[0];
-    const topAg = imps.find(i => agentResults[i.id]);
-
-    const actions = [
-      { action: topE ? `Prioritize ${topE[0]} — ${fmtD(topE[1].value)} addressable` : "Prioritize highest-value E2E flow", owner: "Executive Sponsor", timeline: "Week 1-2", priority: "High" },
-      { action: "Initiate Phase 1 detailed design and wave planning", owner: "Project Lead", timeline: "Week 2-4", priority: "High" },
-      { action: topAg ? `Deploy AI agent for ${trunc(topAg.label, 30)}` : "Generate AI agent scenarios", owner: "Technology Lead", timeline: "Week 4-8", priority: "Med" },
-      { action: `Address ${data.qL} bottom quartile KPIs`, owner: "Process Owners", timeline: "Week 2-6", priority: "High" },
-      { action: "Establish transformation governance", owner: "PMO", timeline: "Week 1-2", priority: "High" },
-    ];
-
-    const rows = [
-      [hd("#", { align: "center" }), hd("Action"), hd("Owner"), hd("Timeline"), hd("Priority", { align: "center" })],
-      ...actions.map((a, i) => {
-        const pColor = a.priority === "High" ? C.gold : a.priority === "Med" ? C.green : C.blue;
-        return [
-          cl(String(i + 1), { align: "center", bold: true }),
-          cl(trunc(a.action, 40)),
-          cl(a.owner, { fontSize: 9 }),
-          cl(a.timeline, { fontSize: 9 }),
-          cl(a.priority, { align: "center", color: pColor, bold: true }),
-        ];
-      }),
-    ];
-    s.addTable(rows, { x: 0.5, y: 1.2, w: 9.0, colW: [0.5, 4.0, 1.8, 1.2, 1.5], border: { type: "solid", pt: 0.5, color: C.bdr }, rowH: 0.45 });
-    addFtr(s, pg++);
-  })();
+  return { imps, rv, cg, sg, tv, agTot, combined, bsh, fnName, e2e, valueRealization, companyFinancials, multiYearRamp, assessmentProfile };
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -613,21 +407,24 @@ function buildDetailedDeck(pptx, data, baseline, { selProcs, procValues, procBen
 export function generateExecDeck(params) {
   const pptx = setupPptx();
   const data = precompute(params);
-  buildExecDeck(pptx, data, params.baseline);
+
+  slideCover(pptx, data);
+  slideWhatWeFound(pptx, data);
+  slideWhereValueIs(pptx, data, params);
+  slideHowWeGotThere(pptx, data, params);
+  slideWhatItTakes(pptx, data);
+  slideNextSteps(pptx, data);
+
   const coName = params.assessmentProfile?.companyName || params.baseline.company || "Company";
-  pptx.writeFile({ fileName: coName.replace(/\s+/g, "_") + "_Phase0_Executive.pptx" });
+  pptx.writeFile({ fileName: coName.replace(/\s+/g, "_") + "_Value_Assessment.pptx" });
 }
 
 export function generateDetailedDeck(params) {
-  const pptx = setupPptx();
-  const data = precompute(params);
-  buildDetailedDeck(pptx, data, params.baseline, params);
-  const coName = params.assessmentProfile?.companyName || params.baseline.company || "Company";
-  pptx.writeFile({ fileName: coName.replace(/\s+/g, "_") + "_Phase0_Detailed.pptx" });
+  // For now, detailed deck uses the same 6-slide executive format
+  // A future expansion can add appendix slides
+  generateExecDeck(params);
 }
 
 export default function generatePPTXv2(params) {
   generateExecDeck(params);
-  // Small delay to avoid browser download collision
-  setTimeout(() => generateDetailedDeck(params), 500);
 }
