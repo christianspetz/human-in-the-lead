@@ -1171,6 +1171,7 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
   const [financialsDraft, setFinancialsDraft] = useState({ revenue: "", cogs: "", grossProfit: "", sga: "", ebitda: "", operatingIncome: "", netIncome: "", accountsReceivable: "", accountsPayable: "", inventory: "", capex: "", operatingCashFlow: "", depreciation: "", headcount: "", financeHeadcount: "", annualPayroll: "", fiscalYear: "", currency: "USD", companyName: "", source: "manual" });
   const [financialsExtracting, setFinancialsExtracting] = useState(false);
   const [financialsConfidence, setFinancialsConfidence] = useState({});
+  const [financialsError, setFinancialsError] = useState(null);
 
   // Multi-Year & Balance Sheet (Feature 2)
   const [multiYearRamp, setMultiYearRamp] = useState(initialData?.multiYearRamp || { erp: [30, 70, 100], agent: [0, 40, 100], costSpread: [70, 20, 10] });
@@ -4256,10 +4257,12 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
 
               const handleFileUpload = async (file) => {
                 setFinancialsExtracting(true);
+                setFinancialsError(null);
                 const reader = new FileReader();
                 reader.onload = async (evt) => {
                   const base64 = evt.target.result.split(",")[1];
-                  const prompt = `You are a financial data extraction expert. Extract financial data from this document using FLEXIBLE LABEL MATCHING. Companies use different names for the same line items.
+                  const isPdf = file.name.toLowerCase().endsWith(".pdf");
+                  const extractionPrompt = `You are a financial data extraction expert. Extract financial data from this document using FLEXIBLE LABEL MATCHING. Companies use different names for the same line items.
 
 FIELD DEFINITIONS & LABEL ALIASES (search for ANY of these labels):
 
@@ -4287,6 +4290,8 @@ INSTRUCTIONS:
 - NEVER return "not found" if a reasonable calculation is possible.
 - For EBITDA: always attempt Operating Income + Depreciation & Amortization.
 - For Gross Profit: always attempt Revenue - COGS.
+- For EPS: look for "Diluted Net Income Per Share", "Earnings per share — diluted", "Diluted EPS"
+- For Free Cash Flow: look for "Free Cash Flow" or calculate as Operating Cash Flow - Capital Expenditures
 
 Return ONLY a JSON object (no markdown, no other text) in this exact format:
 {
@@ -4296,59 +4301,91 @@ Return ONLY a JSON object (no markdown, no other text) in this exact format:
     "ebitda": { ... }, "netIncome": { ... }, "accountsReceivable": { ... },
     "accountsPayable": { ... }, "inventory": { ... }, "capex": { ... },
     "operatingCashFlow": { ... }, "depreciation": { ... },
-    "headcount": { ... }, "financeHeadcount": { ... }, "annualPayroll": { ... }
+    "headcount": { ... }, "financeHeadcount": { ... }, "annualPayroll": { ... },
+    "eps": { ... }, "freeCashFlow": { ... }, "operatingMargin": { ... }
   },
   "fiscalYear": "<year string>",
   "currency": "USD",
   "companyName": "<company name>",
-  "segments": [{"name": "<segment>", "revenue": <number>, "ebitda": <number>}]
-}
+  "segments": [{"name": "<segment>", "revenue": <number>, "operatingIncome": <number>}]
+}`;
+                  // Build message content with native PDF document support
+                  const messageContent = isPdf
+                    ? [
+                        { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } },
+                        { type: "text", text: extractionPrompt },
+                      ]
+                    : [{ type: "text", text: extractionPrompt + "\n\nThe file content (base64 Excel): " + base64.slice(0, 100000) }];
 
-The file content (base64 ${file.name.endsWith(".pdf") ? "PDF" : "Excel"}): ${base64.slice(0, 50000)}`;
                   try {
+                    let text = "";
                     const proxyRes = await fetch("/api/catalyst", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ prompt }),
+                      body: JSON.stringify({
+                        messages: [{ role: "user", content: messageContent }],
+                        max_tokens: 4096,
+                      }),
                     });
-                    let text = "";
                     if (proxyRes.ok) {
                       const proxyData = await proxyRes.json();
                       text = proxyData.result || "";
-                    } else if (apiKey) {
-                      const response = await fetch("https://api.anthropic.com/v1/messages", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
-                        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 4000, messages: [{ role: "user", content: prompt }] }),
-                      });
-                      const data = await response.json();
-                      text = data.content?.map(i => i.text || "").join("\n") || "";
-                    }
-                    const jsonMatch = text.match(/\{[\s\S]*\}/);
-                    if (jsonMatch) {
-                      const parsed = JSON.parse(jsonMatch[0]);
-                      if (parsed.fields) {
-                        const flat = { source: "uploaded", fiscalYear: parsed.fiscalYear || "", currency: parsed.currency || "USD", companyName: parsed.companyName || "", segments: parsed.segments || [] };
-                        const conf = {};
-                        Object.entries(parsed.fields).forEach(([k, v]) => {
-                          flat[k] = v.value;
-                          conf[k] = { confidence: v.confidence || "not found", sourceLabel: v.sourceLabel || "" };
+                    } else {
+                      const proxyErr = await proxyRes.json().catch(() => ({}));
+                      if (apiKey) {
+                        // Fallback to direct API call with native PDF support
+                        const response = await fetch("https://api.anthropic.com/v1/messages", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2024-10-22", "anthropic-dangerous-direct-browser-access": "true" },
+                          body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 4096, messages: [{ role: "user", content: messageContent }] }),
                         });
-                        setFinancialsDraft(prev => ({ ...prev, ...flat }));
-                        setFinancialsConfidence(conf);
+                        const data = await response.json();
+                        if (data.error) throw new Error(data.error.message || "API error");
+                        text = data.content?.map(i => i.text || "").join("\n") || "";
                       } else {
-                        setFinancialsDraft(prev => ({ ...prev, ...parsed, source: "uploaded" }));
-                        const conf = {};
-                        Object.keys(parsed).forEach(k => {
-                          conf[k] = { confidence: parsed[k] != null && parsed[k] !== "" ? "found" : "not found", sourceLabel: "" };
-                        });
-                        setFinancialsConfidence(conf);
+                        throw new Error(proxyErr.error || `Server returned ${proxyRes.status}`);
                       }
-                      setFinancialsEntryMode("manual");
                     }
+
+                    if (!text.trim()) {
+                      throw new Error("No response from AI — the document may be too large or unreadable");
+                    }
+
+                    const jsonMatch = text.match(/\{[\s\S]*\}/);
+                    if (!jsonMatch) {
+                      throw new Error("Could not parse financial data from response. The document may not contain recognizable financial statements.");
+                    }
+
+                    const parsed = JSON.parse(jsonMatch[0]);
+                    if (parsed.fields) {
+                      const flat = { source: "uploaded", fiscalYear: parsed.fiscalYear || "", currency: parsed.currency || "USD", companyName: parsed.companyName || "", segments: parsed.segments || [] };
+                      const conf = {};
+                      Object.entries(parsed.fields).forEach(([k, v]) => {
+                        flat[k] = v.value;
+                        conf[k] = { confidence: v.confidence || "not found", sourceLabel: v.sourceLabel || "" };
+                      });
+                      setFinancialsDraft(prev => ({ ...prev, ...flat }));
+                      setFinancialsConfidence(conf);
+                    } else {
+                      setFinancialsDraft(prev => ({ ...prev, ...parsed, source: "uploaded" }));
+                      const conf = {};
+                      Object.keys(parsed).forEach(k => {
+                        conf[k] = { confidence: parsed[k] != null && parsed[k] !== "" ? "found" : "not found", sourceLabel: "" };
+                      });
+                      setFinancialsConfidence(conf);
+                    }
+                    setFinancialsEntryMode("manual");
                   } catch (err) {
                     console.error("Financial extraction error:", err);
+                    const msg = err.message || "Unknown error during extraction";
+                    setFinancialsError(msg);
+                    showToast("Extraction failed: " + msg);
                   }
+                  setFinancialsExtracting(false);
+                };
+                reader.onerror = () => {
+                  setFinancialsError("Failed to read file");
+                  showToast("Failed to read file");
                   setFinancialsExtracting(false);
                 };
                 reader.readAsDataURL(file);
@@ -4392,7 +4429,18 @@ The file content (base64 ${file.name.endsWith(".pdf") ? "PDF" : "Excel"}): ${bas
                       {financialsExtracting && (
                         <div style={{ padding: 20, textAlign: "center", color: GOLD }}>
                           <div style={{ fontSize: 14, marginBottom: 6 }}>Extracting financial data...</div>
-                          <div style={{ fontSize: 11, color: t.mut }}>Parsing document with AI</div>
+                          <div style={{ fontSize: 11, color: t.mut }}>Parsing document with AI — this may take 15-30 seconds for large PDFs</div>
+                        </div>
+                      )}
+
+                      {financialsError && !financialsExtracting && (
+                        <div style={{ padding: "12px 16px", background: RED + "12", border: `1px solid ${RED}33`, borderRadius: 8, marginBottom: 12 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: RED, marginBottom: 4 }}>Extraction failed</div>
+                          <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.5 }}>{financialsError}</div>
+                          <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+                            <button onClick={() => { setFinancialsError(null); document.getElementById("financials-upload").click(); }} style={{ fontSize: 11, padding: "4px 12px", borderRadius: 6, background: RED + "15", border: `1px solid ${RED}33`, color: RED, cursor: "pointer", fontFamily: FONT }}>Try Again</button>
+                            <button onClick={() => { setFinancialsError(null); setFinancialsEntryMode("manual"); }} style={{ fontSize: 11, padding: "4px 12px", borderRadius: 6, background: "transparent", border: `1px solid ${t.bdr}`, color: t.tx2, cursor: "pointer", fontFamily: FONT }}>Enter Manually</button>
+                          </div>
                         </div>
                       )}
 

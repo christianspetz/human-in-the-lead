@@ -23,7 +23,7 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 app.use(cors());
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 
 // ─── Auth routes ───
@@ -79,19 +79,22 @@ app.post('/api/catalyst', async (req, res) => {
   if (!apiKey) return res.status(500).json({ error: "Catalyst not configured on server" });
 
   try {
-    const { prompt, model } = req.body;
+    const { prompt, model, messages, max_tokens } = req.body;
+
+    // Use newer API version when structured messages are provided (needed for PDF document blocks)
+    const apiVersion = messages ? "2024-10-22" : "2023-06-01";
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+        "anthropic-version": apiVersion,
       },
       body: JSON.stringify({
         model: model || "claude-sonnet-4-20250514",
-        max_tokens: 1500,
-        messages: [{ role: "user", content: prompt }],
+        max_tokens: max_tokens || 1500,
+        messages: messages || [{ role: "user", content: prompt }],
       }),
     });
 
