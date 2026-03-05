@@ -4258,9 +4258,53 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                 const reader = new FileReader();
                 reader.onload = async (evt) => {
                   const base64 = evt.target.result.split(",")[1];
-                  const prompt = `You are a financial data extraction assistant. Extract the following line items from this financial document and return ONLY a JSON object with no other text: { "revenue": number, "cogs": number, "grossProfit": number, "sga": number, "ebitda": number, "headcount": number, "financeHeadcount": number, "annualPayroll": number, "fiscalYear": string, "currency": string, "companyName": string, "source": "uploaded", "segments": [] } Use null for any field not found. All monetary values in millions USD. If you see segment breakdowns, also return segments: [{name, revenue, ebitda}]. The file content (base64 ${file.name.endsWith(".pdf") ? "PDF" : "Excel"}): ${base64.slice(0, 50000)}`;
+                  const prompt = `You are a financial data extraction expert. Extract financial data from this document using FLEXIBLE LABEL MATCHING. Companies use different names for the same line items.
+
+FIELD DEFINITIONS & LABEL ALIASES (search for ANY of these labels):
+
+revenue: "Revenue", "Net Operating Revenues", "Net revenues", "Total revenues", "Total net revenues", "Net sales", "Sales"
+cogs: "Cost of goods sold", "Cost of sales", "Cost of revenues", "Cost of products sold"
+grossProfit: "Gross Profit", "Gross profit", "Gross margin" — OR CALCULATE as revenue minus cogs
+sga: "Selling, general and administrative expenses", "SG&A", "Selling, general & administrative", "Operating expenses" (if no COGS split)
+operatingIncome: "Operating Income", "Operating income", "Income from operations", "Operating profit"
+ebitda: CALCULATE as Operating Income + Depreciation & Amortization. Check BOTH the income statement AND the cash flow statement for depreciation. Never return "not found" if you have operating income and depreciation.
+netIncome: "Net Income Attributable to Shareowners", "Net Income", "Net income", "Net earnings", "Net income attributable to common shareholders"
+accountsReceivable: "Trade accounts receivable", "Accounts receivable, net", "Receivables", "Trade receivables"
+accountsPayable: "Accounts payable and accrued expenses", "Accounts payable", "Trade payables"
+inventory: "Inventories", "Inventory", "Merchandise inventories"
+capex: "Purchases of property, plant and equipment", "Capital expenditures", "Additions to property, plant and equipment"
+operatingCashFlow: "Net Cash Provided by Operating Activities", "Cash provided by operations", "Net cash from operating activities"
+depreciation: "Depreciation and amortization", "Depreciation", "D&A" — check BOTH income statement and cash flow statement
+headcount: "Number of employees", "Employees", "Associates", "Total employees"
+financeHeadcount: "Finance employees", "Finance FTEs" (rarely stated — use null if not found)
+annualPayroll: "Salaries and wages", "Employee compensation", "Personnel expenses" (rarely a single line — use null if not found)
+
+INSTRUCTIONS:
+- Prefer ANNUAL (full-year) figures over quarterly. Look for "Year Ended", "Fiscal Year", "Twelve Months Ended".
+- Numbers in financial statements are often stated "in millions" or "in billions" — convert ALL values to millions USD. If stated in billions, multiply by 1000. If stated in millions, use as-is.
+- If a field is not directly stated but CAN BE CALCULATED from other extracted values, calculate it and mark confidence as "calculated".
+- NEVER return "not found" if a reasonable calculation is possible.
+- For EBITDA: always attempt Operating Income + Depreciation & Amortization.
+- For Gross Profit: always attempt Revenue - COGS.
+
+Return ONLY a JSON object (no markdown, no other text) in this exact format:
+{
+  "fields": {
+    "revenue": { "value": <number in millions or null>, "sourceLabel": "<exact label found in document>", "confidence": "found"|"calculated"|"not found" },
+    "cogs": { ... }, "grossProfit": { ... }, "sga": { ... }, "operatingIncome": { ... },
+    "ebitda": { ... }, "netIncome": { ... }, "accountsReceivable": { ... },
+    "accountsPayable": { ... }, "inventory": { ... }, "capex": { ... },
+    "operatingCashFlow": { ... }, "depreciation": { ... },
+    "headcount": { ... }, "financeHeadcount": { ... }, "annualPayroll": { ... }
+  },
+  "fiscalYear": "<year string>",
+  "currency": "USD",
+  "companyName": "<company name>",
+  "segments": [{"name": "<segment>", "revenue": <number>, "ebitda": <number>}]
+}
+
+The file content (base64 ${file.name.endsWith(".pdf") ? "PDF" : "Excel"}): ${base64.slice(0, 50000)}`;
                   try {
-                    // Use the same callCatalyst pattern — server proxy first
                     const proxyRes = await fetch("/api/catalyst", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
@@ -4274,24 +4318,32 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                       const response = await fetch("https://api.anthropic.com/v1/messages", {
                         method: "POST",
                         headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
-                        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 2000, messages: [{ role: "user", content: prompt }] }),
+                        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 4000, messages: [{ role: "user", content: prompt }] }),
                       });
                       const data = await response.json();
                       text = data.content?.map(i => i.text || "").join("\n") || "";
                     }
-                    // Parse JSON from response
                     const jsonMatch = text.match(/\{[\s\S]*\}/);
                     if (jsonMatch) {
                       const parsed = JSON.parse(jsonMatch[0]);
-                      setFinancialsDraft(prev => ({ ...prev, ...parsed, source: "uploaded" }));
-                      // Set confidence per field
-                      const conf = {};
-                      Object.keys(parsed).forEach(k => {
-                        if (parsed[k] != null && parsed[k] !== "") conf[k] = "found";
-                        else conf[k] = "not_found";
-                      });
-                      setFinancialsConfidence(conf);
-                      setFinancialsEntryMode("manual"); // Show review table
+                      if (parsed.fields) {
+                        const flat = { source: "uploaded", fiscalYear: parsed.fiscalYear || "", currency: parsed.currency || "USD", companyName: parsed.companyName || "", segments: parsed.segments || [] };
+                        const conf = {};
+                        Object.entries(parsed.fields).forEach(([k, v]) => {
+                          flat[k] = v.value;
+                          conf[k] = { confidence: v.confidence || "not found", sourceLabel: v.sourceLabel || "" };
+                        });
+                        setFinancialsDraft(prev => ({ ...prev, ...flat }));
+                        setFinancialsConfidence(conf);
+                      } else {
+                        setFinancialsDraft(prev => ({ ...prev, ...parsed, source: "uploaded" }));
+                        const conf = {};
+                        Object.keys(parsed).forEach(k => {
+                          conf[k] = { confidence: parsed[k] != null && parsed[k] !== "" ? "found" : "not found", sourceLabel: "" };
+                        });
+                        setFinancialsConfidence(conf);
+                      }
+                      setFinancialsEntryMode("manual");
                     }
                   } catch (err) {
                     console.error("Financial extraction error:", err);
@@ -4348,22 +4400,35 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                         <div style={{ marginTop: 12 }}>
                           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                             <thead><tr>
-                              <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 11 }}>Line Item</th>
-                              <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "right", color: t.mut, fontSize: 11 }}>Value ($M / count)</th>
-                              <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 11 }}>Note</th>
-                              {Object.keys(financialsConfidence).length > 0 && <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "center", color: t.mut, fontSize: 11 }}>Status</th>}
+                              <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 11 }}>Field</th>
+                              <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "right", color: t.mut, fontSize: 11 }}>Extracted Value</th>
+                              {Object.keys(financialsConfidence).length > 0 && <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 11 }}>Source Label in Doc</th>}
+                              {Object.keys(financialsConfidence).length > 0 && <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "center", color: t.mut, fontSize: 11 }}>Confidence</th>}
+                              {Object.keys(financialsConfidence).length === 0 && <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 11 }}>Note</th>}
                             </tr></thead>
                             <tbody>
                               {[
-                                { key: "revenue", label: "Net Revenue", note: "Full year (most recent)", prefix: "$", suffix: "M" },
-                                { key: "cogs", label: "Cost of Goods", note: "", prefix: "$", suffix: "M" },
+                                { key: "revenue", label: "Revenue", note: "Full year (most recent)", prefix: "$", suffix: "M" },
+                                { key: "cogs", label: "Cost of Goods Sold", note: "", prefix: "$", suffix: "M" },
                                 { key: "grossProfit", label: "Gross Profit", note: "Auto-calculated", prefix: "$", suffix: "M", auto: true },
                                 { key: "sga", label: "SG&A", note: "", prefix: "$", suffix: "M" },
-                                { key: "ebitda", label: "EBITDA", note: "Auto-calculated if possible", prefix: "$", suffix: "M", auto: true },
+                                { key: "operatingIncome", label: "Operating Income", note: "", prefix: "$", suffix: "M" },
+                                { key: "ebitda", label: "EBITDA", note: "OpIncome + D&A", prefix: "$", suffix: "M", auto: true },
+                                { key: "netIncome", label: "Net Income", note: "", prefix: "$", suffix: "M" },
+                                { key: "depreciation", label: "Depreciation & Amort.", note: "", prefix: "$", suffix: "M" },
+                                { key: "operatingCashFlow", label: "Operating Cash Flow", note: "", prefix: "$", suffix: "M" },
+                                { key: "capex", label: "CapEx", note: "", prefix: "$", suffix: "M" },
+                                { key: "accountsReceivable", label: "Accounts Receivable", note: "", prefix: "$", suffix: "M" },
+                                { key: "accountsPayable", label: "Accounts Payable", note: "", prefix: "$", suffix: "M" },
+                                { key: "inventory", label: "Inventory", note: "", prefix: "$", suffix: "M" },
                                 { key: "headcount", label: "Total Headcount", note: "People", prefix: "", suffix: "" },
                                 { key: "financeHeadcount", label: "Finance FTEs", note: "People", prefix: "", suffix: "" },
                                 { key: "annualPayroll", label: "Annual Payroll", note: "Total loaded cost", prefix: "$", suffix: "M" },
-                              ].map(row => (
+                              ].map(row => {
+                                const confObj = financialsConfidence[row.key];
+                                const confLevel = confObj?.confidence || confObj;
+                                const sourceLabel = confObj?.sourceLabel || "";
+                                return (
                                 <tr key={row.key}>
                                   <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx, fontWeight: 500 }}>{row.label}</td>
                                   <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right" }}>
@@ -4376,29 +4441,34 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                       readOnly={row.auto && ((row.key === "grossProfit" && draftGP) || (row.key === "ebitda" && draftEBITDA))}
                                     />
                                   </td>
-                                  <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, fontSize: 11, color: t.mut }}>{row.note}</td>
-                                  {Object.keys(financialsConfidence).length > 0 && (
-                                    <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "center" }}>
-                                      <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: financialsConfidence[row.key] === "found" ? GREEN + "15" : financialsConfidence[row.key] === "estimated" ? GOLD + "15" : RED + "15", color: financialsConfidence[row.key] === "found" ? GREEN : financialsConfidence[row.key] === "estimated" ? GOLD : RED, fontWeight: 600 }}>
-                                        {financialsConfidence[row.key] === "found" ? "Found" : financialsConfidence[row.key] === "estimated" ? "Estimated" : "Not found"}
-                                      </span>
-                                    </td>
+                                  {Object.keys(financialsConfidence).length > 0 ? (
+                                    <>
+                                      <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, fontSize: 11, color: t.mut, maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={sourceLabel}>{sourceLabel || "—"}</td>
+                                      <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "center" }}>
+                                        <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: confLevel === "found" ? GREEN + "15" : confLevel === "calculated" ? GOLD + "15" : RED + "15", color: confLevel === "found" ? GREEN : confLevel === "calculated" ? GOLD : RED, fontWeight: 600 }}>
+                                          {confLevel === "found" ? "Found" : confLevel === "calculated" ? "Calculated" : "Not found"}
+                                        </span>
+                                      </td>
+                                    </>
+                                  ) : (
+                                    <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, fontSize: 11, color: t.mut }}>{row.note}</td>
                                   )}
                                 </tr>
-                              ))}
+                                );
+                              })}
                               <tr>
                                 <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx, fontWeight: 500 }}>Fiscal Year</td>
                                 <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right" }}>
                                   <input type="text" value={financialsDraft.fiscalYear || ""} onChange={e => setFinancialsDraft(prev => ({ ...prev, fiscalYear: e.target.value }))} placeholder="2025" style={{ width: 120, textAlign: "right", background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "4px 8px", color: t.tx, fontFamily: "monospace", fontSize: 13 }} />
                                 </td>
-                                <td colSpan={2} style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, fontSize: 11, color: t.mut }}>Year of financial data</td>
+                                <td colSpan={Object.keys(financialsConfidence).length > 0 ? 2 : 1} style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, fontSize: 11, color: t.mut }}>Year of financial data</td>
                               </tr>
                               <tr>
                                 <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx, fontWeight: 500 }}>Company Name</td>
                                 <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right" }}>
                                   <input type="text" value={financialsDraft.companyName || ""} onChange={e => setFinancialsDraft(prev => ({ ...prev, companyName: e.target.value }))} placeholder={baseline.company} style={{ width: 200, textAlign: "right", background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "4px 8px", color: t.tx, fontSize: 13 }} />
                                 </td>
-                                <td colSpan={2} style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, fontSize: 11, color: t.mut }}></td>
+                                <td colSpan={Object.keys(financialsConfidence).length > 0 ? 2 : 1} style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, fontSize: 11, color: t.mut }}></td>
                               </tr>
                             </tbody>
                           </table>
