@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef, Suspense } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
-  AreaChart, CartesianGrid
+  AreaChart, CartesianGrid, LineChart, Line, Legend, ReferenceLine
 } from "recharts";
 import generatePPTX from "./generatePPTX";
 import { generateExecDeck, generateDetailedDeck } from "./generatePPTXv2";
@@ -812,11 +812,35 @@ const CalcExplainerDrawer = ({ data, onClose, mode }) => {
             <div style={{ fontSize: 10, color: GOLD, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Result</div>
             <div style={{ fontSize: 22, fontFamily: "'Playfair Display',Georgia,serif", fontWeight: 700, color: GOLD }}>{data.resultFormatted}</div>
           </div>
-          <div style={{ padding: "10px 12px", background: conf.color + "0C", borderRadius: 8, border: `1px solid ${conf.color}30` }}>
+          <div style={{ padding: "10px 12px", background: conf.color + "0C", borderRadius: 8, border: `1px solid ${conf.color}30`, marginBottom: 16 }}>
             <div style={{ fontSize: 10, color: t.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Confidence</div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}><ConfidenceBadge level={data.confidence} /></div>
             <div style={{ fontSize: 11, color: t.tx2, fontStyle: "italic" }}>{conf.reason}</div>
           </div>
+
+          {/* WHY THIS IS DEFENSIBLE */}
+          <div style={{ padding: "12px 14px", background: "#7CB9A810", borderRadius: 8, border: "1px solid #7CB9A830" }}>
+            <div style={{ fontSize: 10, color: "#7CB9A8", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 10 }}>Why This Number Is Defensible</div>
+            <div style={{ fontSize: 11, color: t.tx2, lineHeight: 1.7 }}>
+              <div style={{ marginBottom: 8 }}><span style={{ fontWeight: 600, color: t.tx }}>Methodology:</span> Bottom-up process-level analysis, not top-down benchmarking. Each KPI gap is sized against your specific baseline, not industry averages.</div>
+              <div style={{ marginBottom: 8 }}><span style={{ fontWeight: 600, color: t.tx }}>Benchmark source:</span> {data.benchmarkSource || "APQC PCF"} publishes this benchmark based on n={data.sampleSize || "500+"} companies. Last updated {data.benchmarkYear || "2024"}.</div>
+              <div style={{ marginBottom: 8 }}><span style={{ fontWeight: 600, color: t.tx }}>Conservatism:</span> Your addressable % is set at {data.addressablePct}% — meaning {100 - data.addressablePct}% of the theoretical gap is excluded as non-addressable.</div>
+              <div style={{ marginBottom: 8 }}><span style={{ fontWeight: 600, color: t.tx }}>Scenario used:</span> {data.scenarioLevel} ({data.scenarioFactor}) — {data.scenarioLevel === "Medium" ? "the middle scenario, our recommended planning assumption" : data.scenarioLevel === "High" ? "full addressable value — assumes excellent execution" : "minimum credible case — conservative"}.</div>
+              <div style={{ fontSize: 10, color: t.mut, fontStyle: "italic", marginTop: 8, paddingTop: 8, borderTop: `1px solid ${t.bdr}` }}>This is not a guaranteed outcome. It is a directional estimate of potential value, sized using industry data and your baseline inputs.</div>
+            </div>
+          </div>
+
+          {/* Challenge This button */}
+          {data.onChallenge && (
+            <button onClick={data.onChallenge} style={{ marginTop: 12, width: "100%", fontSize: 12, padding: "10px 16px", borderRadius: 8, background: RED + "12", border: `1px solid ${RED}33`, color: RED, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>
+              Challenge This Number
+            </button>
+          )}
+          {data.challengeResult && (
+            <div style={{ marginTop: 12, padding: "12px 14px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}`, fontSize: 11, color: t.tx2, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+              {data.challengeResult}
+            </div>
+          )}
         </div>
       </div>
     </>
@@ -972,6 +996,23 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
   // Calculation Explainer drawer
   const [calcExplainer, setCalcExplainer] = useState(null);
 
+  // Company Financials (Feature 1)
+  const [companyFinancials, setCompanyFinancials] = useState(initialData?.companyFinancials || null);
+  const [financialsEntryMode, setFinancialsEntryMode] = useState(null); // "upload" | "manual"
+  const [financialsDraft, setFinancialsDraft] = useState({ revenue: "", cogs: "", grossProfit: "", sga: "", ebitda: "", headcount: "", financeHeadcount: "", annualPayroll: "", fiscalYear: "", currency: "USD", companyName: "", source: "manual" });
+  const [financialsExtracting, setFinancialsExtracting] = useState(false);
+  const [financialsConfidence, setFinancialsConfidence] = useState({});
+
+  // Multi-Year & Balance Sheet (Feature 2)
+  const [multiYearRamp, setMultiYearRamp] = useState(initialData?.multiYearRamp || { erp: [30, 70, 100], agent: [0, 40, 100], costSpread: [70, 20, 10] });
+  const [step5Tab, setStep5Tab] = useState("pnl"); // "pnl" | "balanceSheet"
+
+  // Defensibility (Feature 3)
+  const [methodologyOpen, setMethodologyOpen] = useState(false);
+  const [methodologySections, setMethodologySections] = useState({});
+  const [challengeResult, setChallengeResult] = useState(null);
+  const [challengeLoading, setChallengeLoading] = useState(false);
+
   const t = TH[mode];
 
   // Selected processes as array
@@ -1025,6 +1066,57 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
     }
     return null;
   }, [procValues, procBenchmarks, procScenarios, scenarioLevel, baseline, baselineData]);
+
+  // Challenge a value calculation via Catalyst
+  const challengeCalcValue = useCallback(async (explainerData) => {
+    setChallengeLoading(true);
+    const prompt = `A CFO is skeptical of this value estimate: ${explainerData.kpiName}, ${explainerData.resultFormatted} impact.
+The calculation is: gap of ${explainerData.gapValue?.toFixed(2) || "—"} ${explainerData.unit} x $${explainerData.baseAmount}M base x ${explainerData.addressablePct}% addressable x ${explainerData.scenarioLevel} scenario factor (${explainerData.scenarioFactor}).
+Benchmark source: ${explainerData.benchmarkSource}, n=${explainerData.sampleSize || "unknown"}, ${explainerData.benchmarkYear || "2024"}.
+
+Play devil's advocate. Give 3 legitimate challenges a CFO might raise, then give 3 counter-arguments that defend the number. Be specific, not generic. Format as:
+
+CHALLENGES:
+1. ...
+2. ...
+3. ...
+
+DEFENSES:
+1. ...
+2. ...
+3. ...
+
+WHAT WOULD MAKE THIS UNASSAILABLE:
+...`;
+    try {
+      const proxyRes = await fetch("/api/catalyst", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      let text = "";
+      if (proxyRes.ok) {
+        const proxyData = await proxyRes.json();
+        text = proxyData.result || "";
+      } else if (apiKey) {
+        const response = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+          body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 2000, messages: [{ role: "user", content: prompt }] }),
+        });
+        const data = await response.json();
+        text = data.content?.map(i => i.text || "").join("\n") || "No response";
+      } else {
+        text = "Configure API key or server proxy to use Challenge feature.";
+      }
+      setChallengeResult(text);
+      // Update the drawer with challenge result
+      setCalcExplainer(prev => prev ? { ...prev, challengeResult: text } : null);
+    } catch (err) {
+      setChallengeResult(`Error: ${err.message}`);
+    }
+    setChallengeLoading(false);
+  }, [apiKey]);
 
   // Toggle helpers
   const toggleSet = (setter, val) => setter(prev => { const n = new Set(prev); n.has(val) ? n.delete(val) : n.add(val); return n; });
@@ -1106,7 +1198,8 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
     const data = {
       baseline, selectedProcs: [...selectedProcs], selectedFunction,
       procValues, procBenchmarks, questAnswers, baselineData, procScenarios,
-      catalystResults, agentResults, uploadedMining, savedScenarios, valueRealization, lastStep: step,
+      catalystResults, agentResults, uploadedMining, savedScenarios, valueRealization,
+      companyFinancials, multiYearRamp, lastStep: step,
     };
     try {
       await fetch(`/api/assessments/${assessmentId}`, {
@@ -1118,7 +1211,7 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
       setLastSaved(new Date());
     } catch (err) { console.error("Auto-save failed:", err); }
     setSaving(false);
-  }, [assessmentId, baseline, selectedProcs, selectedFunction, procValues, procBenchmarks, questAnswers, baselineData, procScenarios, catalystResults, agentResults, uploadedMining, savedScenarios, valueRealization, step]);
+  }, [assessmentId, baseline, selectedProcs, selectedFunction, procValues, procBenchmarks, questAnswers, baselineData, procScenarios, catalystResults, agentResults, uploadedMining, savedScenarios, valueRealization, companyFinancials, multiYearRamp, step]);
 
   // Auto-save every 30 seconds when data changes
   useEffect(() => {
@@ -1126,7 +1219,7 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(saveToServer, 30000);
     return () => clearTimeout(saveTimer.current);
-  }, [baseline, selectedProcs, procValues, procBenchmarks, questAnswers, baselineData, procScenarios, catalystResults, agentResults, uploadedMining, savedScenarios, valueRealization, step]);
+  }, [baseline, selectedProcs, procValues, procBenchmarks, questAnswers, baselineData, procScenarios, catalystResults, agentResults, uploadedMining, savedScenarios, valueRealization, companyFinancials, multiYearRamp, step]);
 
   // ═══ Share helpers ═══
   const fetchShares = useCallback(async () => {
@@ -1160,6 +1253,24 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
     } catch {}
   };
 
+  // Effective financials: use companyFinancials if loaded, else baseline estimates
+  const effectiveFinancials = useMemo(() => {
+    if (companyFinancials) {
+      return {
+        revenue: companyFinancials.revenue || baseline.revenue,
+        cogs: companyFinancials.cogs || baseline.cogs,
+        sga: companyFinancials.sga || baseline.sga,
+        ebitda: companyFinancials.ebitda || baseline.ebitda,
+        annualPayroll: companyFinancials.annualPayroll || null,
+        headcount: companyFinancials.headcount || null,
+        financeHeadcount: companyFinancials.financeHeadcount || null,
+        source: "P&L Upload",
+        anchored: true,
+      };
+    }
+    return { revenue: baseline.revenue, cogs: baseline.cogs, sga: baseline.sga, ebitda: baseline.ebitda, source: "Revenue band estimate", anchored: false };
+  }, [companyFinancials, baseline]);
+
   // Value computation for Step 7
   const computeValue = useCallback(() => {
     const multipliers = { High: 1.0, Medium: 0.65, Low: 0.35 };
@@ -1182,8 +1293,8 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
         const current = vals[`kpi_current_${ki}`] ?? kpi.current;
         const bench = bmarks[`bench_${ki}`] ?? kpi.benchmark;
         const lever = proc.valLevers?.[0];
-        const baseAmt = lever?.fintype === "Revenue" ? baseline.revenue :
-          lever?.fintype === "COGS" ? baseline.cogs : baseline.sga;
+        const baseAmt = lever?.fintype === "Revenue" ? effectiveFinancials.revenue :
+          lever?.fintype === "COGS" ? effectiveFinancials.cogs : effectiveFinancials.sga;
 
         if (current != null && bench != null && bench !== 0) {
           const gap = Math.abs(current - bench);
@@ -1227,8 +1338,8 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
 
     // Working Capital calculations
     let receivablesImpact = 0, payablesImpact = 0, inventoryImpact = 0;
-    const dailyRevenue = baseline.revenue / 365;
-    const dailyCOGS = baseline.cogs / 365;
+    const dailyRevenue = effectiveFinancials.revenue / 365;
+    const dailyCOGS = effectiveFinancials.cogs / 365;
 
     selProcs.forEach(proc => {
       const vals = procValues[proc.id] || {};
@@ -1286,7 +1397,7 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
       balanceSheet: { receivablesImpact, payablesImpact, inventoryImpact,
         totalWorkingCapital: receivablesImpact + payablesImpact + inventoryImpact }
     };
-  }, [selProcs, procValues, procBenchmarks, scenarioLevel, procScenarios, baseline]);
+  }, [selProcs, procValues, procBenchmarks, scenarioLevel, procScenarios, baseline, effectiveFinancials]);
 
   const valResult = useMemo(() => computeValue(), [computeValue]);
 
@@ -3435,6 +3546,204 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
               );
             })()}
 
+            {/* ─── Sub-step ④ — Company Financials ─── */}
+            {(() => {
+              const hasFinancials = !!companyFinancials;
+              const draftGP = financialsDraft.revenue && financialsDraft.cogs ? (parseFloat(financialsDraft.revenue) - parseFloat(financialsDraft.cogs)).toFixed(1) : "";
+              const draftEBITDA = financialsDraft.revenue && financialsDraft.cogs && financialsDraft.sga
+                ? (parseFloat(financialsDraft.revenue) - parseFloat(financialsDraft.cogs) - parseFloat(financialsDraft.sga)).toFixed(1) : "";
+
+              const confirmFinancials = (data) => {
+                const cf = {
+                  revenue: parseFloat(data.revenue) || null,
+                  cogs: parseFloat(data.cogs) || null,
+                  grossProfit: parseFloat(data.grossProfit) || (parseFloat(data.revenue) - parseFloat(data.cogs)) || null,
+                  sga: parseFloat(data.sga) || null,
+                  ebitda: parseFloat(data.ebitda) || null,
+                  headcount: parseInt(data.headcount) || null,
+                  financeHeadcount: parseInt(data.financeHeadcount) || null,
+                  annualPayroll: parseFloat(data.annualPayroll) || null,
+                  fiscalYear: data.fiscalYear || new Date().getFullYear().toString(),
+                  currency: data.currency || "USD",
+                  companyName: data.companyName || baseline.company,
+                  source: data.source || "manual",
+                  segments: data.segments || [],
+                };
+                setCompanyFinancials(cf);
+                // Also sync baseline if values are meaningful
+                if (cf.revenue) setBaseline(prev => ({ ...prev, revenue: cf.revenue, company: cf.companyName || prev.company }));
+                if (cf.cogs) setBaseline(prev => ({ ...prev, cogs: cf.cogs }));
+                if (cf.sga) setBaseline(prev => ({ ...prev, sga: cf.sga }));
+                if (cf.ebitda) setBaseline(prev => ({ ...prev, ebitda: cf.ebitda }));
+                setFinancialsEntryMode(null);
+              };
+
+              const handleFileUpload = async (file) => {
+                setFinancialsExtracting(true);
+                const reader = new FileReader();
+                reader.onload = async (evt) => {
+                  const base64 = evt.target.result.split(",")[1];
+                  const prompt = `You are a financial data extraction assistant. Extract the following line items from this financial document and return ONLY a JSON object with no other text: { "revenue": number, "cogs": number, "grossProfit": number, "sga": number, "ebitda": number, "headcount": number, "financeHeadcount": number, "annualPayroll": number, "fiscalYear": string, "currency": string, "companyName": string, "source": "uploaded", "segments": [] } Use null for any field not found. All monetary values in millions USD. If you see segment breakdowns, also return segments: [{name, revenue, ebitda}]. The file content (base64 ${file.name.endsWith(".pdf") ? "PDF" : "Excel"}): ${base64.slice(0, 50000)}`;
+                  try {
+                    // Use the same callCatalyst pattern — server proxy first
+                    const proxyRes = await fetch("/api/catalyst", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ prompt }),
+                    });
+                    let text = "";
+                    if (proxyRes.ok) {
+                      const proxyData = await proxyRes.json();
+                      text = proxyData.result || "";
+                    } else if (apiKey) {
+                      const response = await fetch("https://api.anthropic.com/v1/messages", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+                        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 2000, messages: [{ role: "user", content: prompt }] }),
+                      });
+                      const data = await response.json();
+                      text = data.content?.map(i => i.text || "").join("\n") || "";
+                    }
+                    // Parse JSON from response
+                    const jsonMatch = text.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) {
+                      const parsed = JSON.parse(jsonMatch[0]);
+                      setFinancialsDraft(prev => ({ ...prev, ...parsed, source: "uploaded" }));
+                      // Set confidence per field
+                      const conf = {};
+                      Object.keys(parsed).forEach(k => {
+                        if (parsed[k] != null && parsed[k] !== "") conf[k] = "found";
+                        else conf[k] = "not_found";
+                      });
+                      setFinancialsConfidence(conf);
+                      setFinancialsEntryMode("manual"); // Show review table
+                    }
+                  } catch (err) {
+                    console.error("Financial extraction error:", err);
+                  }
+                  setFinancialsExtracting(false);
+                };
+                reader.readAsDataURL(file);
+              };
+
+              return (
+                <div style={{ marginBottom: 16, padding: 20, background: t.card, border: `1px solid ${hasFinancials ? GOLD + "44" : GOLD + "22"}`, borderLeft: `4px solid ${GOLD}`, borderRadius: 12 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+                    <div style={{ fontSize: 28, fontFamily: SERIF, color: GOLD, fontWeight: 700, lineHeight: 1 }}>④</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: t.tx, marginBottom: 4 }}>Company Financials</div>
+                      <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.6, marginBottom: 10 }}>Upload or enter your P&L data to anchor all value calculations to actual financials instead of revenue band estimates.</div>
+
+                      {/* Confirmed banner */}
+                      {hasFinancials && !financialsEntryMode && (
+                        <div style={{ padding: "10px 16px", background: GREEN + "15", border: `1px solid ${GREEN}33`, borderRadius: 8, marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}>
+                          <span style={{ color: GREEN, fontWeight: 700 }}>✓</span>
+                          <span style={{ fontSize: 13, color: GREEN, fontWeight: 600 }}>P&L loaded — {companyFinancials.companyName || baseline.company} FY{companyFinancials.fiscalYear} — All calculations now anchored to your actual financials</span>
+                          <div style={{ flex: 1 }} />
+                          <button onClick={() => { setFinancialsDraft({ ...companyFinancials }); setFinancialsEntryMode("manual"); }} style={{ fontSize: 11, padding: "4px 12px", borderRadius: 6, background: "transparent", border: `1px solid ${t.bdr}`, color: t.tx2, cursor: "pointer", fontFamily: FONT }}>Edit</button>
+                        </div>
+                      )}
+
+                      {/* Option cards */}
+                      {!hasFinancials && !financialsEntryMode && (
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                          <div onClick={() => document.getElementById("financials-upload").click()} style={{ ...cardStyle, padding: "20px 16px", cursor: "pointer", textAlign: "center", border: `1px dashed ${GOLD}44` }}>
+                            <div style={{ fontSize: 24, marginBottom: 8 }}>📄</div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: t.tx, marginBottom: 4 }}>Upload P&L</div>
+                            <div style={{ fontSize: 11, color: t.mut }}>PDF or Excel (.xlsx)</div>
+                            <input id="financials-upload" type="file" accept=".pdf,.xlsx,.xls" onChange={e => { const f = e.target.files[0]; if (f) handleFileUpload(f); }} style={{ display: "none" }} />
+                          </div>
+                          <div onClick={() => setFinancialsEntryMode("manual")} style={{ ...cardStyle, padding: "20px 16px", cursor: "pointer", textAlign: "center", border: `1px dashed ${GOLD}44` }}>
+                            <div style={{ fontSize: 24, marginBottom: 8 }}>⌨</div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: t.tx, marginBottom: 4 }}>Enter Manually</div>
+                            <div style={{ fontSize: 11, color: t.mut }}>8-row financial summary</div>
+                          </div>
+                        </div>
+                      )}
+
+                      {financialsExtracting && (
+                        <div style={{ padding: 20, textAlign: "center", color: GOLD }}>
+                          <div style={{ fontSize: 14, marginBottom: 6 }}>Extracting financial data...</div>
+                          <div style={{ fontSize: 11, color: t.mut }}>Parsing document with AI</div>
+                        </div>
+                      )}
+
+                      {/* Manual entry / review table */}
+                      {financialsEntryMode === "manual" && (
+                        <div style={{ marginTop: 12 }}>
+                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                            <thead><tr>
+                              <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 11 }}>Line Item</th>
+                              <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "right", color: t.mut, fontSize: 11 }}>Value ($M / count)</th>
+                              <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 11 }}>Note</th>
+                              {Object.keys(financialsConfidence).length > 0 && <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "center", color: t.mut, fontSize: 11 }}>Status</th>}
+                            </tr></thead>
+                            <tbody>
+                              {[
+                                { key: "revenue", label: "Net Revenue", note: "Full year (most recent)", prefix: "$", suffix: "M" },
+                                { key: "cogs", label: "Cost of Goods", note: "", prefix: "$", suffix: "M" },
+                                { key: "grossProfit", label: "Gross Profit", note: "Auto-calculated", prefix: "$", suffix: "M", auto: true },
+                                { key: "sga", label: "SG&A", note: "", prefix: "$", suffix: "M" },
+                                { key: "ebitda", label: "EBITDA", note: "Auto-calculated if possible", prefix: "$", suffix: "M", auto: true },
+                                { key: "headcount", label: "Total Headcount", note: "People", prefix: "", suffix: "" },
+                                { key: "financeHeadcount", label: "Finance FTEs", note: "People", prefix: "", suffix: "" },
+                                { key: "annualPayroll", label: "Annual Payroll", note: "Total loaded cost", prefix: "$", suffix: "M" },
+                              ].map(row => (
+                                <tr key={row.key}>
+                                  <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx, fontWeight: 500 }}>{row.label}</td>
+                                  <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right" }}>
+                                    <input
+                                      type="number"
+                                      value={row.auto && row.key === "grossProfit" ? (draftGP || financialsDraft.grossProfit || "") : row.auto && row.key === "ebitda" ? (draftEBITDA || financialsDraft.ebitda || "") : (financialsDraft[row.key] ?? "")}
+                                      onChange={e => setFinancialsDraft(prev => ({ ...prev, [row.key]: e.target.value }))}
+                                      placeholder="—"
+                                      style={{ width: 120, textAlign: "right", background: row.auto ? t.bg : t.card, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "4px 8px", color: t.tx, fontFamily: "monospace", fontSize: 13 }}
+                                      readOnly={row.auto && ((row.key === "grossProfit" && draftGP) || (row.key === "ebitda" && draftEBITDA))}
+                                    />
+                                  </td>
+                                  <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, fontSize: 11, color: t.mut }}>{row.note}</td>
+                                  {Object.keys(financialsConfidence).length > 0 && (
+                                    <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "center" }}>
+                                      <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: financialsConfidence[row.key] === "found" ? GREEN + "15" : financialsConfidence[row.key] === "estimated" ? GOLD + "15" : RED + "15", color: financialsConfidence[row.key] === "found" ? GREEN : financialsConfidence[row.key] === "estimated" ? GOLD : RED, fontWeight: 600 }}>
+                                        {financialsConfidence[row.key] === "found" ? "Found" : financialsConfidence[row.key] === "estimated" ? "Estimated" : "Not found"}
+                                      </span>
+                                    </td>
+                                  )}
+                                </tr>
+                              ))}
+                              <tr>
+                                <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx, fontWeight: 500 }}>Fiscal Year</td>
+                                <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right" }}>
+                                  <input type="text" value={financialsDraft.fiscalYear || ""} onChange={e => setFinancialsDraft(prev => ({ ...prev, fiscalYear: e.target.value }))} placeholder="2025" style={{ width: 120, textAlign: "right", background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "4px 8px", color: t.tx, fontFamily: "monospace", fontSize: 13 }} />
+                                </td>
+                                <td colSpan={2} style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, fontSize: 11, color: t.mut }}>Year of financial data</td>
+                              </tr>
+                              <tr>
+                                <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx, fontWeight: 500 }}>Company Name</td>
+                                <td style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right" }}>
+                                  <input type="text" value={financialsDraft.companyName || ""} onChange={e => setFinancialsDraft(prev => ({ ...prev, companyName: e.target.value }))} placeholder={baseline.company} style={{ width: 200, textAlign: "right", background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "4px 8px", color: t.tx, fontSize: 13 }} />
+                                </td>
+                                <td colSpan={2} style={{ padding: "6px 10px", borderBottom: `1px solid ${t.bdr}40`, fontSize: 11, color: t.mut }}></td>
+                              </tr>
+                            </tbody>
+                          </table>
+                          <div style={{ display: "flex", gap: 8, marginTop: 12, justifyContent: "flex-end" }}>
+                            <button onClick={() => setFinancialsEntryMode(null)} style={{ fontSize: 12, padding: "8px 20px", borderRadius: 8, background: "transparent", border: `1px solid ${t.bdr}`, color: t.tx2, cursor: "pointer", fontFamily: FONT }}>Cancel</button>
+                            <button onClick={() => {
+                              const d = { ...financialsDraft };
+                              if (draftGP) d.grossProfit = draftGP;
+                              if (draftEBITDA) d.ebitda = draftEBITDA;
+                              confirmFinancials(d);
+                            }} style={{ fontSize: 12, padding: "8px 20px", borderRadius: 8, background: GOLD, border: "none", color: "#111", cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>Confirm & Apply</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
               <button onClick={() => setStep(1)} style={btnSecondary}>← Input</button>
               <button onClick={() => setStep(3)} style={btnPrimary}>Value Setting →</button>
@@ -3993,6 +4302,39 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
               }} style={{ ...btnPrimary, padding: "8px 20px", fontSize: 13 }}>Save Scenario</button>
             </div>
 
+            {/* Methodology Card — collapsible */}
+            <div style={{ marginBottom: 16 }}>
+              <button onClick={() => setMethodologyOpen(!methodologyOpen)} style={{ width: "100%", padding: "10px 16px", background: methodologyOpen ? BLUE + "10" : t.card, border: `1px solid ${BLUE}22`, borderRadius: methodologyOpen ? "10px 10px 0 0" : 10, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontFamily: FONT }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: BLUE }}>How these numbers are calculated — and why you can defend them</span>
+                <div style={{ flex: 1 }} />
+                <span style={{ color: BLUE, fontSize: 12 }}>{methodologyOpen ? "▲" : "▼"}</span>
+              </button>
+              {methodologyOpen && (
+                <div style={{ padding: "16px 20px", background: t.card, border: `1px solid ${BLUE}22`, borderTop: "none", borderRadius: "0 0 10px 10px" }}>
+                  {[
+                    { id: "approach", title: "1. THE APPROACH", content: "PrismL4 uses a bottom-up methodology. We start with your actual processes, measure the gap between where you are and where best practice is, and size the financial impact of closing that gap. This is the same approach used by the Big 4 in Phase 0 business cases — we've just automated the 6-week exercise." },
+                    { id: "benchmarks", title: "2. THE BENCHMARK DATA", content: `Benchmarks come from three sources:\n• APQC Process Classification Framework — the largest process benchmarking dataset globally, updated annually\n• SAP Value Lifecycle Management — SAP's own customer outcome database from thousands of S/4HANA implementations\n• Hackett Group — premium benchmarks for finance and supply chain processes\n\nEach benchmark is adjusted for your industry (${baseline.industry}) and revenue band (${baseline.revenueBand}), using published adjustment factors.` },
+                    { id: "gap", title: "3. THE GAP CALCULATION", content: "For each KPI, we calculate: Gap = |Your baseline - Best practice benchmark|. We then ask: what % of that gap is realistically addressable? You set this — default is 40-60% depending on process complexity. The remaining gap is treated as non-addressable (organizational, structural, or market constraints)." },
+                    { id: "financial", title: "4. THE FINANCIAL TRANSLATION", content: `The gap in process terms (days, %, FTEs) is translated to dollars using your financial inputs. For example: a 2-day reduction in DSO x your annual revenue / 365 = working capital released. For headcount KPIs: FTE reduction x loaded cost per FTE = SG&A impact.${companyFinancials ? "\n\nYour calculations are anchored to " + (companyFinancials.companyName || baseline.company) + " FY" + companyFinancials.fiscalYear + " actuals." : "\n\nCurrently using revenue band estimates. Upload your P&L in Step 2 for exact figures."}` },
+                    { id: "split", title: "5. THE ERP / AI SPLIT", content: "ERP value = what S/4HANA delivers by implementing best practice processes. Agent uplift = the additional improvement from intelligent automation on top of ERP. Agent benchmarks are set at 15-30% better than ERP benchmarks, based on outcomes from early AI agent deployments in finance processes." },
+                    { id: "scenarios", title: "6. THE SCENARIO FACTORS", content: "Three scenarios reflect implementation risk:\n• High (100%): Full addressable value — assumes excellent execution and adoption\n• Medium (65%): Conservative — our recommended planning assumption\n• Low (35%): Minimum credible case — poor adoption, partial deployment\n\nAll headline numbers shown at Medium unless you change the scenario." },
+                    { id: "defensible", title: "7. WHAT MAKES THIS DEFENSIBLE", content: `Three things make this number defensible in front of a CFO or board:\n1. It's anchored to your P&L — not a percentage of generic industry revenue\n2. It's process-level, not top-down — every dollar traces back to a specific process, a specific KPI, a specific benchmark with a source and sample size\n3. It's deliberately conservative — addressable % and scenario factor both reduce the theoretical maximum by 35-65%` },
+                  ].map(section => (
+                    <div key={section.id} style={{ marginBottom: 8 }}>
+                      <button onClick={() => setMethodologySections(prev => ({ ...prev, [section.id]: !prev[section.id] }))} style={{ width: "100%", padding: "8px 0", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: FONT }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: section.id === "defensible" ? GOLD : t.tx, letterSpacing: ".3px" }}>{section.title}</span>
+                        <div style={{ flex: 1, height: 1, background: t.bdr }} />
+                        <span style={{ fontSize: 10, color: t.mut }}>{methodologySections[section.id] ? "−" : "+"}</span>
+                      </button>
+                      {methodologySections[section.id] && (
+                        <div style={{ padding: "8px 0 8px 12px", fontSize: 12, color: t.tx2, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{section.content}</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Summary KPIs — ERP / Agent / Combined split */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 24 }}>
               {[
@@ -4039,6 +4381,20 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
               );
             })()}
 
+            {/* Tab switcher — P&L vs Balance Sheet & Multi-Year */}
+            <div style={{ display: "flex", gap: 2, marginBottom: 16 }}>
+              {[{ id: "pnl", label: "P&L Impact" }, { id: "balanceSheet", label: "Balance Sheet & Multi-Year" }].map(tab => (
+                <button key={tab.id} onClick={() => setStep5Tab(tab.id)} style={{
+                  fontSize: 12, padding: "8px 20px", borderRadius: 8,
+                  background: step5Tab === tab.id ? GOLD + "18" : "transparent",
+                  border: `1px solid ${step5Tab === tab.id ? GOLD + "44" : t.bdr}`,
+                  color: step5Tab === tab.id ? GOLD : t.tx2,
+                  cursor: "pointer", fontFamily: FONT, fontWeight: step5Tab === tab.id ? 700 : 400,
+                }}>{tab.label}</button>
+              ))}
+            </div>
+
+            {step5Tab === "pnl" && (<>
             {/* P&L Impact Summary */}
             <div style={labelStyle}>P&L Impact Summary</div>
             {(() => {
@@ -4140,7 +4496,16 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
                       <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40` }}>
                         {scoreLabel ? <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 3, background: scoreColor + "15", color: scoreColor, fontWeight: 600 }}>{scoreLabel}</span> : <span style={{ fontSize: 10, color: t.sub }}>—</span>}
                       </td>
-                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: GOLD, fontWeight: 700 }}>{fd(imp.value)}</td>
+                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: GOLD, fontWeight: 700 }}>
+                        {fd(imp.value)}
+                        <ExplainerIcon color={GOLD} onClick={() => {
+                          const p = PROC_MAP[imp.id];
+                          if (p?.kpis?.[0]) {
+                            const d = buildExplainerData(p, p.kpis[0], 0, "erp");
+                            if (d) setCalcExplainer({ ...d, onChallenge: () => challengeCalcValue(d) });
+                          }
+                        }} />
+                      </td>
                       <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: GREEN, fontWeight: 600 }}>{imp.agentValue > 0 ? fd(imp.agentValue) : "—"}</td>
                       <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: t.tx, fontWeight: 700 }}>{fd(imp.value + (imp.agentValue || 0))}</td>
                     </tr>
@@ -4214,6 +4579,236 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
                 </div>
               );
             })()}
+            </>)}
+
+            {/* ═══ Balance Sheet & Multi-Year Tab ═══ */}
+            {step5Tab === "balanceSheet" && (<>
+              {/* SECTION A — Balance Sheet Impact */}
+              <div style={labelStyle}>Balance Sheet Impact (Year 1)</div>
+              {(() => {
+                const cf = effectiveFinancials;
+                const bsh = valResult.balanceSheet;
+                const isEst = !cf.anchored;
+                const estTag = isEst ? " (est.)" : "";
+
+                // Current DSO/DIO/DPO from baseline or industry averages
+                const currentDSO = baseline.recv > 0 && cf.revenue > 0 ? Math.round(baseline.recv / cf.revenue * 365) : 45;
+                const currentDIO = baseline.inventory > 0 && cf.cogs > 0 ? Math.round(baseline.inventory / cf.cogs * 365) : 60;
+                const currentDPO = baseline.pay > 0 && cf.cogs > 0 ? Math.round(baseline.pay / cf.cogs * 365) : 35;
+                const currentCCC = currentDSO + currentDIO - currentDPO;
+
+                // Improvements from value calculation
+                const dsoImprove = cf.revenue > 0 ? Math.round(bsh.receivablesImpact / (cf.revenue / 365)) : 0;
+                const dioImprove = cf.cogs > 0 ? Math.round(bsh.inventoryImpact / (cf.cogs / 365)) : 0;
+                const dpoImprove = cf.cogs > 0 ? Math.round(bsh.payablesImpact / (cf.cogs / 365)) : 0;
+
+                // Post-ERP values (70% of improvement from ERP)
+                const erpFactor = 0.7;
+                const agentFactor = 0.3;
+                const postErpDSO = currentDSO - Math.round(dsoImprove * erpFactor);
+                const postErpDIO = currentDIO - Math.round(dioImprove * erpFactor);
+                const postErpDPO = currentDPO + Math.round(dpoImprove * erpFactor);
+                const postAllDSO = currentDSO - dsoImprove;
+                const postAllDIO = currentDIO - dioImprove;
+                const postAllDPO = currentDPO + dpoImprove;
+
+                const currentAR = baseline.recv || Math.round(cf.revenue * currentDSO / 365);
+                const currentInv = baseline.inventory || Math.round(cf.cogs * currentDIO / 365);
+                const currentAP = baseline.pay || Math.round(cf.cogs * currentDPO / 365);
+                const currentWC = currentAR + currentInv - currentAP;
+
+                const postErpAR = Math.round(cf.revenue * postErpDSO / 365);
+                const postErpInv = Math.round(cf.cogs * postErpDIO / 365);
+                const postErpAP = Math.round(cf.cogs * postErpDPO / 365);
+                const postAllAR = Math.round(cf.revenue * postAllDSO / 365);
+                const postAllInv = Math.round(cf.cogs * postAllDIO / 365);
+                const postAllAP = Math.round(cf.cogs * postAllDPO / 365);
+
+                const bsRows = [
+                  { l: "Accounts Receivable", cur: currentAR, erp: postErpAR, all: postAllAR, unit: "$M", better: "down" },
+                  { l: "Inventory", cur: currentInv, erp: postErpInv, all: postAllInv, unit: "$M", better: "down" },
+                  { l: "Accounts Payable", cur: currentAP, erp: postErpAP, all: postAllAP, unit: "$M", better: "up" },
+                  { l: "Cash & Equivalents", cur: baseline.cash || 0, erp: (baseline.cash || 0) + Math.round(bsh.totalWorkingCapital * erpFactor), all: (baseline.cash || 0) + Math.round(bsh.totalWorkingCapital), unit: "$M", better: "up" },
+                  { l: "Working Capital", cur: currentWC, erp: postErpAR + postErpInv - postErpAP, all: postAllAR + postAllInv - postAllAP, unit: "$M", better: "down", highlight: true },
+                  { l: "DSO (Days)", cur: currentDSO, erp: postErpDSO, all: postAllDSO, unit: "days", better: "down" },
+                  { l: "DIO (Days)", cur: currentDIO, erp: postErpDIO, all: postAllDIO, unit: "days", better: "down" },
+                  { l: "DPO (Days)", cur: currentDPO, erp: postErpDPO, all: postAllDPO, unit: "days", better: "up" },
+                  { l: "Cash Conversion Cycle", cur: currentCCC, erp: postErpDSO + postErpDIO - postErpDPO, all: postAllDSO + postAllDIO - postAllDPO, unit: "days", better: "down", highlight: true },
+                ];
+
+                return (
+                  <>
+                    {isEst && (
+                      <div style={{ padding: "8px 14px", background: GOLD + "10", border: `1px solid ${GOLD}22`, borderRadius: 8, marginBottom: 12, fontSize: 12, color: GOLD }}>
+                        Values are estimated from revenue band. <button onClick={() => { setStep(2); setFinancialsEntryMode("manual"); }} style={{ background: "none", border: "none", color: GOLD, textDecoration: "underline", cursor: "pointer", fontFamily: FONT, fontSize: 12, fontWeight: 600 }}>Upload P&L for exact figures</button>
+                      </div>
+                    )}
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginBottom: 24 }}>
+                      <thead><tr>
+                        {["Line Item", `Current${estTag}`, "Post-ERP", "Post-ERP+AI", "Change", "Direction"].map((h, i) => (
+                          <th key={i} style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: i === 0 ? "left" : "right", color: t.mut, fontWeight: 600, fontSize: 11 }}>{h}</th>
+                        ))}
+                      </tr></thead>
+                      <tbody>
+                        {bsRows.map(row => {
+                          const change = row.all - row.cur;
+                          const pctChange = row.cur !== 0 ? Math.round(Math.abs(change) / Math.abs(row.cur) * 100) : 0;
+                          const isGood = (row.better === "down" && change < 0) || (row.better === "up" && change > 0);
+                          return (
+                            <tr key={row.l} style={{ background: row.highlight ? GOLD + "08" : "transparent" }}>
+                              <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, color: row.highlight ? GOLD : t.tx, fontWeight: row.highlight ? 700 : 400 }}>{row.l}</td>
+                              <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: t.mut }}>{row.unit === "$M" ? fm(row.cur) : row.cur}</td>
+                              <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: t.tx2 }}>{row.unit === "$M" ? fm(row.erp) : row.erp}</td>
+                              <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: t.tx }}>{row.unit === "$M" ? fm(row.all) : row.all}</td>
+                              <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: isGood ? GREEN : RED, fontWeight: 600 }}>
+                                {row.unit === "$M" ? `${change >= 0 ? "+" : ""}${fm(change)}` : `${change >= 0 ? "+" : ""}${change}`} ({pctChange}%)
+                              </td>
+                              <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontSize: 12 }}>
+                                <span style={{ color: isGood ? GREEN : RED }}>{isGood ? (row.better === "down" ? "↓ Better" : "↑ Better") : (row.better === "down" ? "↑ Worse" : "↓ Worse")}</span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </>
+                );
+              })()}
+
+              {/* SECTION B — Multi-Year Value Projection */}
+              <div style={labelStyle}>Multi-Year Value Projection (3-Year)</div>
+              {(() => {
+                const tv = valResult.total;
+                const agTot = valResult.agentTotal || 0;
+                const bsh = valResult.balanceSheet;
+                const ramp = multiYearRamp;
+
+                // Calculate per-year values
+                const y1ERP = tv * ramp.erp[0] / 100;
+                const y2ERP = tv * ramp.erp[1] / 100;
+                const y3ERP = tv * ramp.erp[2] / 100;
+                const y1Agent = agTot * ramp.agent[0] / 100;
+                const y2Agent = agTot * ramp.agent[1] / 100;
+                const y3Agent = agTot * ramp.agent[2] / 100;
+
+                // Implementation costs from agent specs
+                const totalImplCost = selProcs.reduce((s, p) => s + (AGENT_SPECS[p.id]?.implCost || 0), 0) / 1000; // convert K to M
+                const erpImplCost = tv * 0.15; // rough ERP implementation as 15% of annual value (industry standard)
+                const totalCost = totalImplCost + erpImplCost;
+                const y1Cost = totalCost * ramp.costSpread[0] / 100;
+                const y2Cost = totalCost * ramp.costSpread[1] / 100;
+                const y3Cost = totalCost * ramp.costSpread[2] / 100;
+
+                const y1Net = y1ERP + y1Agent - y1Cost;
+                const y2Net = y2ERP + y2Agent - y2Cost;
+                const y3Net = y3ERP + y3Agent - y3Cost;
+                const cum1 = y1Net;
+                const cum2 = cum1 + y2Net;
+                const cum3 = cum2 + y3Net;
+
+                const y1WC = bsh.totalWorkingCapital * 0.5;
+                const y2WC = bsh.totalWorkingCapital * 0.8;
+                const y3WC = bsh.totalWorkingCapital;
+
+                const y1EBITDA = effectiveFinancials.ebitda > 0 ? ((y1ERP + y1Agent) / effectiveFinancials.ebitda * 100).toFixed(1) : "—";
+                const y2EBITDA = effectiveFinancials.ebitda > 0 ? ((y2ERP + y2Agent) / effectiveFinancials.ebitda * 100).toFixed(1) : "—";
+                const y3EBITDA = effectiveFinancials.ebitda > 0 ? ((y3ERP + y3Agent) / effectiveFinancials.ebitda * 100).toFixed(1) : "—";
+
+                // Breakeven calculation
+                const monthlyNet = (y1Net + y2Net + y3Net) / 36;
+                const breakEvenMonths = y1Net < 0 ? Math.ceil(Math.abs(y1Net) / ((y2Net + y3Net) / 24)) + 12 : Math.ceil(y1Cost / ((y1ERP + y1Agent) / 12));
+
+                // Chart data
+                const chartData = [
+                  { month: 0, value: 0 },
+                  { month: 6, value: cum1 * 0.3 },
+                  { month: 12, value: cum1 },
+                  { month: 18, value: cum1 + y2Net * 0.5 },
+                  { month: 24, value: cum2 },
+                  { month: 30, value: cum2 + y3Net * 0.5 },
+                  { month: 36, value: cum3 },
+                ];
+
+                return (
+                  <>
+                    {/* Editable ramp assumptions */}
+                    <div style={{ marginBottom: 16, padding: "10px 14px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}`, display: "flex", gap: 20, flexWrap: "wrap", alignItems: "center" }}>
+                      <div style={{ fontSize: 11, color: t.mut, fontWeight: 600 }}>Ramp Assumptions:</div>
+                      {[
+                        { label: "ERP", key: "erp", c: GOLD },
+                        { label: "Agent", key: "agent", c: GREEN },
+                        { label: "Cost Spread", key: "costSpread", c: PURPLE },
+                      ].map(cfg => (
+                        <div key={cfg.key} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11 }}>
+                          <span style={{ color: cfg.c, fontWeight: 600 }}>{cfg.label}:</span>
+                          {[0, 1, 2].map(yi => (
+                            <span key={yi}>
+                              Y{yi + 1}
+                              <input type="number" value={ramp[cfg.key][yi]} onChange={e => {
+                                const newRamp = { ...multiYearRamp };
+                                newRamp[cfg.key] = [...newRamp[cfg.key]];
+                                newRamp[cfg.key][yi] = parseInt(e.target.value) || 0;
+                                setMultiYearRamp(newRamp);
+                              }} style={{ width: 36, textAlign: "center", background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 4, padding: "2px 4px", color: cfg.c, fontFamily: "monospace", fontSize: 11, marginLeft: 2 }} />%
+                            </span>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginBottom: 24 }}>
+                      <thead><tr>
+                        {["Metric", "Year 1", "Year 2", "Year 3", "3-Year Total"].map((h, i) => (
+                          <th key={i} style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: i === 0 ? "left" : "right", color: t.mut, fontWeight: 600, fontSize: 11 }}>{h}</th>
+                        ))}
+                      </tr></thead>
+                      <tbody>
+                        {[
+                          { l: "ERP Value Realized", vals: [y1ERP, y2ERP, y3ERP], total: y1ERP + y2ERP + y3ERP, c: GOLD, pcts: ramp.erp },
+                          { l: "Agent Uplift Realized", vals: [y1Agent, y2Agent, y3Agent], total: y1Agent + y2Agent + y3Agent, c: GREEN, pcts: ramp.agent },
+                          { l: "Combined Value", vals: [y1ERP + y1Agent, y2ERP + y2Agent, y3ERP + y3Agent], total: y1ERP + y2ERP + y3ERP + y1Agent + y2Agent + y3Agent, c: t.tx },
+                          { l: "Implementation Cost", vals: [-y1Cost, -y2Cost, -y3Cost], total: -(y1Cost + y2Cost + y3Cost), c: RED },
+                          { l: "Net Value", vals: [y1Net, y2Net, y3Net], total: y1Net + y2Net + y3Net, c: t.tx, bold: true },
+                          { l: "Cumulative Net", vals: [cum1, cum2, cum3], total: cum3, c: GOLD, bold: true, highlight: true },
+                          { l: "Working Capital Release", vals: [y1WC, y2WC, y3WC], total: y3WC, c: BLUE },
+                          { l: "EBITDA Impact (%)", vals: [y1EBITDA, y2EBITDA, y3EBITDA], total: "—", c: PURPLE, pct: true },
+                        ].map(row => (
+                          <tr key={row.l} style={{ background: row.highlight ? GOLD + "08" : "transparent" }}>
+                            <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, color: row.c, fontWeight: row.bold ? 700 : 400 }}>{row.l}</td>
+                            {row.vals.map((v, i) => (
+                              <td key={i} style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: row.c, fontWeight: row.bold ? 700 : 500 }}>
+                                {row.pct ? `${v}%` : fm(v)}{row.pcts ? ` (${row.pcts[i]}%)` : ""}
+                              </td>
+                            ))}
+                            <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: row.c, fontWeight: 700 }}>
+                              {row.pct ? row.total : fm(row.total)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+
+                    {/* Cumulative Net Value chart */}
+                    <div style={labelStyle}>Cumulative Net Value Over 3 Years</div>
+                    <div style={{ height: 220, marginBottom: 16 }}>
+                      <ResponsiveContainer>
+                        <LineChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={t.bdr} />
+                          <XAxis dataKey="month" tick={{ fill: t.tx2, fontSize: 11 }} tickFormatter={v => `M${v}`} axisLine={{ stroke: t.bdr }} />
+                          <YAxis tick={{ fill: t.mut, fontSize: 11, fontFamily: "monospace" }} axisLine={{ stroke: t.bdr }} tickFormatter={v => `$${v.toFixed(0)}M`} />
+                          <Tooltip contentStyle={{ background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 8, fontSize: 13, color: t.tx }} formatter={v => [`$${v.toFixed(1)}M`, "Cumulative Net"]} />
+                          <ReferenceLine y={0} stroke={RED} strokeDasharray="3 3" />
+                          <Line type="monotone" dataKey="value" stroke={GOLD} strokeWidth={2} dot={{ fill: GOLD, r: 4 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div style={{ textAlign: "center", fontSize: 13, color: GOLD, fontWeight: 600, marginBottom: 24 }}>
+                      Payback in ~{breakEvenMonths > 0 && breakEvenMonths < 37 ? breakEvenMonths : "—"} months
+                    </div>
+                  </>
+                );
+              })()}
+            </>)}
 
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
               <button onClick={() => setStep(4)} style={btnSecondary}>← Benchmark</button>
@@ -4409,14 +5004,14 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
               <div style={{ fontSize: 32, marginBottom: 8 }}>📊</div>
               <div style={{ fontSize: 18, fontFamily: SERIF, fontWeight: 700, color: GOLD, marginBottom: 6 }}>Executive Deck (4 slides)</div>
               <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.5, marginBottom: 14 }}>Board-ready: value summary, P&L, decision leakage, next steps</div>
-                <button onClick={() => generateExecDeck({ baseline, selProcs, valResult, scenarioLevel, procValues, procBenchmarks, agentResults, baselineData, selectedFunction, totalKPIs, FUNCTIONS, PROC_MAP, getQuartile, BLUEPRINT_TIERS, valueRealization, processOwners: processOwnership })} style={{ ...btnPrimary, padding: "14px 24px", fontSize: 15, width: "100%", background: GOLD }}>
+                <button onClick={() => generateExecDeck({ baseline, selProcs, valResult, scenarioLevel, procValues, procBenchmarks, agentResults, baselineData, selectedFunction, totalKPIs, FUNCTIONS, PROC_MAP, getQuartile, BLUEPRINT_TIERS, valueRealization, processOwners: processOwnership, companyFinancials, multiYearRamp })} style={{ ...btnPrimary, padding: "14px 24px", fontSize: 15, width: "100%", background: GOLD }}>
                   ↓ Download Executive PPTX
                 </button>
               </div>
               <div onClick={() => setMoreOptionsOpen(prev => ({ ...prev, step7downloads: !prev.step7downloads }))} style={{ fontSize: 12, color: t.mut, cursor: "pointer", marginBottom: 8 }}>{moreOptionsOpen.step7downloads ? "▾ Fewer options" : "▸ More downloads"}</div>
               {moreOptionsOpen.step7downloads && (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 28 }}>
-                <button onClick={() => generateDetailedDeck({ baseline, selProcs, valResult, scenarioLevel, procValues, procBenchmarks, agentResults, baselineData, selectedFunction, totalKPIs, FUNCTIONS, PROC_MAP, getQuartile, BLUEPRINT_TIERS, valueRealization, processOwners: processOwnership })} style={{ ...btnSecondary, padding: "10px 16px", fontSize: 12 }}>
+                <button onClick={() => generateDetailedDeck({ baseline, selProcs, valResult, scenarioLevel, procValues, procBenchmarks, agentResults, baselineData, selectedFunction, totalKPIs, FUNCTIONS, PROC_MAP, getQuartile, BLUEPRINT_TIERS, valueRealization, processOwners: processOwnership, companyFinancials, multiYearRamp })} style={{ ...btnSecondary, padding: "10px 16px", fontSize: 12 }}>
                   ↓ Detailed PPTX (10 slides)
                 </button>
                 <button onClick={generatePhase0Report} style={{ ...btnSecondary, padding: "10px 16px", fontSize: 12 }}>
@@ -4510,6 +5105,9 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
         )}
 
       </div>
+
+      {/* ─── CALC EXPLAINER DRAWER ─── */}
+      {calcExplainer && <CalcExplainerDrawer data={calcExplainer} onClose={() => { setCalcExplainer(null); setChallengeResult(null); }} mode={mode} />}
 
       {/* ─── FOOTER ─── */}
       <div style={{ borderTop: `1px solid ${t.bdr}`, background: mode === "dark" ? "#131312" : "#EFEBE3", padding: "6px 24px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0, flexWrap: "wrap" }}>

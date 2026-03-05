@@ -43,7 +43,7 @@ const cl = (t, ex) => ({ text: t, options: { fontSize: 10, color: C.white, ...ex
 /* ═══════════════════════════════════════════════════════
    PRECOMPUTE shared data
    ═══════════════════════════════════════════════════════ */
-function precompute({ baseline, selProcs, valResult, procValues, procBenchmarks, agentResults, getQuartile, PROC_MAP, FUNCTIONS, selectedFunction, valueRealization }) {
+function precompute({ baseline, selProcs, valResult, procValues, procBenchmarks, agentResults, getQuartile, PROC_MAP, FUNCTIONS, selectedFunction, valueRealization, companyFinancials, multiYearRamp }) {
   const imps = valResult.impacts.filter(i => i.value > 0);
   const { revImpact: rv, cogsImpact: cg, sgaImpact: sg } = valResult.pnl;
   const tv = valResult.total;
@@ -108,7 +108,7 @@ function precompute({ baseline, selProcs, valResult, procValues, procBenchmarks,
   // Top 3 processes by value
   const top3 = imps.slice(0, 3);
 
-  return { imps, rv, cg, sg, tv, agTot, combined, bsh, fnName, e2e, procQuartiles, qT, qA, qL, qTot, leakage, agentData, top3, valueRealization };
+  return { imps, rv, cg, sg, tv, agTot, combined, bsh, fnName, e2e, procQuartiles, qT, qA, qL, qTot, leakage, agentData, top3, valueRealization, companyFinancials, multiYearRamp };
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -169,6 +169,10 @@ function buildExecDeck(pptx, data, baseline) {
       s.addText(item[0], { x: bx, y: 4.05, w: 2.0, h: 0.25, fontSize: 10, fontFace: "Calibri", color: C.gray });
       s.addText(item[1], { x: bx, y: 4.3, w: 2.0, h: 0.35, fontSize: 18, fontFace: "Georgia", color: i === 3 ? C.gold : C.green, bold: i === 3 });
     });
+    // Methodology footnote
+    const cfName = baseline.companyFinancials?.companyName || baseline.company || "Company";
+    const cfYear = baseline.companyFinancials?.fiscalYear || "";
+    s.addText(`Based on ${cfName}${cfYear ? " FY" + cfYear : ""} financials. Medium scenario (65%). Methodology: APQC + SAP VLM benchmarks, bottom-up process analysis.`, { x: 0.5, y: 4.9, w: 9.0, h: 0.25, fontSize: 7, fontFace: "Calibri", color: C.dkGray, italic: true });
     addFtr(s, pg++);
   })();
 
@@ -223,7 +227,7 @@ function buildExecDeck(pptx, data, baseline) {
    DETAILED REPORT — 10 slides max
    ═══════════════════════════════════════════════════════ */
 function buildDetailedDeck(pptx, data, baseline, { selProcs, procValues, procBenchmarks, agentResults, baselineData, PROC_MAP, getQuartile, scenarioLevel, totalKPIs, processOwners }) {
-  const { imps, rv, cg, sg, tv, agTot, combined, bsh, fnName, e2e, procQuartiles, qT, qA, qL, qTot, leakage, agentData, valueRealization } = data;
+  const { imps, rv, cg, sg, tv, agTot, combined, bsh, fnName, e2e, procQuartiles, qT, qA, qL, qTot, leakage, agentData, valueRealization, companyFinancials, multiYearRamp } = data;
   const dt = today();
   let pg = 1;
 
@@ -406,18 +410,53 @@ function buildDetailedDeck(pptx, data, baseline, { selProcs, procValues, procBen
       [cl("EBITDA", { bold: true, color: C.gold, ...gf }), cl(fmtD(baseline.ebitda), { align: "right", bold: true, color: C.gold, ...gf }), cl(fmtD(rv + cg + sg), { align: "right", bold: true, color: C.gold, ...gf }), cl(fmtD((baseline.ebitda || 0) + rv + cg + sg), { align: "right", bold: true, color: C.gold, ...gf })],
     ], { x: 0.5, y: 1.1, w: 9.0, colW: [2.5, 2.0, 2.5, 2.0], border: { type: "solid", pt: 0.5, color: C.bdr }, rowH: 0.38 });
 
-    // Balance sheet (if applicable)
+    // 3-year cumulative waterfall
+    const ramp = multiYearRamp || { erp: [30, 70, 100], agent: [0, 40, 100], costSpread: [70, 20, 10] };
+    const totalImplCost = agentData.reduce((s, a) => s + (a.implCost || 0), 0) / 1000;
+    const erpImplCost = tv * 0.15;
+    const tCost = totalImplCost + erpImplCost;
+    s.addText("3-Year Value Waterfall", { x: 0.5, y: 3.6, w: 9.0, h: 0.3, fontSize: 14, fontFace: "Georgia", color: C.white, bold: true });
+    s.addTable([
+      [hd(""), hd("Year 1", { align: "right" }), hd("Year 2", { align: "right" }), hd("Year 3", { align: "right" }), hd("3-Year", { align: "right" })],
+      [cl("ERP Value"), cl(fmtD(tv * ramp.erp[0] / 100), { align: "right", color: C.gold }), cl(fmtD(tv * ramp.erp[1] / 100), { align: "right", color: C.gold }), cl(fmtD(tv * ramp.erp[2] / 100), { align: "right", color: C.gold }), cl(fmtD(tv * (ramp.erp[0] + ramp.erp[1] + ramp.erp[2]) / 100), { align: "right", color: C.gold, bold: true })],
+      [cl("Agent Uplift"), cl(fmtD(agTot * ramp.agent[0] / 100), { align: "right", color: C.green }), cl(fmtD(agTot * ramp.agent[1] / 100), { align: "right", color: C.green }), cl(fmtD(agTot * ramp.agent[2] / 100), { align: "right", color: C.green }), cl(fmtD(agTot * (ramp.agent[0] + ramp.agent[1] + ramp.agent[2]) / 100), { align: "right", color: C.green, bold: true })],
+      [cl("Working Capital", { color: C.blue }), cl(fmtD(bsh.totalWorkingCapital * 0.5), { align: "right", color: C.blue }), cl(fmtD(bsh.totalWorkingCapital * 0.8), { align: "right", color: C.blue }), cl(fmtD(bsh.totalWorkingCapital), { align: "right", color: C.blue }), cl(fmtD(bsh.totalWorkingCapital), { align: "right", color: C.blue, bold: true })],
+    ], { x: 0.5, y: 3.9, w: 9.0, colW: [2.0, 1.75, 1.75, 1.75, 1.75], border: { type: "solid", pt: 0.5, color: C.bdr }, rowH: 0.28 });
+    addFtr(s, pg++);
+  })();
+
+  // ── Slide 8b: Balance Sheet Impact ──
+  (() => {
     const hasWC = bsh && bsh.totalWorkingCapital > 0;
-    if (hasWC) {
-      s.addText("Working Capital", { x: 0.5, y: 3.8, w: 9.0, h: 0.3, fontSize: 14, fontFace: "Georgia", color: C.white, bold: true });
-      s.addTable([
-        [hd("Item"), hd("Impact", { align: "right" })],
-        [cl("Accounts Receivable"), cl(fmtD(bsh.receivablesImpact), { align: "right", color: C.green })],
-        [cl("Inventory"), cl(fmtD(bsh.inventoryImpact), { align: "right", color: C.green })],
-        [cl("Accounts Payable"), cl(fmtD(bsh.payablesImpact), { align: "right", color: C.blue })],
-        [cl("Net Working Capital Freed", { color: C.gold, bold: true, fill: { color: C.lightGold } }), cl(fmtD(bsh.totalWorkingCapital), { align: "right", color: C.gold, bold: true, fill: { color: C.lightGold } })],
-      ], { x: 0.5, y: 4.1, w: 5.0, colW: [3.0, 2.0], border: { type: "solid", pt: 0.5, color: C.bdr }, rowH: 0.28 });
-    }
+    if (!hasWC) { return; }
+    const s = dkSl(pptx); goldLn(pptx, s);
+    s.addText("Balance Sheet Impact", { x: 0.5, y: 0.5, w: 9.0, h: 0.5, fontSize: 24, fontFace: "Georgia", color: C.white });
+
+    // DSO/DIO/DPO calculations
+    const rev = baseline.revenue || 1;
+    const cogs = baseline.cogs || 1;
+    const currentDSO = baseline.recv > 0 ? Math.round(baseline.recv / rev * 365) : 45;
+    const currentDIO = baseline.inventory > 0 ? Math.round(baseline.inventory / cogs * 365) : 60;
+    const currentDPO = baseline.pay > 0 ? Math.round(baseline.pay / cogs * 365) : 35;
+    const dsoImp = rev > 0 ? Math.round(bsh.receivablesImpact / (rev / 365)) : 0;
+    const dioImp = cogs > 0 ? Math.round(bsh.inventoryImpact / (cogs / 365)) : 0;
+    const dpoImp = cogs > 0 ? Math.round(bsh.payablesImpact / (cogs / 365)) : 0;
+
+    s.addTable([
+      [hd("Metric"), hd("Current", { align: "right" }), hd("Improved", { align: "right" }), hd("Change", { align: "right" })],
+      [cl("DSO (Days)"), cl(String(currentDSO), { align: "right" }), cl(String(currentDSO - dsoImp), { align: "right" }), cl(`-${dsoImp} days`, { align: "right", color: C.green })],
+      [cl("DIO (Days)"), cl(String(currentDIO), { align: "right" }), cl(String(currentDIO - dioImp), { align: "right" }), cl(`-${dioImp} days`, { align: "right", color: C.green })],
+      [cl("DPO (Days)"), cl(String(currentDPO), { align: "right" }), cl(String(currentDPO + dpoImp), { align: "right" }), cl(`+${dpoImp} days`, { align: "right", color: C.green })],
+      [cl("Cash Conversion Cycle", { bold: true }), cl(String(currentDSO + currentDIO - currentDPO), { align: "right", bold: true }), cl(String((currentDSO - dsoImp) + (currentDIO - dioImp) - (currentDPO + dpoImp)), { align: "right", bold: true }), cl(`-${dsoImp + dioImp + dpoImp} days`, { align: "right", color: C.gold, bold: true })],
+    ], { x: 0.5, y: 1.2, w: 9.0, colW: [3.0, 2.0, 2.0, 2.0], border: { type: "solid", pt: 0.5, color: C.bdr }, rowH: 0.38 });
+
+    // Working capital headline
+    s.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 2.5, y: 3.5, w: 5.0, h: 1.2, fill: { color: C.lightGold }, rectRadius: 0.1, line: { color: C.gold, width: 1 } });
+    s.addText("Working Capital Released", { x: 2.5, y: 3.6, w: 5.0, h: 0.3, fontSize: 12, fontFace: "Calibri", color: C.gray, align: "center" });
+    s.addText(fmtD(bsh.totalWorkingCapital), { x: 2.5, y: 3.9, w: 5.0, h: 0.7, fontSize: 36, fontFace: "Georgia", color: C.gold, bold: true, align: "center" });
+
+    // Source footnote
+    s.addText("Sources: DSO improvement from O2C cycle time KPIs; DIO from inventory KPIs; DPO from P2P process improvements.", { x: 0.5, y: 4.9, w: 9.0, h: 0.25, fontSize: 7, fontFace: "Calibri", color: C.dkGray, italic: true });
     addFtr(s, pg++);
   })();
 
