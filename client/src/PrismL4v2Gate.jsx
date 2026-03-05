@@ -2,10 +2,11 @@ import { useState } from "react";
 import PrismL4v2 from "./PrismL4v2";
 
 const PASS = "Betterquestions2026@";
+const SESSION_KEY = "prisml4v2_unlocked";
 
 export default function PrismL4v2Gate() {
   const [input, setInput] = useState("");
-  const [unlocked, setUnlocked] = useState(false);
+  const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem(SESSION_KEY) === "true");
   const [error, setError] = useState(false);
 
   if (unlocked) return <PrismL4v2 />;
@@ -13,6 +14,7 @@ export default function PrismL4v2Gate() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (input.trim() === PASS) {
+      sessionStorage.setItem(SESSION_KEY, "true");
       setUnlocked(true);
     } else {
       setError(true);

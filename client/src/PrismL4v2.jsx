@@ -895,12 +895,18 @@ const SMART_TO_BASELINE = {
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════ */
 export default function PrismL4v2({ user, onLogout, assessmentId, initialData, isOwner, onBack }) {
-  const [page, setPage] = useState(initialData ? "work" : "choose");
+  const [page, setPage] = useState(initialData ? "work" : "setup");
   const [mode, setMode] = useState("dark");
   const isClientRole = user?.role === "client";
   const [viewMode, setViewMode] = useState(isClientRole ? "client" : "consultant"); // consultant | client
   const [step, setStep] = useState(initialData?.lastStep || 1);
   const [entryMode, setEntryMode] = useState(null); // "e2e" | "function"
+
+  // Assessment Profile (collected at setup)
+  const [assessmentProfile, setAssessmentProfile] = useState(initialData?.assessmentProfile || {
+    companyName: "", industry: "", revenueBand: "", fiscalYear: String(new Date().getFullYear()),
+    currency: "USD", assessmentPurpose: "Phase 0 Business Case",
+  });
 
   // Process Ownership (V2)
   const [processOwnership, setProcessOwnership] = useState(initialData?.processOwnership || {});
@@ -961,6 +967,7 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
 
   // Two-track baseline data (Step 2)
   const [baselineData, setBaselineData] = useState(initialData?.baselineData || {});
+  const [step2Tab, setStep2Tab] = useState("questionnaire"); // "questionnaire" | "manual"
 
   // Per-process potential categorization (Step 5 / Step 7)
   const [procScenarios, setProcScenarios] = useState(initialData?.procScenarios || {});
@@ -1199,7 +1206,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
       baseline, selectedProcs: [...selectedProcs], selectedFunction,
       procValues, procBenchmarks, questAnswers, baselineData, procScenarios,
       catalystResults, agentResults, uploadedMining, savedScenarios, valueRealization,
-      companyFinancials, multiYearRamp, lastStep: step,
+      companyFinancials, multiYearRamp, assessmentProfile, lastStep: step,
     };
     try {
       await fetch(`/api/assessments/${assessmentId}`, {
@@ -1211,7 +1218,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
       setLastSaved(new Date());
     } catch (err) { console.error("Auto-save failed:", err); }
     setSaving(false);
-  }, [assessmentId, baseline, selectedProcs, selectedFunction, procValues, procBenchmarks, questAnswers, baselineData, procScenarios, catalystResults, agentResults, uploadedMining, savedScenarios, valueRealization, companyFinancials, multiYearRamp, step]);
+  }, [assessmentId, baseline, selectedProcs, selectedFunction, procValues, procBenchmarks, questAnswers, baselineData, procScenarios, catalystResults, agentResults, uploadedMining, savedScenarios, valueRealization, companyFinancials, multiYearRamp, assessmentProfile, step]);
 
   // Auto-save every 30 seconds when data changes
   useEffect(() => {
@@ -1219,7 +1226,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(saveToServer, 30000);
     return () => clearTimeout(saveTimer.current);
-  }, [baseline, selectedProcs, procValues, procBenchmarks, questAnswers, baselineData, procScenarios, catalystResults, agentResults, uploadedMining, savedScenarios, valueRealization, companyFinancials, multiYearRamp, step]);
+  }, [baseline, selectedProcs, procValues, procBenchmarks, questAnswers, baselineData, procScenarios, catalystResults, agentResults, uploadedMining, savedScenarios, valueRealization, companyFinancials, multiYearRamp, assessmentProfile, step]);
 
   // ═══ Share helpers ═══
   const fetchShares = useCallback(async () => {
@@ -1338,8 +1345,8 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
 
     // Working Capital calculations
     let receivablesImpact = 0, payablesImpact = 0, inventoryImpact = 0;
-    const dailyRevenue = effectiveFinancials.revenue / 365;
-    const dailyCOGS = effectiveFinancials.cogs / 365;
+    const dailyRevenue = (effectiveFinancials.revenue || 0) / 365;
+    const dailyCOGS = (effectiveFinancials.cogs || 0) / 365;
 
     selProcs.forEach(proc => {
       const vals = procValues[proc.id] || {};
@@ -3291,155 +3298,217 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
             {(() => {
               const procsWithBaseline = selProcs.filter(p => Object.keys(baselineData).some(k => k.startsWith(p.id))).length;
               const procsWithAnswers = selProcs.filter(p => Object.keys(questAnswers).some(k => k.startsWith(p.id))).length;
-              const dataCount = procsWithBaseline + procsWithAnswers;
+              const procsWithKPIs = selProcs.filter(p => Object.keys(procValues).some(k => k === p.id && Object.keys(procValues[k]).some(vk => vk.startsWith("kpi_current_")))).length;
+              const dataCount = procsWithBaseline + procsWithAnswers + procsWithKPIs;
               const hasData = dataCount > 0;
               return (
                 <div style={{ marginBottom: 16, padding: 20, background: t.card, border: `1px solid ${hasData ? GOLD + "44" : GOLD + "22"}`, borderLeft: `4px solid ${GOLD}`, borderRadius: 12, opacity: hasData ? 0.85 : 1 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
                     <div style={{ fontSize: 28, fontFamily: SERIF, color: GOLD, fontWeight: 700, lineHeight: 1 }}>②</div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: t.tx, marginBottom: 4 }}>Collect & Upload Responses</div>
-                      <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.6, marginBottom: 10 }}>Upload completed questionnaire responses or enter data manually.</div>
-                      <div style={{ marginBottom: 8 }}>
-                        <label style={{ display: "block", fontSize: 14, padding: "12px 24px", borderRadius: 10, background: GOLD, border: "none", color: "#111", cursor: "pointer", fontFamily: FONT, fontWeight: 600, textAlign: "center", marginBottom: 8 }}>
-                          ↑ Upload Responses (CSV)
-                          <input type="file" accept=".csv" onChange={handleQuestionnaireUpload} style={{ display: "none" }} />
-                        </label>
-                        <div onClick={() => setMoreOptionsOpen(prev => ({ ...prev, step2upload: !prev.step2upload }))} style={{ fontSize: 11, color: t.mut, cursor: "pointer", marginBottom: 4 }}>{moreOptionsOpen.step2upload ? "▾ Fewer options" : "▸ More options"}</div>
-                        {moreOptionsOpen.step2upload && (
-                          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                            <button onClick={() => setShowPasteModal(true)} style={{ fontSize: 12, padding: "8px 16px", borderRadius: 8, background: "none", border: `1px solid ${t.bdr}`, color: t.tx2, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
-                              ⎘ Paste Responses
-                            </button>
-                            <button onClick={() => setFocusProc(focusProc ? null : selProcs[0]?.id || null)} style={{ fontSize: 12, padding: "8px 16px", borderRadius: 8, background: "none", border: `1px solid ${t.bdr}`, color: t.tx2, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
-                              ⌨ Enter Manually
-                            </button>
-                            <span onClick={() => setStep(3)} style={{ fontSize: 11, color: t.mut, fontStyle: "italic", cursor: "pointer", marginLeft: 4 }}>Skip for now →</span>
-                          </div>
-                        )}
-                      </div>
-                      {hasData && <span style={{ fontSize: 11, color: GREEN, fontWeight: 600 }}>✓ Data received for {dataCount} processes</span>}
-                    </div>
-                  </div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: t.tx, marginBottom: 4 }}>Collect Baseline Data</div>
+                      <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.6, marginBottom: 10 }}>Upload questionnaire responses, enter data via questionnaire, or input KPI values directly.</div>
 
-                  {/* Inline manual entry — process selector + panels */}
-                  {focusProc && (
-                    <div style={{ marginTop: 16, paddingLeft: 44 }}>
-                      <div style={{ display: "flex", gap: 4, marginBottom: 12, flexWrap: "wrap" }}>
-                        {selProcs.map(proc => (
-                          <button key={proc.id} onClick={() => setFocusProc(proc.id)} style={{
-                            fontSize: 10, padding: "4px 10px", borderRadius: 6,
-                            background: focusProc === proc.id ? proc.l1Color + "20" : "transparent",
-                            border: `1px solid ${focusProc === proc.id ? proc.l1Color + "44" : t.bdr}`,
-                            color: focusProc === proc.id ? proc.l1Color : t.tx2,
-                            cursor: "pointer", fontFamily: FONT, fontWeight: focusProc === proc.id ? 700 : 400,
-                          }}>
-                            {proc.l4} {proc.label.length > 25 ? proc.label.slice(0, 25) + "…" : proc.label}
-                            {(Object.keys(baselineData).some(k => k.startsWith(proc.id)) || Object.keys(questAnswers).some(k => k.startsWith(proc.id + "_q-"))) && <span style={{ marginLeft: 4, color: GREEN }}>✓</span>}
-                          </button>
+                      {/* Sub-tab switcher */}
+                      <div style={{ display: "flex", gap: 2, marginBottom: 12, borderBottom: `1px solid ${t.bdr}` }}>
+                        {[
+                          { key: "questionnaire", label: "Questionnaire", color: GOLD },
+                          { key: "manual", label: "Enter Manually", color: GREEN },
+                        ].map(tab => (
+                          <button key={tab.key} onClick={() => { setStep2Tab(tab.key); if (tab.key === "questionnaire") setFocusProc(focusProc || selProcs[0]?.id || null); }}
+                            style={{
+                              fontSize: 11, padding: "6px 14px", fontWeight: step2Tab === tab.key ? 700 : 500,
+                              background: step2Tab === tab.key ? tab.color + "12" : "transparent",
+                              border: "none", borderBottomStyle: "solid", borderBottomWidth: 2,
+                              borderBottomColor: step2Tab === tab.key ? tab.color : "transparent",
+                              color: step2Tab === tab.key ? tab.color : t.tx2,
+                              cursor: "pointer", fontFamily: FONT,
+                            }}>{tab.label}</button>
                         ))}
                       </div>
-                      <div style={{ fontSize: 10, color: t.mut, marginBottom: 8 }}>{selProcs.filter(p => Object.keys(questAnswers).some(k => k.startsWith(p.id + "_q-")) || Object.keys(baselineData).some(k => k.startsWith(p.id))).length} of {selProcs.length} processes have baseline data</div>
 
-                      {PROC_MAP[focusProc] && (
-                        <div style={{ ...cardStyle, maxHeight: 500, overflowY: "auto" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                            <div>
-                              <div style={{ fontSize: 10, fontFamily: "monospace", color: t.mut }}>{PROC_MAP[focusProc].l4}</div>
-                              <div style={{ fontSize: 16, fontWeight: 600, color: t.tx }}>{PROC_MAP[focusProc].label}</div>
+                      {/* Questionnaire Tab */}
+                      {step2Tab === "questionnaire" && (
+                        <div>
+                          <div style={{ marginBottom: 8 }}>
+                            <label style={{ display: "block", fontSize: 14, padding: "12px 24px", borderRadius: 10, background: GOLD, border: "none", color: "#111", cursor: "pointer", fontFamily: FONT, fontWeight: 600, textAlign: "center", marginBottom: 8 }}>
+                              ↑ Upload Responses (CSV)
+                              <input type="file" accept=".csv" onChange={handleQuestionnaireUpload} style={{ display: "none" }} />
+                            </label>
+                            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                              <button onClick={() => setShowPasteModal(true)} style={{ fontSize: 12, padding: "8px 16px", borderRadius: 8, background: "none", border: `1px solid ${t.bdr}`, color: t.tx2, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
+                                ⎘ Paste Responses
+                              </button>
+                              <button onClick={() => setFocusProc(focusProc ? null : selProcs[0]?.id || null)} style={{ fontSize: 12, padding: "8px 16px", borderRadius: 8, background: "none", border: `1px solid ${t.bdr}`, color: t.tx2, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>
+                                ⌨ Enter via Questionnaire
+                              </button>
+                              <span onClick={() => setStep(3)} style={{ fontSize: 11, color: t.mut, fontStyle: "italic", cursor: "pointer", marginLeft: 4 }}>Skip for now →</span>
                             </div>
-                            <button onClick={() => setFocusProc(null)} style={{ background: "none", border: "none", color: t.mut, cursor: "pointer", fontSize: 16 }}>×</button>
                           </div>
+                          {hasData && <span style={{ fontSize: 11, color: GREEN, fontWeight: 600, display: "block", marginBottom: 8 }}>✓ Data received for {dataCount} processes</span>}
 
-                          {/* Smart Questions */}
-                          {(() => {
-                            const visibleQs = getVisibleQuestions(focusProc);
-                            const answeredCount = visibleQs.filter(q => {
-                              const v = questAnswers[`${focusProc}_${q.id}`];
-                              return v !== undefined && v !== "" && v !== null;
-                            }).length;
-                            const warnings = getValidationWarnings(focusProc);
-                            const summary = getSmartSummary(focusProc);
-                            const effQs = visibleQs.filter(q => q.category === "efficiency");
-                            const leakQs = visibleQs.filter(q => q.category === "leakage");
-                            const inputStyle = { width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, boxSizing: "border-box" };
-                            const renderQ = (q) => (
-                              <div key={q.id} style={{ marginBottom: 10, transition: "all 0.3s ease" }}>
-                                <div style={{ fontSize: 11, color: t.tx2, marginBottom: 3, display: "flex", alignItems: "center", gap: 6 }}>
-                                  {q.question}
-                                  {q.required && <span style={{ color: RED, fontSize: 9 }}>*</span>}
-                                  {!q.required && <span style={{ fontSize: 9, color: t.mut, fontStyle: "italic" }}>conditional</span>}
-                                </div>
-                                {q.type === "dropdown" ? (
-                                  <select value={questAnswers[`${focusProc}_${q.id}`] || ""} onChange={e => setSmartAnswer(focusProc, q.id, e.target.value)} style={inputStyle}>
-                                    <option value="">Select...</option>
-                                    {q.options.map(o => <option key={o} value={o}>{o}</option>)}
-                                  </select>
-                                ) : q.type === "rating" ? (
-                                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                                    {[1, 2, 3, 4, 5].map(n => {
-                                      const sel = parseInt(questAnswers[`${focusProc}_${q.id}`]) === n;
-                                      return <button key={n} onClick={() => setSmartAnswer(focusProc, q.id, n)} style={{ width: 32, height: 32, borderRadius: "50%", border: `2px solid ${sel ? GOLD : t.bdr}`, background: sel ? GOLD + "25" : "transparent", color: sel ? GOLD : t.mut, fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: FONT }}>{n}</button>;
-                                    })}
-                                    {questAnswers[`${focusProc}_${q.id}`] && <span style={{ fontSize: 10, color: GOLD, marginLeft: 4 }}>{q.labels[parseInt(questAnswers[`${focusProc}_${q.id}`]) - 1]}</span>}
-                                  </div>
-                                ) : q.type === "number_with_unit" ? (
-                                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                                    <input type="number" value={questAnswers[`${focusProc}_${q.id}`] || ""} onChange={e => setSmartAnswer(focusProc, q.id, e.target.value)}
-                                      placeholder="0" style={{ ...inputStyle, flex: 1, width: "auto" }} />
-                                    <select value={questAnswers[`${focusProc}_${q.id}-unit`] || q.units[1]} onChange={e => setSmartUnit(focusProc, q.id, e.target.value)}
-                                      style={{ background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 8px", color: t.tx, fontFamily: FONT, fontSize: 11 }}>
-                                      {q.units.map(u => <option key={u} value={u}>{u}</option>)}
-                                    </select>
-                                  </div>
-                                ) : (
-                                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                                    <input type="number" value={questAnswers[`${focusProc}_${q.id}`] || ""} onChange={e => setSmartAnswer(focusProc, q.id, e.target.value)}
-                                      min={q.range?.[0]} max={q.range?.[1]} placeholder="0" style={{ ...inputStyle, flex: 1, width: "auto" }} />
-                                    {q.unit && <span style={{ fontSize: 10, color: t.mut }}>{q.unit}</span>}
-                                  </div>
-                                )}
-                                {warnings[q.id] && <div style={{ fontSize: 10, color: GOLD, marginTop: 2 }}>{warnings[q.id]}</div>}
+                          {/* Inline questionnaire entry — process selector + panels */}
+                          {focusProc && (
+                            <div style={{ marginTop: 8 }}>
+                              <div style={{ display: "flex", gap: 4, marginBottom: 12, flexWrap: "wrap" }}>
+                                {selProcs.map(proc => (
+                                  <button key={proc.id} onClick={() => setFocusProc(proc.id)} style={{
+                                    fontSize: 10, padding: "4px 10px", borderRadius: 6,
+                                    background: focusProc === proc.id ? proc.l1Color + "20" : "transparent",
+                                    border: `1px solid ${focusProc === proc.id ? proc.l1Color + "44" : t.bdr}`,
+                                    color: focusProc === proc.id ? proc.l1Color : t.tx2,
+                                    cursor: "pointer", fontFamily: FONT, fontWeight: focusProc === proc.id ? 700 : 400,
+                                  }}>
+                                    {proc.l4} {proc.label.length > 25 ? proc.label.slice(0, 25) + "…" : proc.label}
+                                    {(Object.keys(baselineData).some(k => k.startsWith(proc.id)) || Object.keys(questAnswers).some(k => k.startsWith(proc.id + "_q-"))) && <span style={{ marginLeft: 4, color: GREEN }}>✓</span>}
+                                  </button>
+                                ))}
                               </div>
-                            );
-                            return (
-                              <>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                                  <div style={{ fontSize: 10, color: t.mut }}>{answeredCount} of {visibleQs.length} questions answered</div>
-                                  <div style={{ width: 80, height: 4, borderRadius: 2, background: t.bdr }}>
-                                    <div style={{ width: `${visibleQs.length ? (answeredCount / visibleQs.length) * 100 : 0}%`, height: "100%", borderRadius: 2, background: answeredCount === visibleQs.length ? GREEN : GOLD, transition: "width 0.3s ease" }} />
-                                  </div>
-                                </div>
-                                <div style={{ padding: 12, background: GREEN + "08", border: `1px solid ${GREEN}22`, borderLeft: `3px solid ${GREEN}`, borderRadius: 10, marginBottom: 12 }}>
-                                  <div style={{ fontSize: 11, color: GREEN, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 10 }}>Process Efficiency</div>
-                                  {effQs.map(renderQ)}
-                                </div>
-                                {leakQs.length > 0 && (
-                                  <div style={{ padding: 12, background: GOLD + "08", border: `1px solid ${GOLD}22`, borderLeft: `3px solid ${GOLD}`, borderRadius: 10, marginBottom: 12 }}>
-                                    <div style={{ fontSize: 11, color: GOLD, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 10 }}>Data-Driven Leakage</div>
-                                    {leakQs.map(renderQ)}
-                                  </div>
-                                )}
-                                {summary && (
-                                  <div style={{ padding: 10, background: BLUE + "08", border: `1px solid ${BLUE}22`, borderRadius: 8, marginBottom: 12 }}>
-                                    <div style={{ fontSize: 10, color: BLUE, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 4 }}>Auto-Summary</div>
-                                    <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.6 }}>{summary}</div>
-                                  </div>
-                                )}
-                              </>
-                            );
-                          })()}
+                              <div style={{ fontSize: 10, color: t.mut, marginBottom: 8 }}>{selProcs.filter(p => Object.keys(questAnswers).some(k => k.startsWith(p.id + "_q-")) || Object.keys(baselineData).some(k => k.startsWith(p.id))).length} of {selProcs.length} processes have baseline data</div>
 
-                          {/* MiningLinker */}
-                          {uploadedMining[focusProc] && baselineData[`${focusProc}_a_ftes`] && (
-                            <Suspense fallback={null}>
-                              <MiningLinker procId={focusProc} proc={PROC_MAP[focusProc]} miningData={uploadedMining[focusProc]} baselineData={baselineData} theme={t} />
-                            </Suspense>
+                              {PROC_MAP[focusProc] && (
+                                <div style={{ ...cardStyle, maxHeight: 500, overflowY: "auto" }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                                    <div>
+                                      <div style={{ fontSize: 10, fontFamily: "monospace", color: t.mut }}>{PROC_MAP[focusProc].l4}</div>
+                                      <div style={{ fontSize: 16, fontWeight: 600, color: t.tx }}>{PROC_MAP[focusProc].label}</div>
+                                    </div>
+                                    <button onClick={() => setFocusProc(null)} style={{ background: "none", border: "none", color: t.mut, cursor: "pointer", fontSize: 16 }}>×</button>
+                                  </div>
+
+                                  {/* Smart Questions */}
+                                  {(() => {
+                                    const visibleQs = getVisibleQuestions(focusProc);
+                                    const answeredCount = visibleQs.filter(q => {
+                                      const v = questAnswers[`${focusProc}_${q.id}`];
+                                      return v !== undefined && v !== "" && v !== null;
+                                    }).length;
+                                    const warnings = getValidationWarnings(focusProc);
+                                    const summary = getSmartSummary(focusProc);
+                                    const effQs = visibleQs.filter(q => q.category === "efficiency");
+                                    const leakQs = visibleQs.filter(q => q.category === "leakage");
+                                    const inputStyle = { width: "100%", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 10px", color: t.tx, fontFamily: FONT, fontSize: 12, boxSizing: "border-box" };
+                                    const renderQ = (q) => (
+                                      <div key={q.id} style={{ marginBottom: 10, transition: "all 0.3s ease" }}>
+                                        <div style={{ fontSize: 11, color: t.tx2, marginBottom: 3, display: "flex", alignItems: "center", gap: 6 }}>
+                                          {q.question}
+                                          {q.required && <span style={{ color: RED, fontSize: 9 }}>*</span>}
+                                          {!q.required && <span style={{ fontSize: 9, color: t.mut, fontStyle: "italic" }}>conditional</span>}
+                                        </div>
+                                        {q.type === "dropdown" ? (
+                                          <select value={questAnswers[`${focusProc}_${q.id}`] || ""} onChange={e => setSmartAnswer(focusProc, q.id, e.target.value)} style={inputStyle}>
+                                            <option value="">Select...</option>
+                                            {q.options.map(o => <option key={o} value={o}>{o}</option>)}
+                                          </select>
+                                        ) : q.type === "rating" ? (
+                                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                                            {[1, 2, 3, 4, 5].map(n => {
+                                              const sel = parseInt(questAnswers[`${focusProc}_${q.id}`]) === n;
+                                              return <button key={n} onClick={() => setSmartAnswer(focusProc, q.id, n)} style={{ width: 32, height: 32, borderRadius: "50%", border: `2px solid ${sel ? GOLD : t.bdr}`, background: sel ? GOLD + "25" : "transparent", color: sel ? GOLD : t.mut, fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: FONT }}>{n}</button>;
+                                            })}
+                                            {questAnswers[`${focusProc}_${q.id}`] && <span style={{ fontSize: 10, color: GOLD, marginLeft: 4 }}>{q.labels[parseInt(questAnswers[`${focusProc}_${q.id}`]) - 1]}</span>}
+                                          </div>
+                                        ) : q.type === "number_with_unit" ? (
+                                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                            <input type="number" value={questAnswers[`${focusProc}_${q.id}`] || ""} onChange={e => setSmartAnswer(focusProc, q.id, e.target.value)}
+                                              placeholder="0" style={{ ...inputStyle, flex: 1, width: "auto" }} />
+                                            <select value={questAnswers[`${focusProc}_${q.id}-unit`] || q.units[1]} onChange={e => setSmartUnit(focusProc, q.id, e.target.value)}
+                                              style={{ background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 6, padding: "6px 8px", color: t.tx, fontFamily: FONT, fontSize: 11 }}>
+                                              {q.units.map(u => <option key={u} value={u}>{u}</option>)}
+                                            </select>
+                                          </div>
+                                        ) : (
+                                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                            <input type="number" value={questAnswers[`${focusProc}_${q.id}`] || ""} onChange={e => setSmartAnswer(focusProc, q.id, e.target.value)}
+                                              min={q.range?.[0]} max={q.range?.[1]} placeholder="0" style={{ ...inputStyle, flex: 1, width: "auto" }} />
+                                            {q.unit && <span style={{ fontSize: 10, color: t.mut }}>{q.unit}</span>}
+                                          </div>
+                                        )}
+                                        {warnings[q.id] && <div style={{ fontSize: 10, color: GOLD, marginTop: 2 }}>{warnings[q.id]}</div>}
+                                      </div>
+                                    );
+                                    return (
+                                      <>
+                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                                          <div style={{ fontSize: 10, color: t.mut }}>{answeredCount} of {visibleQs.length} questions answered</div>
+                                          <div style={{ width: 80, height: 4, borderRadius: 2, background: t.bdr }}>
+                                            <div style={{ width: `${visibleQs.length ? (answeredCount / visibleQs.length) * 100 : 0}%`, height: "100%", borderRadius: 2, background: answeredCount === visibleQs.length ? GREEN : GOLD, transition: "width 0.3s ease" }} />
+                                          </div>
+                                        </div>
+                                        <div style={{ padding: 12, background: GREEN + "08", border: `1px solid ${GREEN}22`, borderLeft: `3px solid ${GREEN}`, borderRadius: 10, marginBottom: 12 }}>
+                                          <div style={{ fontSize: 11, color: GREEN, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 10 }}>Process Efficiency</div>
+                                          {effQs.map(renderQ)}
+                                        </div>
+                                        {leakQs.length > 0 && (
+                                          <div style={{ padding: 12, background: GOLD + "08", border: `1px solid ${GOLD}22`, borderLeft: `3px solid ${GOLD}`, borderRadius: 10, marginBottom: 12 }}>
+                                            <div style={{ fontSize: 11, color: GOLD, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 10 }}>Data-Driven Leakage</div>
+                                            {leakQs.map(renderQ)}
+                                          </div>
+                                        )}
+                                        {summary && (
+                                          <div style={{ padding: 10, background: BLUE + "08", border: `1px solid ${BLUE}22`, borderRadius: 8, marginBottom: 12 }}>
+                                            <div style={{ fontSize: 10, color: BLUE, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 4 }}>Auto-Summary</div>
+                                            <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.6 }}>{summary}</div>
+                                          </div>
+                                        )}
+                                      </>
+                                    );
+                                  })()}
+
+                                  {/* MiningLinker */}
+                                  {uploadedMining[focusProc] && baselineData[`${focusProc}_a_ftes`] && (
+                                    <Suspense fallback={null}>
+                                      <MiningLinker procId={focusProc} proc={PROC_MAP[focusProc]} miningData={uploadedMining[focusProc]} baselineData={baselineData} theme={t} />
+                                    </Suspense>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           )}
                         </div>
                       )}
+
+                      {/* Enter Manually Tab — Inline KPI baseline entry */}
+                      {step2Tab === "manual" && (
+                        <div>
+                          <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.6, marginBottom: 12 }}>Enter current KPI values directly for each process. These values drive the gap analysis and value calculation.</div>
+                          <div style={{ display: "grid", gap: 8 }}>
+                            {selProcs.map(proc => {
+                              const vals = procValues[proc.id] || {};
+                              const setVal = (key, val) => setProcValues(prev => ({ ...prev, [proc.id]: { ...(prev[proc.id] || {}), [key]: val } }));
+                              const filledCount = (proc.kpis || []).filter((_, ki) => vals[`kpi_current_${ki}`] != null).length;
+                              const totalKpis = (proc.kpis || []).length;
+                              return (
+                                <div key={proc.id} style={{ ...cardStyle, borderLeft: `3px solid ${proc.l1Color}` }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                                    <div>
+                                      <span style={{ fontSize: 10, fontFamily: "monospace", color: t.mut, marginRight: 6 }}>{proc.l4}</span>
+                                      <span style={{ fontSize: 13, fontWeight: 600, color: t.tx }}>{proc.label}</span>
+                                    </div>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                      <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, background: proc.l1Color + "15", color: proc.l1Color, fontWeight: 600 }}>{proc.e2e}</span>
+                                      {filledCount > 0 && <span style={{ fontSize: 10, color: GREEN, fontWeight: 600 }}>{filledCount}/{totalKpis}</span>}
+                                    </div>
+                                  </div>
+                                  <div style={{ display: "grid", gap: 4 }}>
+                                    {(proc.kpis || []).map((kpi, ki) => (
+                                      <div key={ki} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+                                        <span style={{ fontSize: 12, color: t.tx2, flex: 1 }}>{kpi.name}</span>
+                                        <span style={{ fontSize: 10, color: t.mut, minWidth: 50, textAlign: "right" }}>Bench: {kpi.benchmark ?? "—"}</span>
+                                        <input type="number" placeholder="Current" value={vals[`kpi_current_${ki}`] ?? ""} onChange={e => setVal(`kpi_current_${ki}`, e.target.value === "" ? null : parseFloat(e.target.value))}
+                                          style={{ width: 80, background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 4, padding: "3px 6px", color: t.tx, fontFamily: "monospace", fontSize: 12, textAlign: "right" }} />
+                                        <span style={{ fontSize: 10, color: t.mut, minWidth: 30 }}>{kpi.unit}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               );
             })()}
@@ -4398,7 +4467,8 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
             {/* P&L Impact Summary */}
             <div style={labelStyle}>P&L Impact Summary</div>
             {(() => {
-              const { revImpact, cogsImpact, sgaImpact, agentRevImpact, agentCogsImpact, agentSgaImpact } = valResult.pnl;
+              const pnl = valResult.pnl || {};
+              const { revImpact = 0, cogsImpact = 0, sgaImpact = 0, agentRevImpact = 0, agentCogsImpact = 0, agentSgaImpact = 0 } = pnl;
               return (
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginBottom: 24 }}>
                   <thead><tr>{["Line Item", "Baseline", "ERP Impact", "Agent Impact", "Combined", "Improved"].map((h, i) => (
@@ -4427,7 +4497,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
             })()}
 
             {/* Balance Sheet / Working Capital Impact */}
-            {valResult.balanceSheet.totalWorkingCapital > 0 && (
+            {(valResult.balanceSheet?.totalWorkingCapital || 0) > 0 && (
               <>
                 <div style={labelStyle}>Working Capital Impact</div>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginBottom: 24 }}>
@@ -4587,20 +4657,22 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
               <div style={labelStyle}>Balance Sheet Impact (Year 1)</div>
               {(() => {
                 const cf = effectiveFinancials;
-                const bsh = valResult.balanceSheet;
+                const bsh = valResult.balanceSheet || { receivablesImpact: 0, payablesImpact: 0, inventoryImpact: 0, totalWorkingCapital: 0 };
                 const isEst = !cf.anchored;
                 const estTag = isEst ? " (est.)" : "";
+                const cfRevenue = cf.revenue || 0;
+                const cfCogs = cf.cogs || 0;
 
                 // Current DSO/DIO/DPO from baseline or industry averages
-                const currentDSO = baseline.recv > 0 && cf.revenue > 0 ? Math.round(baseline.recv / cf.revenue * 365) : 45;
-                const currentDIO = baseline.inventory > 0 && cf.cogs > 0 ? Math.round(baseline.inventory / cf.cogs * 365) : 60;
-                const currentDPO = baseline.pay > 0 && cf.cogs > 0 ? Math.round(baseline.pay / cf.cogs * 365) : 35;
+                const currentDSO = (baseline.recv || 0) > 0 && cfRevenue > 0 ? Math.round((baseline.recv || 0) / cfRevenue * 365) : 45;
+                const currentDIO = (baseline.inventory || 0) > 0 && cfCogs > 0 ? Math.round((baseline.inventory || 0) / cfCogs * 365) : 60;
+                const currentDPO = (baseline.pay || 0) > 0 && cfCogs > 0 ? Math.round((baseline.pay || 0) / cfCogs * 365) : 35;
                 const currentCCC = currentDSO + currentDIO - currentDPO;
 
                 // Improvements from value calculation
-                const dsoImprove = cf.revenue > 0 ? Math.round(bsh.receivablesImpact / (cf.revenue / 365)) : 0;
-                const dioImprove = cf.cogs > 0 ? Math.round(bsh.inventoryImpact / (cf.cogs / 365)) : 0;
-                const dpoImprove = cf.cogs > 0 ? Math.round(bsh.payablesImpact / (cf.cogs / 365)) : 0;
+                const dsoImprove = cfRevenue > 0 ? Math.round(bsh.receivablesImpact / (cfRevenue / 365)) : 0;
+                const dioImprove = cfCogs > 0 ? Math.round(bsh.inventoryImpact / (cfCogs / 365)) : 0;
+                const dpoImprove = cfCogs > 0 ? Math.round(bsh.payablesImpact / (cfCogs / 365)) : 0;
 
                 // Post-ERP values (70% of improvement from ERP)
                 const erpFactor = 0.7;
@@ -4612,17 +4684,17 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                 const postAllDIO = currentDIO - dioImprove;
                 const postAllDPO = currentDPO + dpoImprove;
 
-                const currentAR = baseline.recv || Math.round(cf.revenue * currentDSO / 365);
-                const currentInv = baseline.inventory || Math.round(cf.cogs * currentDIO / 365);
-                const currentAP = baseline.pay || Math.round(cf.cogs * currentDPO / 365);
+                const currentAR = baseline.recv || Math.round(cfRevenue * currentDSO / 365);
+                const currentInv = baseline.inventory || Math.round(cfCogs * currentDIO / 365);
+                const currentAP = baseline.pay || Math.round(cfCogs * currentDPO / 365);
                 const currentWC = currentAR + currentInv - currentAP;
 
-                const postErpAR = Math.round(cf.revenue * postErpDSO / 365);
-                const postErpInv = Math.round(cf.cogs * postErpDIO / 365);
-                const postErpAP = Math.round(cf.cogs * postErpDPO / 365);
-                const postAllAR = Math.round(cf.revenue * postAllDSO / 365);
-                const postAllInv = Math.round(cf.cogs * postAllDIO / 365);
-                const postAllAP = Math.round(cf.cogs * postAllDPO / 365);
+                const postErpAR = Math.round(cfRevenue * postErpDSO / 365);
+                const postErpInv = Math.round(cfCogs * postErpDIO / 365);
+                const postErpAP = Math.round(cfCogs * postErpDPO / 365);
+                const postAllAR = Math.round(cfRevenue * postAllDSO / 365);
+                const postAllInv = Math.round(cfCogs * postAllDIO / 365);
+                const postAllAP = Math.round(cfCogs * postAllDPO / 365);
 
                 const bsRows = [
                   { l: "Accounts Receivable", cur: currentAR, erp: postErpAR, all: postAllAR, unit: "$M", better: "down" },
@@ -4678,10 +4750,10 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
               {/* SECTION B — Multi-Year Value Projection */}
               <div style={labelStyle}>Multi-Year Value Projection (3-Year)</div>
               {(() => {
-                const tv = valResult.total;
+                const tv = valResult.total || 0;
                 const agTot = valResult.agentTotal || 0;
-                const bsh = valResult.balanceSheet;
-                const ramp = multiYearRamp;
+                const bsh = valResult.balanceSheet || { totalWorkingCapital: 0 };
+                const ramp = multiYearRamp || { erp: [30, 70, 100], agent: [0, 40, 100], costSpread: [70, 20, 10] };
 
                 // Calculate per-year values
                 const y1ERP = tv * ramp.erp[0] / 100;
@@ -4706,13 +4778,15 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                 const cum2 = cum1 + y2Net;
                 const cum3 = cum2 + y3Net;
 
-                const y1WC = bsh.totalWorkingCapital * 0.5;
-                const y2WC = bsh.totalWorkingCapital * 0.8;
-                const y3WC = bsh.totalWorkingCapital;
+                const twc = bsh.totalWorkingCapital || 0;
+                const y1WC = twc * 0.5;
+                const y2WC = twc * 0.8;
+                const y3WC = twc;
 
-                const y1EBITDA = effectiveFinancials.ebitda > 0 ? ((y1ERP + y1Agent) / effectiveFinancials.ebitda * 100).toFixed(1) : "—";
-                const y2EBITDA = effectiveFinancials.ebitda > 0 ? ((y2ERP + y2Agent) / effectiveFinancials.ebitda * 100).toFixed(1) : "—";
-                const y3EBITDA = effectiveFinancials.ebitda > 0 ? ((y3ERP + y3Agent) / effectiveFinancials.ebitda * 100).toFixed(1) : "—";
+                const efEbitda = effectiveFinancials.ebitda || 0;
+                const y1EBITDA = efEbitda > 0 ? ((y1ERP + y1Agent) / efEbitda * 100).toFixed(1) : "—";
+                const y2EBITDA = efEbitda > 0 ? ((y2ERP + y2Agent) / efEbitda * 100).toFixed(1) : "—";
+                const y3EBITDA = efEbitda > 0 ? ((y3ERP + y3Agent) / efEbitda * 100).toFixed(1) : "—";
 
                 // Breakeven calculation
                 const monthlyNet = (y1Net + y2Net + y3Net) / 36;
