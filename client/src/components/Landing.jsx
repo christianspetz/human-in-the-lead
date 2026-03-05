@@ -8,15 +8,13 @@ export default function Landing({ onStart, onStartSimulator, onStartRoleReimagin
   return (
     <div className="page-wrapper" style={{ maxWidth: '860px' }}>
       <div className="landing">
-        <div className="animate-in">
-          <span className="landing-badge">AI Transformation Tools</span>
-        </div>
         <h1 className="animate-in animate-in-delay-1">Human-in-the-Lead</h1>
         <p className="subtitle animate-in animate-in-delay-2">Why Most AI Transformations Fail (And Will Yours?)</p>
         <p className="description animate-in animate-in-delay-3">
           There's a lot of excitement around AI right now, and rightly so. But the organizations that stall tend to overindex on the technology and underindex on everything else: leadership alignment, data readiness, change capacity, and getting people to actually adopt new ways of working.
         </p>
 
+        <div className="landing-section-label animate-in animate-in-delay-4">AI TRANSFORMATION TOOLS</div>
         <div className="landing-tools-grid animate-in animate-in-delay-4">
           {/* Diagnostic Card */}
           <div className="landing-tool-card" onClick={() => onStart(name, email)}>

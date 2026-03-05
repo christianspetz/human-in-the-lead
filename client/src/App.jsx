@@ -16,6 +16,7 @@ import ZeroHumanCompany from './components/ZeroHumanCompany';
 import Prism from './Prism';
 import PrismAuth from './PrismAuth';
 import PrismL4v2Gate from './PrismL4v2Gate';
+import PanasonicGate from './components/PanasonicGate';
 
 const SCREENS = {
   LANDING: 'landing',
@@ -35,6 +36,7 @@ const SCREENS = {
   PRISM: 'prism',
   PRISML4: 'prisml4',
   PRISML4V2: 'prisml4v2',
+  PANASONIC_GO: 'panasonic_go',
 };
 
 // Map URL paths to screens
@@ -48,6 +50,7 @@ const PATH_TO_SCREEN = {
   '/prism': SCREENS.PRISM,
   '/prisml4': SCREENS.PRISML4,
   '/prisml4v2': SCREENS.PRISML4V2,
+  '/panasonic-go': SCREENS.PANASONIC_GO,
 };
 
 // Map screens to URL paths
@@ -57,6 +60,7 @@ const SCREEN_TO_PATH = {
   [SCREENS.PRISM]: '/prism',
   [SCREENS.PRISML4]: '/prisml4',
   [SCREENS.PRISML4V2]: '/prisml4v2',
+  [SCREENS.PANASONIC_GO]: '/panasonic-go',
   [SCREENS.LANDING]: '/',
 };
 
@@ -242,7 +246,9 @@ export default function App() {
 
       {screen === SCREENS.PRISML4V2 && <PrismL4v2Gate />}
 
-      {screen !== SCREENS.ARCLINE && screen !== SCREENS.APOLLO && screen !== SCREENS.ZERO_HUMAN && screen !== SCREENS.PRISM && screen !== SCREENS.PRISML4 && screen !== SCREENS.PRISML4V2 && <footer className="app-footer">
+      {screen === SCREENS.PANASONIC_GO && <PanasonicGate />}
+
+      {screen !== SCREENS.ARCLINE && screen !== SCREENS.APOLLO && screen !== SCREENS.ZERO_HUMAN && screen !== SCREENS.PRISM && screen !== SCREENS.PRISML4 && screen !== SCREENS.PRISML4V2 && screen !== SCREENS.PANASONIC_GO && <footer className="app-footer">
         <p style={{ fontSize: '0.7rem', color: 'var(--slate)', marginBottom: '0.75rem', maxWidth: '500px', margin: '0 auto 0.75rem', lineHeight: '1.5' }}>
           This is a personal project built on my own time. All views are my own and do not represent the views or positions of my employer. Based on publicly available frameworks and best practices.
         </p>

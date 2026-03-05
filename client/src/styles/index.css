@@ -477,9 +477,12 @@ body { font-family: var(--font-body); background: var(--navy); color: var(--whit
   transform: translateY(-2px);
   box-shadow: 0 8px 30px rgba(249,115,22,0.3);
 }
+.landing-section-label { font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--teal); font-weight: 600; margin-bottom: 1.25rem; text-align: center; }
+.landing-section-divider { width: 100%; max-width: 200px; height: 1px; background: linear-gradient(90deg, transparent, rgba(6,182,212,0.3), transparent); margin: 2.5rem auto 2rem; }
+.landing-tools-grid-single { grid-template-columns: 1fr; max-width: 600px; margin: 0 auto; }
 .landing-tool-card-wide {
   grid-column: 1 / -1;
-  max-width: 480px;
+  max-width: 100%;
   justify-self: center;
 }
 
