@@ -688,6 +688,50 @@ const getQuartile = (current, benchmark, kpi) => {
 };
 
 /* ═══════════════════════════════════════════════════════
+   SAP MODULE NAME MAP — plain English labels
+   ═══════════════════════════════════════════════════════ */
+const SAP_MODULE_NAMES = {
+  "FI-AR": "Accounts Receivable", "FI-AP": "Accounts Payable", "FI-GL": "General Ledger",
+  "FI-AA": "Asset Accounting", "CO-PA": "Profitability Analysis", "CO-PC": "Product Cost Controlling",
+  "FSCM-CR": "Credit Management", "FSCM-BD": "Biller Direct", "FSCM-CM": "Cash Management",
+  "FSCM-TRM": "Treasury & Risk Management", "SD-OTC": "Order to Cash (Sales)", "SD-BIL": "Billing",
+  "MM-PUR": "Purchasing", "MM-IM": "Inventory Management", "MM-WM": "Warehouse Management",
+  "PS": "Project System", "HR-PY": "Payroll", "HR-TM": "Time Management",
+  "SD-SLS": "Sales & Distribution", "SD-BF": "Basic Functions (Pricing)", "SD-CAS": "Contract & Agreement",
+  "SD-SHP": "Shipping", "TRM": "Treasury", "FI-BL": "Bank Ledger", "FI-TX": "Tax",
+  "EWM": "Extended Warehouse Mgmt", "TM": "Transportation Mgmt",
+  "RAR": "Revenue Accounting", "FSCM": "Financial Supply Chain Mgmt",
+  "BW/4HANA": "Data Warehouse", "SAC": "Analytics Cloud", "BW4": "Data Warehouse",
+  "Signavio": "Process Intelligence", "BPC": "Business Planning", "ACR": "Advanced Compliance Reporting",
+  "ACDOCA": "Universal Journal", "Ariba": "Procurement Network", "CLM": "Contract Lifecycle Mgmt",
+  "SLC": "Supplier Lifecycle", "Group Reporting": "Group Reporting",
+  "S/4 Close Cockpit": "Close Management", "FICO": "Finance & Controlling",
+};
+
+const getSapModuleLabel = (code) => {
+  const c = (code || "").trim();
+  const parts = c.split(/\s*\/\s*/);
+  return parts.map(p => {
+    const pt = p.trim();
+    const n = SAP_MODULE_NAMES[pt];
+    return n ? `[${pt}] ${n}` : pt;
+  }).join(" / ");
+};
+
+const SapBadge = ({ module: mod }) => {
+  const codes = (mod || "").split(/\s*\/\s*/);
+  const primaryCode = codes[0].trim();
+  const primaryName = SAP_MODULE_NAMES[primaryCode] || null;
+  const fullTooltip = getSapModuleLabel(mod);
+  return (
+    <span title={fullTooltip} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+      <code style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: "#7BA7CC15", color: "#7BA7CC", fontWeight: 600, fontFamily: "monospace" }}>{mod}</code>
+      {primaryName && <span style={{ fontSize: 9, color: "#7BA7CC", opacity: 0.8 }}>{primaryName}</span>}
+    </span>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════
    DROPDOWN OPTIONS
    ═══════════════════════════════════════════════════════ */
 const VALUE_TYPES = ["Tangible", "Intangible"];
@@ -848,6 +892,28 @@ const CalcExplainerDrawer = ({ data, onClose, mode }) => {
 };
 
 /* ═══════════════════════════════════════════════════════
+   MINING EXAMPLE FORMAT — collapsible data format sample
+   ═══════════════════════════════════════════════════════ */
+const MiningExampleFormat = ({ theme: th }) => {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <div style={{ marginTop: 8 }}>
+      <button onClick={() => setOpen(!open)} style={{ background: "none", border: "none", color: th.tx2, cursor: "pointer", fontSize: 11, fontFamily: "'DM Sans',sans-serif", fontWeight: 600, padding: 0 }}>
+        {open ? "Hide example data format ▴" : "See example data format ▾"}
+      </button>
+      {open && (
+        <div style={{ marginTop: 6, padding: "10px 12px", background: th.bg, border: `1px solid ${th.bdr}`, borderRadius: 8 }}>
+          <div style={{ fontSize: 10, color: th.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Sample Signavio / Celonis export format</div>
+          <pre style={{ fontSize: 11, fontFamily: "monospace", color: th.tx2, lineHeight: 1.7, margin: 0, overflowX: "auto", whiteSpace: "pre" }}>{`Process ID | Cycle Time (days) | Case Count | Automation % | Rework %
+o2c-001    | 4.2               | 1,847      | 23%          | 8%
+o2c-002    | 2.1               | 3,204      | 67%          | 3%`}</pre>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════
    SMART QUESTIONS ENGINE (Step 2)
    15 questions max: 5 universal + 10 conditional
    ═══════════════════════════════════════════════════════ */
@@ -958,12 +1024,25 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
   // Value Realization Plan (Step 6)
   const [valueRealization, setValueRealization] = useState(initialData?.valueRealization || {});
   const [vrCollapsed, setVrCollapsed] = useState({ people: true, processes: true, data: true, technology: true, governance: true, operatingModel: true });
+  const [vrAutoPopulated, setVrAutoPopulated] = useState(initialData?.vrAutoPopulated || false);
+  const [vrLoading, setVrLoading] = useState({});
 
   // UX progressive disclosure states
   const [implSpecCollapsed, setImplSpecCollapsed] = useState({});
   const [roiTimelineCollapsed, setRoiTimelineCollapsed] = useState({});
   const [benchFiltersOpen, setBenchFiltersOpen] = useState(false);
   const [moreOptionsOpen, setMoreOptionsOpen] = useState({});
+
+  // Toast notifications (D2)
+  const [toasts, setToasts] = useState([]);
+  const showToast = useCallback((message) => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
+  }, []);
+
+  // Contextual loading messages (D1)
+  const [catalystLoadingMsg, setCatalystLoadingMsg] = useState({});
 
   // Two-track baseline data (Step 2)
   const [baselineData, setBaselineData] = useState(initialData?.baselineData || {});
@@ -1213,7 +1292,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ data, companyName: baseline.company }),
+        body: JSON.stringify({ data, companyName: assessmentProfile.companyName || baseline.company }),
       });
       setLastSaved(new Date());
     } catch (err) { console.error("Auto-save failed:", err); }
@@ -1422,6 +1501,8 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
   // Catalyst API call — tries server proxy first, falls back to browser-side key
   const callCatalyst = async (procId, prompt, resultSetter, loadingSetter) => {
     loadingSetter(prev => ({ ...prev, [procId]: true }));
+    const procLabel = selProcs.find(p => p.id === procId)?.label || procId;
+    setCatalystLoadingMsg(prev => ({ ...prev, [procId]: `Analyzing ${procLabel} benchmark data...` }));
     try {
       // Try server proxy first (API key stays server-side)
       const proxyRes = await fetch("/api/catalyst", {
@@ -1435,6 +1516,8 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
         setCatalystServer(true);
         resultSetter(prev => ({ ...prev, [procId]: proxyData.result }));
         loadingSetter(prev => ({ ...prev, [procId]: false }));
+        setCatalystLoadingMsg(prev => { const n = { ...prev }; delete n[procId]; return n; });
+        showToast(`Benchmark analysis complete for ${procLabel}`);
         return;
       }
 
@@ -1448,7 +1531,8 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
     }
 
     // Fallback: direct browser call with user-provided API key
-    if (!apiKey) { setShowApiKeyInput(true); loadingSetter(prev => ({ ...prev, [procId]: false })); return; }
+    if (!apiKey) { setShowApiKeyInput(true); loadingSetter(prev => ({ ...prev, [procId]: false })); setCatalystLoadingMsg(prev => { const n = { ...prev }; delete n[procId]; return n; }); return; }
+    setCatalystLoadingMsg(prev => ({ ...prev, [procId]: `Generating implementation specification for ${procLabel}...` }));
     try {
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
@@ -1471,11 +1555,126 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
       const data = await response.json();
       const text = data.content?.map(i => i.text || "").join("\n") || "No response";
       resultSetter(prev => ({ ...prev, [procId]: text }));
+      showToast(`Benchmark analysis complete for ${procLabel}`);
     } catch (err) {
       resultSetter(prev => ({ ...prev, [procId]: `Catalyst error: ${err.message}` }));
     }
     loadingSetter(prev => ({ ...prev, [procId]: false }));
+    setCatalystLoadingMsg(prev => { const n = { ...prev }; delete n[procId]; return n; });
   };
+
+  // ═══ VRP Auto-Populate via Catalyst ═══
+  const VRP_DIMS = ["people", "processes", "data", "technology", "governance", "operatingModel"];
+  const VRP_DIM_LABELS = { people: "People", processes: "Processes", data: "Data", technology: "Technology", governance: "Governance", operatingModel: "Operating Model" };
+
+  const autoPopulateVRP = useCallback(async () => {
+    if (vrAutoPopulated) return;
+    setVrAutoPopulated(true);
+
+    const context = `Assessment context:
+- Processes assessed: ${selProcs.map(p => p.label).join(", ")}
+- Total ERP value: $${valResult.total?.toFixed(1) || "0"}M
+- Total Agent uplift: $${valResult.agentTotal?.toFixed(1) || "0"}M
+- Top KPI improvements: ${valResult.impacts?.slice(0, 5).map(i => i.label).join(", ") || "None"}
+- Agent types identified: ${selProcs.filter(p => AGENT_SPECS[p.id]).map(p => AGENT_SPECS[p.id].agentType + " (" + p.label + ")").slice(0, 5).join(", ") || "None"}
+- Company: ${companyName}, Industry: ${assessmentProfile.industry || baseline.industry}, Revenue band: ${assessmentProfile.revenueBand || baseline.revenueBand}`;
+
+    const callForDim = async (dimKey) => {
+      const dimLabel = VRP_DIM_LABELS[dimKey];
+      setVrLoading(prev => ({ ...prev, [dimKey]: true }));
+      const sysPrompt = `You are a transformation impact analyst. Based on the following SAP S/4HANA Phase 0 assessment data, generate concise, specific impacts for the ${dimLabel} dimension. Be concrete — name specific roles, systems, processes. Return as JSON: { "keyPoints": ["string"], "actions": ["string"], "timeline": "string", "complexity": "Low"|"Medium"|"High" }`;
+      const userPrompt = `${context}\n\nGenerate impacts for: ${dimLabel}`;
+      const fullPrompt = `System: ${sysPrompt}\n\nUser: ${userPrompt}`;
+
+      try {
+        let result = null;
+        // Try server proxy first
+        try {
+          const proxyRes = await fetch("/api/catalyst", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: fullPrompt }),
+          });
+          const proxyData = await proxyRes.json();
+          if (proxyRes.ok && proxyData.result) {
+            result = proxyData.result;
+          }
+        } catch (_) {}
+
+        // Fallback: direct browser call
+        if (!result && apiKey) {
+          const response = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": apiKey,
+              "anthropic-version": "2023-06-01",
+              "anthropic-dangerous-direct-browser-access": "true",
+            },
+            body: JSON.stringify({
+              model: "claude-sonnet-4-20250514",
+              max_tokens: 1000,
+              messages: [{ role: "user", content: fullPrompt }],
+            })
+          });
+          if (response.ok) {
+            const data = await response.json();
+            result = data.content?.map(i => i.text || "").join("\n") || null;
+          }
+        }
+
+        if (result) {
+          // Try to parse JSON from result
+          try {
+            const jsonMatch = result.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const parsed = JSON.parse(jsonMatch[0]);
+              const dimData = {};
+              // Map parsed data to VRP fields based on dimension
+              if (dimKey === "people") {
+                if (parsed.keyPoints) dimData.roleChanges = parsed.keyPoints.join("\n");
+                if (parsed.actions) dimData.skillsRequired = parsed.actions.slice(0, 5);
+              } else if (dimKey === "processes") {
+                if (parsed.keyPoints) dimData.processesRedesigned = parsed.keyPoints;
+                if (parsed.actions) dimData.automationCandidates = parsed.actions;
+              } else if (dimKey === "data") {
+                if (parsed.keyPoints) dimData.dataGaps = parsed.keyPoints.join("\n");
+                if (parsed.actions) dimData.governanceNeeds = parsed.actions.join("\n");
+              } else if (dimKey === "technology") {
+                if (parsed.keyPoints) dimData.integrationNeeds = parsed.keyPoints.join("\n");
+                if (parsed.actions) dimData.itInfrastructure = parsed.actions.join("\n");
+              } else if (dimKey === "governance") {
+                if (parsed.keyPoints) dimData.decisionRights = parsed.keyPoints.join("\n");
+                if (parsed.actions) dimData.ownershipModel = parsed.actions.join("\n");
+              } else if (dimKey === "operatingModel") {
+                if (parsed.keyPoints) dimData.structuralChanges = parsed.keyPoints.join("\n");
+                if (parsed.actions) dimData.reportingChanges = parsed.actions.join("\n");
+              }
+              setValueRealization(prev => ({ ...prev, [dimKey]: { ...(prev[dimKey] || {}), ...dimData } }));
+            }
+          } catch (_) {
+            // If JSON parse fails, store as text in first field
+            const fieldMap = { people: "roleChanges", processes: "processesRedesigned", data: "dataGaps", technology: "integrationNeeds", governance: "decisionRights", operatingModel: "structuralChanges" };
+            const field = fieldMap[dimKey];
+            if (field) setValueRealization(prev => ({ ...prev, [dimKey]: { ...(prev[dimKey] || {}), [field]: result } }));
+          }
+        }
+      } catch (err) {
+        console.error(`VRP auto-populate error for ${dimKey}:`, err);
+      }
+      setVrLoading(prev => ({ ...prev, [dimKey]: false }));
+    };
+
+    // Fire all 6 in parallel
+    await Promise.allSettled(VRP_DIMS.map(callForDim));
+  }, [vrAutoPopulated, selProcs, valResult, companyName, assessmentProfile, baseline, apiKey]);
+
+  // Auto-populate VRP on first open of Step 6
+  useEffect(() => {
+    if (step === 6 && !vrAutoPopulated && selProcs.length > 0) {
+      autoPopulateVRP();
+    }
+  }, [step, vrAutoPopulated, selProcs.length]);
 
   // ═══ Questionnaire Export — Professional HTML Document ═══
   const generateQuestionnaireDoc = () => {
@@ -1515,7 +1714,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
       const procsHtml = procs.map(proc => {
         const bp = getBlueprintForL2(proc.l2id);
         const jobs = proc.jobs || [];
-        const saps = (proc.sap || []).map(s => s.module).join(", ");
+        const saps = (proc.sap || []).map(s => getSapModuleLabel(s.module)).join(", ");
         const kpiRows = (proc.kpis || []).map((kpi, ki) => `
           <tr style="background:${ki % 2 === 0 ? '#fff' : '#FAFAF8'}">
             <td style="padding:8px 12px;border:1px solid #E0DDD6;font-size:12px">${kpi.name}</td>
@@ -1633,10 +1832,14 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'DM Sans', sans-serif; color: #333; background: #fff; line-height: 1.5; }
   @media print {
-    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .no-print { display: none !important; }
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: #fff !important; color: #000 !important; }
+    .no-print, nav, button, [role="navigation"] { display: none !important; }
     .page-break { page-break-before: always; }
     table { page-break-inside: avoid; }
+    div[style*="page-break-inside:avoid"] { page-break-inside: avoid; }
+    div[style*="page-break-before"] { page-break-before: always; }
+    @page { margin: 1.5cm; size: A4; }
+    body::after { content: "${baseline.company || "Company"} | " attr(data-date) " | Confidential"; position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 9px; color: #999; padding: 8px; border-top: 1px solid #ddd; }
   }
   @page { margin: 1.5cm; size: A4; }
   table { border-collapse: collapse; width: 100%; }
@@ -1886,7 +2089,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
         </tr>`;
       }).join("");
       const sapHtml = (proc.sap || []).map(s =>
-        `<div style="margin:4px 0;padding:6px 8px;background:#f0f4ff;border-radius:4px;font-size:12px"><strong style="color:#7BA7CC">${s.module}</strong> — ${s.desc}${s.scenario ? `<br/><em>${s.scenario}</em>` : ""}</div>`
+        `<div style="margin:4px 0;padding:6px 8px;background:#f0f4ff;border-radius:4px;font-size:12px"><code style="background:#7BA7CC15;padding:1px 5px;border-radius:3px;color:#7BA7CC;font-weight:600">${s.module}</code> <span style="color:#7BA7CC;opacity:.8;font-size:11px">${SAP_MODULE_NAMES[s.module.split(/\s*\/\s*/)[0].trim()] || ""}</span> — ${s.desc}${s.scenario ? `<br/><em>${s.scenario}</em>` : ""}</div>`
       ).join("");
       const agentHtml = agentResults[proc.id] ? `<div style="margin:8px 0;padding:10px;background:#fdf8ef;border:1px solid #D4A85322;border-radius:8px;font-size:12px;white-space:pre-wrap"><strong style="color:#D4A853">AI Agent Scenario</strong><br/>${agentResults[proc.id]}</div>` : "";
 
@@ -2177,6 +2380,97 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
   // ═══════════════════════════════════════════════════
   // V2: CHOOSE PAGE — Dual Entry Point
   // ═══════════════════════════════════════════════════
+  // Sync assessmentProfile → baseline
+  const companyName = assessmentProfile.companyName || baseline.company || "Demo Company";
+
+  // ═══════════════════════════════════════════════════
+  // ASSESSMENT SETUP PAGE
+  // ═══════════════════════════════════════════════════
+  const INDUSTRIES = ["Manufacturing", "Retail", "Financial Services", "Healthcare", "Technology", "Energy & Utilities", "Telecommunications", "Consumer Goods", "Pharmaceuticals", "Automotive", "Aerospace & Defense", "Mining & Metals", "Media & Entertainment", "Transportation & Logistics", "Professional Services"];
+  const REVENUE_BANDS = ["<$500M", "$500M-$1B", "$1-5B", "$5-10B", "$10-25B", "$25B+"];
+  const FISCAL_YEARS = [String(new Date().getFullYear() - 1), String(new Date().getFullYear()), String(new Date().getFullYear() + 1)];
+  const CURRENCIES = ["USD", "EUR", "GBP", "CHF", "JPY", "AUD", "CAD", "SGD", "HKD", "SEK"];
+  const PURPOSES = ["Phase 0 Business Case", "Workshop Demo", "Internal Review"];
+
+  if (page === "setup") return (
+    <div style={{ minHeight: "100vh", background: t.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT, padding: 20 }}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet" />
+      <div style={{ maxWidth: 520, width: "100%" }}>
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <div style={{ fontSize: 12, color: t.mut, letterSpacing: "3px", textTransform: "uppercase", marginBottom: 16 }}>humaninthelead.ai</div>
+          <div style={{ fontSize: 42, fontFamily: SERIF, color: t.tx, fontWeight: 400, letterSpacing: "-1px", marginBottom: 4 }}>Assessment Setup</div>
+          <div style={{ fontSize: 14, color: t.tx2, lineHeight: 1.6 }}>Set up the assessment context. Takes about 60 seconds.</div>
+        </div>
+        <div style={{ ...cardStyle, padding: 28 }}>
+          <div style={{ display: "grid", gap: 16 }}>
+            <div>
+              <div style={{ fontSize: 11, color: t.tx2, fontWeight: 600, marginBottom: 4 }}>Company Name *</div>
+              <input value={assessmentProfile.companyName} onChange={e => setAssessmentProfile(prev => ({ ...prev, companyName: e.target.value }))}
+                placeholder="Enter company name" style={{ width: "100%", padding: "10px 12px", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 8, color: t.tx, fontFamily: FONT, fontSize: 14, outline: "none" }} />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 11, color: t.tx2, fontWeight: 600, marginBottom: 4 }}>Industry *</div>
+                <select value={assessmentProfile.industry} onChange={e => setAssessmentProfile(prev => ({ ...prev, industry: e.target.value }))}
+                  style={{ width: "100%", padding: "10px 12px", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 8, color: assessmentProfile.industry ? t.tx : t.mut, fontFamily: FONT, fontSize: 13 }}>
+                  <option value="">Select industry</option>
+                  {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: t.tx2, fontWeight: 600, marginBottom: 4 }}>Revenue Band *</div>
+                <select value={assessmentProfile.revenueBand} onChange={e => setAssessmentProfile(prev => ({ ...prev, revenueBand: e.target.value }))}
+                  style={{ width: "100%", padding: "10px 12px", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 8, color: assessmentProfile.revenueBand ? t.tx : t.mut, fontFamily: FONT, fontSize: 13 }}>
+                  <option value="">Select band</option>
+                  {REVENUE_BANDS.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 11, color: t.tx2, fontWeight: 600, marginBottom: 4 }}>Fiscal Year *</div>
+                <select value={assessmentProfile.fiscalYear} onChange={e => setAssessmentProfile(prev => ({ ...prev, fiscalYear: e.target.value }))}
+                  style={{ width: "100%", padding: "10px 12px", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 8, color: t.tx, fontFamily: FONT, fontSize: 13 }}>
+                  {FISCAL_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: t.tx2, fontWeight: 600, marginBottom: 4 }}>Currency</div>
+                <select value={assessmentProfile.currency} onChange={e => setAssessmentProfile(prev => ({ ...prev, currency: e.target.value }))}
+                  style={{ width: "100%", padding: "10px 12px", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 8, color: t.tx, fontFamily: FONT, fontSize: 13 }}>
+                  {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: t.tx2, fontWeight: 600, marginBottom: 4 }}>Purpose</div>
+                <select value={assessmentProfile.assessmentPurpose} onChange={e => setAssessmentProfile(prev => ({ ...prev, assessmentPurpose: e.target.value }))}
+                  style={{ width: "100%", padding: "10px 12px", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 8, color: t.tx, fontFamily: FONT, fontSize: 13 }}>
+                  {PURPOSES.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              if (!assessmentProfile.companyName.trim() || !assessmentProfile.industry || !assessmentProfile.revenueBand) return;
+              // Sync to baseline
+              setBaseline(prev => ({ ...prev, company: assessmentProfile.companyName.trim(), industry: assessmentProfile.industry, revenueBand: assessmentProfile.revenueBand }));
+              setPage("choose");
+            }}
+            disabled={!assessmentProfile.companyName.trim() || !assessmentProfile.industry || !assessmentProfile.revenueBand}
+            style={{ ...btnPrimary, width: "100%", marginTop: 20, padding: "14px 24px", fontSize: 15, opacity: (!assessmentProfile.companyName.trim() || !assessmentProfile.industry || !assessmentProfile.revenueBand) ? 0.4 : 1 }}>
+            Continue
+          </button>
+        </div>
+        <div style={{ textAlign: "center", marginTop: 16 }}>
+          <button onClick={() => setMode(mode === "dark" ? "light" : "dark")} style={{ background: "none", border: "none", color: t.mut, cursor: "pointer", fontSize: 12, fontFamily: FONT }}>
+            {mode === "dark" ? "☀ Light" : "◐ Dark"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   if (page === "choose") return (
     <div style={{ minHeight: "100vh", background: t.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT, padding: 20 }}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -2185,58 +2479,47 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
         <div style={{ fontSize: 52, fontFamily: SERIF, color: t.tx, fontWeight: 400, letterSpacing: "-1px", marginBottom: 4 }}>PrismL4</div>
         <div style={{ fontSize: 18, color: GOLD, fontWeight: 500, marginBottom: 8 }}>Bottom-Up Value Identification Engine</div>
         <div style={{ fontSize: 14, color: t.tx2, lineHeight: 1.6, marginBottom: 32, maxWidth: 480, margin: "0 auto 32px" }}>
-          Choose how you want to enter the assessment. Both paths lead to the same 6-step workflow.
+          Choose how you want to enter the assessment. Both paths lead to the same 7-step workflow.
         </div>
+        <div style={{ fontSize: 11, color: t.mut, marginBottom: 16 }}>{ALL_PROCS.length} L4 processes across Order to Cash, Record to Report, Procure to Pay</div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, maxWidth: 600, margin: "0 auto 32px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12, maxWidth: 600, margin: "0 auto 32px" }}>
           {/* Start E2E Card */}
           <div
             onClick={() => { setEntryMode("e2e"); setSelectedFunction("finance"); setPage("work"); setStep(1); setViewMode("consultant"); }}
             style={{
-              ...cardStyle, padding: "32px 24px", cursor: "pointer", textAlign: "center",
+              ...cardStyle, padding: "16px 24px", cursor: "pointer",
               border: `1px solid ${GOLD}44`, transition: "all 0.2s",
+              display: "flex", alignItems: "center", gap: 16,
             }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = GOLD; e.currentTarget.style.background = GOLD + "08"; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = GOLD + "44"; e.currentTarget.style.background = t.card; }}
           >
-            <div style={{ fontSize: 36, marginBottom: 12 }}>⚡</div>
-            <div style={{ fontSize: 20, fontFamily: SERIF, color: GOLD, fontWeight: 600, marginBottom: 8 }}>Start E2E</div>
-            <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.6, marginBottom: 16 }}>
-              Full APQC process map with all functions visible. Browse the complete hierarchy and select processes across all E2E streams.
+            <div style={{ fontSize: 28, flexShrink: 0 }}>⚡</div>
+            <div style={{ flex: 1, textAlign: "left" }}>
+              <div style={{ fontSize: 16, fontFamily: SERIF, color: GOLD, fontWeight: 600 }}>Start E2E</div>
+              <div style={{ fontSize: 12, color: t.tx2 }}>Full APQC process map — browse and select across all E2E streams</div>
             </div>
-            <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap" }}>
-              {APQC.map(l1 => (
-                <span key={l1.l1id} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: l1.color + "15", color: l1.color, fontWeight: 600 }}>
-                  {l1.icon} {l1.e2e}
-                </span>
-              ))}
-            </div>
-            <div style={{ fontSize: 11, color: GREEN, fontWeight: 600, marginTop: 12 }}>{ALL_PROCS.length} processes available</div>
+            <div style={{ fontSize: 18, color: GOLD, flexShrink: 0 }}>→</div>
           </div>
 
           {/* Start by Function Card */}
           <div
             onClick={() => { setEntryMode("function"); setPage("entry"); }}
             style={{
-              ...cardStyle, padding: "32px 24px", cursor: "pointer", textAlign: "center",
+              ...cardStyle, padding: "16px 24px", cursor: "pointer",
               border: `1px solid ${PURPLE}44`, transition: "all 0.2s",
+              display: "flex", alignItems: "center", gap: 16,
             }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = PURPLE; e.currentTarget.style.background = PURPLE + "08"; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = PURPLE + "44"; e.currentTarget.style.background = t.card; }}
           >
-            <div style={{ fontSize: 36, marginBottom: 12 }}>◆</div>
-            <div style={{ fontSize: 20, fontFamily: SERIF, color: PURPLE, fontWeight: 600, marginBottom: 8 }}>Start by Function</div>
-            <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.6, marginBottom: 16 }}>
-              Select a business function first (Finance, Supply Chain, HR, etc.), then drill into its processes.
+            <div style={{ fontSize: 28, flexShrink: 0 }}>◆</div>
+            <div style={{ flex: 1, textAlign: "left" }}>
+              <div style={{ fontSize: 16, fontFamily: SERIF, color: PURPLE, fontWeight: 600 }}>Start by Function</div>
+              <div style={{ fontSize: 12, color: t.tx2 }}>Select a business function first, then drill into its processes</div>
             </div>
-            <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap" }}>
-              {FUNCTIONS.filter(f => f.active).map(fn => (
-                <span key={fn.id} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: fn.color + "15", color: fn.color, fontWeight: 600 }}>
-                  {fn.icon} {fn.name}
-                </span>
-              ))}
-            </div>
-            <div style={{ fontSize: 11, color: t.mut, fontWeight: 500, marginTop: 12 }}>Guided function selection</div>
+            <div style={{ fontSize: 18, color: PURPLE, flexShrink: 0 }}>→</div>
           </div>
         </div>
 
@@ -2540,25 +2823,37 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
             <div><span style={{ fontSize: 10, color: GREEN, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginRight: 4 }}>WC Freed</span><span style={{ fontSize: 18, fontFamily: SERIF, color: GREEN }}>{fm(valResult.balanceSheet.totalWorkingCapital)}</span></div>
           </>}
         </div>
-        <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
-          {steps.map(s => (
-            <button key={s.n} onClick={() => setStep(s.n)} style={{
-              background: step === s.n ? GOLD : "none",
-              color: step === s.n ? "#111" : t.tx2,
-              border: step === s.n ? "none" : `1px solid ${t.bdr}`,
-              borderRadius: 6, padding: "4px 12px", cursor: "pointer", fontSize: 11, fontWeight: step === s.n ? 700 : 500, fontFamily: FONT,
-              position: "relative",
-            }}>
-              {s.n}. {s.l}
-              {stepStatus[s.n] && step !== s.n && (
-                <span style={{
-                  position: "absolute", top: -2, right: -2,
-                  width: 6, height: 6, borderRadius: "50%",
-                  background: GREEN, display: "block",
-                }} />
-              )}
-            </button>
-          ))}
+        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+          {assessmentProfile.companyName && (
+            <span style={{ fontSize: 10, padding: "3px 10px", borderRadius: 6, background: GOLD + "12", border: `1px solid ${GOLD}25`, color: GOLD, fontWeight: 600, whiteSpace: "nowrap" }}>
+              {assessmentProfile.companyName} · {assessmentProfile.industry || "—"} · {assessmentProfile.revenueBand || "—"} · FY{assessmentProfile.fiscalYear}
+            </span>
+          )}
+          <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
+            {steps.map(s => {
+              const isComplete = stepStatus[s.n];
+              const isCurrent = step === s.n;
+              const isLocked = (s.n === 3 && !(stepStatus[1] && stepStatus[2])) ||
+                (s.n === 4 && !(stepStatus[1] && stepStatus[2])) ||
+                (s.n === 5 && !(stepStatus[3] && stepStatus[4])) ||
+                (s.n === 6 && !(stepStatus[3] && stepStatus[4])) ||
+                (s.n === 7 && !(stepStatus[5] && stepStatus[6]));
+              return (
+                <button key={s.n} onClick={() => !isLocked && setStep(s.n)} style={{
+                  background: isCurrent ? GOLD : isComplete ? GREEN + "15" : "none",
+                  color: isCurrent ? "#111" : isLocked ? t.sub : isComplete ? GREEN : t.tx2,
+                  border: isCurrent ? "none" : isComplete ? `1px solid ${GREEN}33` : `1px solid ${t.bdr}`,
+                  borderRadius: 6, padding: "4px 12px", cursor: isLocked ? "not-allowed" : "pointer",
+                  fontSize: 11, fontWeight: isCurrent ? 700 : 500, fontFamily: FONT,
+                  opacity: isLocked ? 0.5 : 1,
+                }}>
+                  {isComplete && !isCurrent && <span style={{ color: GOLD, marginRight: 2 }}>✓</span>}
+                  {isLocked && <span style={{ marginRight: 2, fontSize: 9 }}>🔒</span>}
+                  {s.n}. {s.l}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -2755,7 +3050,6 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                     <div style={{ fontSize: 13, fontWeight: 600, color: sel ? l1.color : t.tx }}>{g.l2}</div>
                                     <div style={{ fontSize: 11, color: t.mut }}>{l3Count} L3 subs · {l4Count} processes</div>
                                   </div>
-                                  {bp && <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, background: bp.color + "20", color: bp.color }}>{bp.name}</span>}
                                 </div>
                               </div>
                             );
@@ -2864,9 +3158,8 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                 </div>
                                 <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginLeft: 28 }}>
                                   {proc.kpis?.length > 0 && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: GREEN + "15", color: GREEN, fontWeight: 600 }}>{proc.kpis.length} KPIs</span>}
-                                  {proc.sap?.[0] && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: BLUE + "15", color: BLUE, fontWeight: 600 }}>{proc.sap[0].module}</span>}
+                                  {proc.sap?.[0] && <SapBadge module={proc.sap[0].module} />}
                                   {proc.valLevers?.[0] && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: ORANGE + "15", color: ORANGE }}>{proc.valLevers[0].vclass}</span>}
-                                  {bp && <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, background: bp.color + "20", color: bp.color }}>{bp.name}</span>}
                                 </div>
                                 {proc.jobs?.length > 0 && (
                                   <div style={{ marginLeft: 28, marginTop: 4, fontSize: 10, color: t.mut }}>
@@ -2914,7 +3207,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                     <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: GREEN + "15", color: GREEN, fontWeight: 600 }}>{p.kpis?.length || 0}</span>
                                   </td>
                                   <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}30` }}>
-                                    {p.sap?.[0] && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: BLUE + "15", color: BLUE, fontWeight: 600 }}>{p.sap[0].module}</span>}
+                                    {p.sap?.[0] && <SapBadge module={p.sap[0].module} />}
                                   </td>
                                 </tr>
                               ))}
@@ -3147,7 +3440,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                           <span style={{ fontSize: 10, fontFamily: "monospace", color: t.mut, minWidth: 60 }}>{proc.l4}</span>
                                           <span style={{ fontSize: 12, color: sel ? t.tx : t.tx2, flex: 1, fontWeight: sel ? 500 : 400 }}>{proc.label}</span>
                                           <span style={{ fontSize: 10, color: t.mut }}>{proc.kpis?.length || 0} KPIs</span>
-                                          {proc.sap?.[0] && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: BLUE + "15", color: BLUE, fontWeight: 600 }}>{proc.sap[0].module}</span>}
+                                          {proc.sap?.[0] && <SapBadge module={proc.sap[0].module} />}
                                         </div>
                                       );
                                     })}
@@ -3559,6 +3852,13 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                         <span onClick={() => setStep(3)} style={{ fontSize: 11, color: t.mut, fontStyle: "italic", cursor: "pointer", marginLeft: 4 }}>Skip for now →</span>
                       </div>
                       {hasMining && <span style={{ fontSize: 11, color: GREEN, fontWeight: 600 }}>✓ Mining data for {miningCount} processes</span>}
+
+                      {/* Example data format — collapsible */}
+                      <MiningExampleFormat theme={t} />
+
+                      <div style={{ marginTop: 8, padding: "8px 12px", background: GOLD + "08", border: `1px solid ${GOLD}22`, borderRadius: 8, fontSize: 11, color: t.tx2, lineHeight: 1.6 }}>
+                        Don't have process mining data? Skip this step — questionnaire responses will be used instead. Process mining data upgrades your confidence score from <span style={{ color: GOLD, fontWeight: 600 }}>Medium</span> → <span style={{ color: GREEN, fontWeight: 600 }}>High</span>.
+                      </div>
                     </div>
                   </div>
 
@@ -3905,9 +4205,9 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
               return Object.keys(modules).length > 0 ? (
                 <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
                   {Object.entries(modules).map(([mod, procs]) => (
-                    <div key={mod} style={{ padding: "4px 10px", background: BLUE + "10", border: `1px solid ${BLUE}22`, borderRadius: 6 }}>
-                      <span style={{ fontSize: 11, color: BLUE, fontWeight: 700 }}>{mod}</span>
-                      <span style={{ fontSize: 9, color: t.mut, marginLeft: 4 }}>{procs.length}</span>
+                    <div key={mod} title={procs.join(", ")} style={{ padding: "4px 10px", background: BLUE + "10", border: `1px solid ${BLUE}22`, borderRadius: 6, display: "flex", alignItems: "center", gap: 4 }}>
+                      <SapBadge module={mod} />
+                      <span style={{ fontSize: 9, color: t.mut }}>{procs.length}</span>
                     </div>
                   ))}
                 </div>
@@ -3946,7 +4246,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                 });
 
                 // Tab state per process — default "benchmarks"
-                const procTab = procScenarios[proc.id]?._tab || "benchmarks";
+                const procTab = procScenarios[proc.id]?._tab || "sap";
                 const setTab = (tab) => setProcScenarios(prev => ({ ...prev, [proc.id]: { ...(prev[proc.id] || {}), _tab: tab } }));
 
                 return (
@@ -3966,9 +4266,9 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                     {/* Section Tabs */}
                     <div style={{ display: "flex", gap: 2, marginBottom: 12, borderBottom: `1px solid ${t.bdr}` }}>
                       {[
-                        { key: "benchmarks", label: "Benchmarks", color: GREEN },
-                        { key: "sap", label: "SAP", color: BLUE },
+                        { key: "sap", label: "SAP Capabilities", color: BLUE },
                         { key: "agents", label: "AI Agents", color: GOLD },
+                        { key: "benchmarks", label: "Benchmarks", color: GREEN },
                       ].map(tab => (
                         <button key={tab.key} onClick={() => setTab(tab.key)} style={{
                           fontSize: 11, padding: "6px 14px", fontWeight: procTab === tab.key ? 700 : 500,
@@ -3992,7 +4292,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                             setCatalystResults, setCatalystLoading
                           )} disabled={catalystLoading[proc.id]}
                             style={{ fontSize: 10, padding: "4px 12px", borderRadius: 6, background: GOLD + "15", border: `1px solid ${GOLD}33`, color: GOLD, cursor: catalystLoading[proc.id] ? "wait" : "pointer", fontFamily: FONT, fontWeight: 600 }}>
-                            {catalystLoading[proc.id] ? "⟳ Loading..." : "⚡ Catalyst"}
+                            {catalystLoading[proc.id] ? (catalystLoadingMsg[proc.id] || "Analyzing...") : "⚡ Catalyst"}
                           </button>
                         </div>
                         <div style={{ display: "grid", gap: 10 }}>
@@ -4191,7 +4491,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                           <div style={{ padding: "8px 10px", borderRadius: 6, background: GOLD + "06", border: `1px solid ${GOLD}18` }}>
                             <div style={{ fontSize: 9, color: GOLD, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 4 }}>What S/4HANA delivers</div>
                             {(proc.sap || []).length > 0 ? (proc.sap || []).slice(0, 3).map((s, si) => (
-                              <div key={si} style={{ fontSize: 10, color: t.tx2, lineHeight: 1.5, paddingLeft: 8, borderLeft: `2px solid ${GOLD}30`, marginBottom: 3 }}>{s.module}: {s.desc}</div>
+                              <div key={si} style={{ fontSize: 10, color: t.tx2, lineHeight: 1.5, paddingLeft: 8, borderLeft: `2px solid ${GOLD}30`, marginBottom: 3 }}><SapBadge module={s.module} /> {s.desc}</div>
                             )) : <div style={{ fontSize: 10, color: t.sub, fontStyle: "italic" }}>No SAP modules mapped</div>}
                           </div>
                           <div style={{ padding: "8px 10px", borderRadius: 6, background: GREEN + "06", border: `1px solid ${GREEN}18` }}>
@@ -4444,8 +4744,23 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
               ) : (
                 <div style={{ padding: 32, textAlign: "center", color: t.mut, marginBottom: 24, border: `2px dashed ${t.bdr}`, borderRadius: 10 }}>
                   <div style={{ fontSize: 28, marginBottom: 8, opacity: 0.5 }}>📊</div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: t.tx2, marginBottom: 6 }}>No baseline data yet</div>
-                  <button onClick={() => setStep(3)} style={{ fontSize: 12, padding: "8px 20px", borderRadius: 8, background: GOLD + "15", border: `1px solid ${GOLD}33`, color: GOLD, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>Enter data in Step 3</button>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: t.tx2, marginBottom: 6 }}>Value calculation requires baseline data</div>
+                  <div style={{ fontSize: 12, color: t.mut, marginBottom: 14, lineHeight: 1.6 }}>
+                    You have {selProcs.filter(p => !Object.keys(baselineData).some(k => k.startsWith(p.id))).length} of {selProcs.length} processes with no baseline entered.
+                  </div>
+                  <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+                    <button onClick={() => setStep(3)} style={{ fontSize: 12, padding: "10px 20px", borderRadius: 8, background: GOLD + "15", border: `1px solid ${GOLD}33`, color: GOLD, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>Enter baseline data</button>
+                    <button onClick={() => {
+                      selProcs.forEach(proc => {
+                        (proc.kpis || []).forEach((kpi, ki) => {
+                          if (!procValues[proc.id]?.["kpi_current_" + ki]) {
+                            setProcValues(prev => ({ ...prev, [proc.id]: { ...(prev[proc.id] || {}), ["kpi_current_" + ki]: kpi.current ?? kpi.benchmark } }));
+                          }
+                        });
+                      });
+                      showToast("Benchmark estimates applied as proxy baseline");
+                    }} style={{ fontSize: 12, padding: "10px 20px", borderRadius: 8, background: "transparent", border: `1px solid ${t.bdr}`, color: t.tx2, cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>Use benchmark estimates</button>
+                  </div>
                 </div>
               );
             })()}
@@ -4940,6 +5255,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                     style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "4px 0" }}>
                     <span style={{ fontSize: 18 }}>{dim.icon}</span>
                     <span style={{ fontSize: 15, fontWeight: 700, color: dim.color, flex: 1 }}>{dim.label}</span>
+                    {vrLoading[dim.key] && <span style={{ fontSize: 11, color: dim.color, fontWeight: 500 }}>Analyzing {dim.label}...</span>}
                     <span style={{ fontSize: 12, color: t.mut, transform: isOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}>▼</span>
                   </div>
                   {isOpen && (
@@ -4994,12 +5310,10 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                           )}
                         </div>
                       ))}
-                      <button onClick={() => {
-                        const prompt = `For the "${dim.label}" dimension of a value realization plan for ${baseline.company || "this company"}, suggest key items based on: ${selProcs.length} processes assessed, ${Object.keys(agentResults).length} AI agents identified, total value ${valResult.combined ? "$" + valResult.combined.toFixed(0) + "M" : "TBD"}. Be specific and concise.`;
-                        navigator.clipboard.writeText(prompt);
-                      }} style={{ padding: "6px 14px", borderRadius: 8, background: dim.color + "15", border: `1px solid ${dim.color}30`, color: dim.color, fontFamily: FONT, fontSize: 11, fontWeight: 600, cursor: "pointer", width: "fit-content" }}>
-                        ✦ Catalyst AI Assist — Copy Prompt
-                      </button>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <button onClick={async () => {
+                          setVrLoading(prev => ({ ...prev, [dim.key]: true }));
+                          const fullP = 'System: You are a transformation impact analyst. Generate specific impacts for the ' + dim.label + ' dimension. Return JSON: { keyPoints: [string], actions: [string] }. User: Processes: ' + selProcs.map(p => p.label).slice(0, 10).join(", ") + '. ERP value: 
                     </div>
                   )}
                 </div>
@@ -5136,21 +5450,32 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                 const bottomQuartile = (() => { let count = 0; selProcs.forEach(p => { (p.kpis || []).forEach((kpi, ki) => { const current = procValues[p.id]?.[`kpi_current_${ki}`] ?? kpi.current; const bench = procBenchmarks[p.id]?.[`bench_${ki}`] ?? kpi.benchmark; const q = getQuartile(current, bench, kpi); if (q && q.score < 1.5) count++; }); }); return count; })();
                 const leastData = selProcs.filter(p => !Object.keys(baselineData).some(k => k.startsWith(p.id))).length;
 
-                const steps = [];
-                if (topE2E) steps.push({ n: 1, text: `Prioritize ${topE2E[0]} — $${topE2E[1].toFixed(1)}M addressable value`, c: GOLD });
-                if (topAgent) steps.push({ n: steps.length + 1, text: `Deploy AI agents for ${topAgent.label} — $${topAgent.agentValue.toFixed(1)}M incremental uplift`, c: GREEN });
-                if (bottomQuartile > 0) steps.push({ n: steps.length + 1, text: `Address ${bottomQuartile} Bottom Quartile KPIs to close performance gaps`, c: RED });
-                if (leastData > 0) steps.push({ n: steps.length + 1, text: `Deep-dive baseline for ${leastData} processes with missing data`, c: PURPLE });
-                steps.push({ n: steps.length + 1, text: "Initiate Phase 1 detailed design and implementation roadmap", c: BLUE });
+                const biggestProc = valResult.impacts[0];
+                const highFeasAgents = selProcs.filter(p => AGENT_SPECS[p.id] && AGENT_SPECS[p.id].feasibility >= 80);
+
+                const actionSteps = [];
+                if (topE2E) actionSteps.push({ action: `Prioritize ${topE2E[0]} for Phase 1`, rationale: `$${topE2E[1].toFixed(1)}M addressable — largest value concentration`, owner: "Executive Sponsor", timeline: "Week 1-2", priority: "High", c: GOLD });
+                if (biggestProc) actionSteps.push({ action: `Validate ${biggestProc.label} baseline with process owner`, rationale: `$${biggestProc.value.toFixed(1)}M at stake — confirm KPI assumptions before design`, owner: "Process Owner", timeline: "Week 1-3", priority: "High", c: GOLD });
+                if (topAgent) actionSteps.push({ action: `Deploy AI agent for ${topAgent.label}`, rationale: `$${topAgent.agentValue.toFixed(1)}M incremental uplift${highFeasAgents.length > 0 ? ` — ${highFeasAgents.length} high-feasibility candidates` : ""}`, owner: "Technology Lead", timeline: "Week 4-8", priority: "Medium", c: GREEN });
+                if (bottomQuartile > 0) actionSteps.push({ action: `Address ${bottomQuartile} bottom quartile KPIs`, rationale: "Largest headroom for improvement vs. industry benchmarks", owner: "Process Owners", timeline: "Week 2-6", priority: "High", c: RED });
+                if (leastData > 0) actionSteps.push({ action: `Collect baseline for ${leastData} processes with missing data`, rationale: "Missing data reduces confidence — schedule SME workshops", owner: "Project Lead", timeline: "Week 1-2", priority: "High", c: PURPLE });
+                actionSteps.push({ action: "Initiate Phase 1 detailed design", rationale: "Translate findings into wave plan, requirements, and roadmap", owner: "Project Lead", timeline: "Week 2-4", priority: "High", c: BLUE });
 
                 return (
-                  <div style={{ display: "grid", gap: 8 }}>
-                    {steps.map(s => (
-                      <div key={s.n} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: s.c + "08", border: `1px solid ${s.c}22`, borderRadius: 8 }}>
-                        <span style={{ fontSize: 16, fontFamily: SERIF, color: s.c, fontWeight: 700, minWidth: 24 }}>{s.n}.</span>
-                        <span style={{ fontSize: 13, color: t.tx, lineHeight: 1.5 }}>{s.text}</span>
-                      </div>
-                    ))}
+                  <div style={{ display: "grid", gap: 10 }}>
+                    {actionSteps.map((s, i) => {
+                      const pColor = s.priority === "High" ? GOLD : s.priority === "Medium" ? GREEN : BLUE;
+                      return (
+                        <div key={i} style={{ padding: "14px 16px", background: s.c + "08", border: `1px solid ${s.c}22`, borderRadius: 10, display: "grid", gridTemplateColumns: "1fr auto", gap: 8 }}>
+                          <div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: t.tx, marginBottom: 4 }}>{i + 1}. {s.action}</div>
+                            <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.5, marginBottom: 6 }}>{s.rationale}</div>
+                            <div style={{ fontSize: 11, color: t.mut }}>Owner: {s.owner} | {s.timeline}</div>
+                          </div>
+                          <div style={{ padding: "4px 12px", borderRadius: 6, background: pColor + "20", color: pColor, fontSize: 11, fontWeight: 700, height: "fit-content", textTransform: "uppercase" }}>{s.priority}</div>
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })()}
@@ -5179,6 +5504,241 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
         )}
 
       </div>
+
+      {/* ─── TOAST NOTIFICATIONS ─── */}
+      {toasts.length > 0 && (
+        <div style={{ position: "fixed", bottom: 80, right: 24, zIndex: 9999, display: "flex", flexDirection: "column", gap: 8 }}>
+          {toasts.map(toast => (
+            <div key={toast.id} style={{ padding: "10px 18px", background: GREEN + "20", border: `1px solid ${GREEN}44`, borderRadius: 10, color: GREEN, fontSize: 13, fontFamily: FONT, fontWeight: 600, animation: "fadeIn 0.2s ease-in", backdropFilter: "blur(8px)" }}>
+              {toast.message}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ─── CALC EXPLAINER DRAWER ─── */}
+      {calcExplainer && <CalcExplainerDrawer data={calcExplainer} onClose={() => { setCalcExplainer(null); setChallengeResult(null); }} mode={mode} />}
+
+      {/* ─── FOOTER ─── */}
+      <div style={{ borderTop: `1px solid ${t.bdr}`, background: mode === "dark" ? "#131312" : "#EFEBE3", padding: "6px 24px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 10, color: t.mut, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>PrismL4</span>
+        <div style={{ height: 10, width: 1, background: t.bdr }} />
+        <span style={{ fontSize: 10, color: t.sub }}>Bottom-Up Value Identification Engine</span>
+        <div style={{ flex: 1 }} />
+        <span style={{ fontSize: 10, color: t.sub }}>humaninthelead.ai</span>
+      </div>
+    </div>
+  );
+}
+ + (valResult.total?.toFixed(1) || "0") + 'M. Company: ' + companyName + '. Generate for: ' + dim.label;
+                          callCatalyst(dim.key, fullP, (fn) => { fn(prev => { const r = prev[dim.key]; if (typeof r === "string") { try { const m = r.match(/{[sS]*}/); if (m) { const p = JSON.parse(m[0]); const fld = { people: "roleChanges", processes: "processesRedesigned", data: "dataGaps", technology: "integrationNeeds", governance: "decisionRights", operatingModel: "structuralChanges" }[dim.key]; if (p.keyPoints) setValueRealization(vr => ({ ...vr, [dim.key]: { ...(vr[dim.key] || {}), [fld]: Array.isArray(p.keyPoints) ? p.keyPoints.join("
+") : p.keyPoints } })); } } catch(_){} } setVrLoading(vl => ({ ...vl, [dim.key]: false })); return prev; }); }, setVrLoading);
+                        }} disabled={vrLoading[dim.key]} style={{ padding: "6px 14px", borderRadius: 8, background: dim.color + "15", border: `1px solid ${dim.color}30`, color: dim.color, fontFamily: FONT, fontSize: 11, fontWeight: 600, cursor: vrLoading[dim.key] ? "wait" : "pointer" }}>
+                          {vrLoading[dim.key] ? "Regenerating..." : "Regenerate"}
+                        </button>
+                        {!apiKey && catalystServer === false && <span style={{ fontSize: 10, color: t.mut, fontStyle: "italic" }}>Add API key to auto-populate</span>}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
+              <button onClick={() => setStep(5)} style={btnSecondary}>← Value Calculation</button>
+              <button onClick={() => setStep(7)} style={btnPrimary}>Action Plan →</button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            STEP 7 — Phase 0 Action Plan
+           ═══════════════════════════════════════════════ */}
+        {step === 7 && (
+          <div>
+            {stepHeader(7, "Phase 0 Action Plan", "Download deliverables, share with stakeholders, and define next steps.")}
+
+            {/* Hero Stats */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 10, marginBottom: 28 }}>
+              {[
+                { l: "Combined Value", v: fd(valResult.combined), c: "#FFFFFF", large: true, dollar: true },
+                { l: "ERP Value", v: fd(valResult.total), c: GOLD, dollar: true },
+                { l: "Agent Uplift", v: fd(valResult.agentTotal), c: GREEN, dollar: true },
+                { l: "Processes", v: selProcs.length, c: BLUE },
+                { l: "KPIs Assessed", v: totalKPIs, c: PURPLE },
+                { l: "Peer Group", v: `${baseline.industry || "Mfg"} ${baseline.revenueBand || "$1-5B"}`, c: "#AAA" },
+              ].map(k => (
+                <div key={k.l} style={{ background: `${k.c}0C`, border: `1px solid ${k.c}22`, borderRadius: 10, padding: "14px 16px", textAlign: "center" }}>
+                  <div style={{ fontSize: 10, color: k.c, textTransform: "uppercase", letterSpacing: ".5px", fontWeight: 600, marginBottom: 4 }}>{k.l}</div>
+                  <div style={{ fontSize: k.large ? 28 : 22, fontFamily: SERIF, color: k.c, fontWeight: k.large ? 700 : 400, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>{k.v}{k.dollar && <span title={`${k.l}: gap × base amount × addressable% × scenario factor`} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 14, height: 14, borderRadius: "50%", background: k.c + "20", color: k.c, fontSize: 8, fontWeight: 700, cursor: "help", flexShrink: 0 }}>i</span>}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* ─── Blueprint Coverage ─── */}
+            {(() => {
+              const tierCounts = {};
+              BLUEPRINT_TIERS.forEach(bt => tierCounts[bt.id] = 0);
+              selProcs.forEach(p => (p.blueprintTiers || []).forEach(tid => { tierCounts[tid] = (tierCounts[tid] || 0) + 1; }));
+              const coveredCount = BLUEPRINT_TIERS.filter(bt => tierCounts[bt.id] > 0).length;
+              const maxCount = Math.max(...Object.values(tierCounts), 1);
+              const missing = BLUEPRINT_TIERS.filter(bt => tierCounts[bt.id] === 0).map(bt => bt.name);
+              return (
+                <div style={{ marginBottom: 28 }}>
+                  <div style={labelStyle}>EY.ai Value Blueprint Coverage</div>
+                  <div style={{ ...cardStyle, padding: 20 }}>
+                    <div style={{ display: "grid", gap: 6 }}>
+                      {BLUEPRINT_TIERS.map(bt => {
+                        const count = tierCounts[bt.id] || 0;
+                        const pct = count > 0 ? Math.round((count / maxCount) * 100) : 0;
+                        return (
+                          <div key={bt.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <span style={{ fontSize: 14, minWidth: 22, textAlign: "center" }}>{bt.icon}</span>
+                            <span style={{ fontSize: 11, fontWeight: 600, color: count > 0 ? bt.color : t.mut, minWidth: 110 }}>{bt.name}</span>
+                            <div style={{ flex: 1, height: 14, background: t.bg, borderRadius: 7, overflow: "hidden" }}>
+                              {count > 0 && <div style={{ width: pct + "%", height: "100%", background: bt.color, borderRadius: 7, transition: "width 0.3s" }} />}
+                            </div>
+                            <span style={{ fontSize: 11, fontWeight: 600, color: count > 0 ? t.tx : t.mut, minWidth: 28, textAlign: "right" }}>{count}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div style={{ fontSize: 11, color: t.tx2, marginTop: 14 }}>Assessment covers <span style={{ color: GOLD, fontWeight: 700 }}>{coveredCount} of 7</span> tiers across {selProcs.length} processes</div>
+                    {missing.length > 0 && <div style={{ fontSize: 11, color: t.mut, marginTop: 6, fontStyle: "italic" }}>Consider expanding scope to address: {missing.join(", ")}</div>}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Downloads — Primary action first */}
+            <div style={labelStyle}>Deliverables</div>
+            <div style={{ ...cardStyle, textAlign: "center", padding: 24, marginBottom: 12 }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>📊</div>
+              <div style={{ fontSize: 18, fontFamily: SERIF, fontWeight: 700, color: GOLD, marginBottom: 6 }}>Executive Deck (4 slides)</div>
+              <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.5, marginBottom: 14 }}>Board-ready: value summary, P&L, decision leakage, next steps</div>
+                <button onClick={() => generateExecDeck({ baseline, selProcs, valResult, scenarioLevel, procValues, procBenchmarks, agentResults, baselineData, selectedFunction, totalKPIs, FUNCTIONS, PROC_MAP, getQuartile, BLUEPRINT_TIERS, valueRealization, processOwners: processOwnership, companyFinancials, multiYearRamp })} style={{ ...btnPrimary, padding: "14px 24px", fontSize: 15, width: "100%", background: GOLD }}>
+                  ↓ Download Executive PPTX
+                </button>
+              </div>
+              <div onClick={() => setMoreOptionsOpen(prev => ({ ...prev, step7downloads: !prev.step7downloads }))} style={{ fontSize: 12, color: t.mut, cursor: "pointer", marginBottom: 8 }}>{moreOptionsOpen.step7downloads ? "▾ Fewer options" : "▸ More downloads"}</div>
+              {moreOptionsOpen.step7downloads && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 28 }}>
+                <button onClick={() => generateDetailedDeck({ baseline, selProcs, valResult, scenarioLevel, procValues, procBenchmarks, agentResults, baselineData, selectedFunction, totalKPIs, FUNCTIONS, PROC_MAP, getQuartile, BLUEPRINT_TIERS, valueRealization, processOwners: processOwnership, companyFinancials, multiYearRamp })} style={{ ...btnSecondary, padding: "10px 16px", fontSize: 12 }}>
+                  ↓ Detailed PPTX (10 slides)
+                </button>
+                <button onClick={generatePhase0Report} style={{ ...btnSecondary, padding: "10px 16px", fontSize: 12 }}>
+                  ↓ Phase 0 Report (HTML)
+                </button>
+                <button onClick={exportSessionJSON} style={{ ...btnSecondary, padding: "10px 16px", fontSize: 12 }}>
+                  ↓ Export JSON
+                </button>
+                <button onClick={() => generatePPTX({ baseline, selProcs, valResult, scenarioLevel, procValues, procBenchmarks, agentResults, baselineData, selectedFunction, totalKPIs, FUNCTIONS, PROC_MAP, getQuartile, BLUEPRINT_TIERS })} style={{ ...btnSecondary, padding: "10px 16px", fontSize: 12 }}>
+                  ↓ Legacy PPTX (v1)
+                </button>
+              </div>
+              )}
+
+            {/* Share Section */}
+            {assessmentId && isOwner && (
+              <>
+                <div style={labelStyle}>Share Assessment</div>
+                <div style={{ ...cardStyle, marginBottom: 24, padding: 20 }}>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                    <input value={shareEmail} onChange={e => setShareEmail(e.target.value)} placeholder="email@example.com"
+                      onKeyDown={e => e.key === "Enter" && handleShare()}
+                      style={{ flex: 1, padding: "10px 12px", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 8, color: t.tx, fontFamily: FONT, fontSize: 13, outline: "none" }} />
+                    <select value={shareRole} onChange={e => setShareRole(e.target.value)}
+                      style={{ padding: "10px", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 8, color: t.tx, fontFamily: FONT, fontSize: 12 }}>
+                      <option value="viewer">Viewer</option>
+                      <option value="editor">Editor</option>
+                    </select>
+                    <button onClick={handleShare} disabled={shareLoading || !shareEmail.trim()}
+                      style={{ padding: "10px 20px", borderRadius: 8, background: PURPLE, border: "none", color: "#fff", fontFamily: FONT, fontWeight: 600, fontSize: 13, cursor: shareLoading ? "wait" : "pointer", opacity: shareEmail.trim() ? 1 : 0.4 }}>
+                      Share
+                    </button>
+                  </div>
+                  <button onClick={() => { navigator.clipboard.writeText(window.location.href); }}
+                    style={{ padding: "8px 16px", borderRadius: 6, background: t.bg, border: `1px solid ${t.bdr}`, color: t.tx2, fontFamily: FONT, fontSize: 11, cursor: "pointer" }}>
+                    Copy Assessment Link
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Next Steps — Auto-generated */}
+            <div style={labelStyle}>Recommended Next Steps</div>
+            <div style={{ ...cardStyle, padding: 20, marginBottom: 24 }}>
+              {(() => {
+                const topE2E = (() => { const e2eVals = {}; valResult.impacts.forEach(i => { e2eVals[i.e2e] = (e2eVals[i.e2e] || 0) + i.value; }); const sorted = Object.entries(e2eVals).sort((a, b) => b[1] - a[1]); return sorted[0]; })();
+                const topAgent = valResult.impacts.filter(i => (i.agentValue || 0) > 0).sort((a, b) => (b.agentValue || 0) - (a.agentValue || 0))[0];
+                const bottomQuartile = (() => { let count = 0; selProcs.forEach(p => { (p.kpis || []).forEach((kpi, ki) => { const current = procValues[p.id]?.[`kpi_current_${ki}`] ?? kpi.current; const bench = procBenchmarks[p.id]?.[`bench_${ki}`] ?? kpi.benchmark; const q = getQuartile(current, bench, kpi); if (q && q.score < 1.5) count++; }); }); return count; })();
+                const leastData = selProcs.filter(p => !Object.keys(baselineData).some(k => k.startsWith(p.id))).length;
+
+                const biggestProc = valResult.impacts[0];
+                const highFeasAgents = selProcs.filter(p => AGENT_SPECS[p.id] && AGENT_SPECS[p.id].feasibility >= 80);
+
+                const actionSteps = [];
+                if (topE2E) actionSteps.push({ action: `Prioritize ${topE2E[0]} for Phase 1`, rationale: `$${topE2E[1].toFixed(1)}M addressable — largest value concentration`, owner: "Executive Sponsor", timeline: "Week 1-2", priority: "High", c: GOLD });
+                if (biggestProc) actionSteps.push({ action: `Validate ${biggestProc.label} baseline with process owner`, rationale: `$${biggestProc.value.toFixed(1)}M at stake — confirm KPI assumptions before design`, owner: "Process Owner", timeline: "Week 1-3", priority: "High", c: GOLD });
+                if (topAgent) actionSteps.push({ action: `Deploy AI agent for ${topAgent.label}`, rationale: `$${topAgent.agentValue.toFixed(1)}M incremental uplift${highFeasAgents.length > 0 ? ` — ${highFeasAgents.length} high-feasibility candidates` : ""}`, owner: "Technology Lead", timeline: "Week 4-8", priority: "Medium", c: GREEN });
+                if (bottomQuartile > 0) actionSteps.push({ action: `Address ${bottomQuartile} bottom quartile KPIs`, rationale: "Largest headroom for improvement vs. industry benchmarks", owner: "Process Owners", timeline: "Week 2-6", priority: "High", c: RED });
+                if (leastData > 0) actionSteps.push({ action: `Collect baseline for ${leastData} processes with missing data`, rationale: "Missing data reduces confidence — schedule SME workshops", owner: "Project Lead", timeline: "Week 1-2", priority: "High", c: PURPLE });
+                actionSteps.push({ action: "Initiate Phase 1 detailed design", rationale: "Translate findings into wave plan, requirements, and roadmap", owner: "Project Lead", timeline: "Week 2-4", priority: "High", c: BLUE });
+
+                return (
+                  <div style={{ display: "grid", gap: 10 }}>
+                    {actionSteps.map((s, i) => {
+                      const pColor = s.priority === "High" ? GOLD : s.priority === "Medium" ? GREEN : BLUE;
+                      return (
+                        <div key={i} style={{ padding: "14px 16px", background: s.c + "08", border: `1px solid ${s.c}22`, borderRadius: 10, display: "grid", gridTemplateColumns: "1fr auto", gap: 8 }}>
+                          <div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: t.tx, marginBottom: 4 }}>{i + 1}. {s.action}</div>
+                            <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.5, marginBottom: 6 }}>{s.rationale}</div>
+                            <div style={{ fontSize: 11, color: t.mut }}>Owner: {s.owner} | {s.timeline}</div>
+                          </div>
+                          <div style={{ padding: "4px 12px", borderRadius: 6, background: pColor + "20", color: pColor, fontSize: 11, fontWeight: 700, height: "fit-content", textTransform: "uppercase" }}>{s.priority}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Saved Scenarios */}
+            {savedScenarios.length > 0 && (
+              <>
+                <div style={labelStyle}>Saved Scenarios</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 8, marginBottom: 20 }}>
+                  {savedScenarios.map((sc, i) => (
+                    <div key={i} style={{ ...cardStyle, textAlign: "center" }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: t.tx }}>{sc.name}</div>
+                      <div style={{ fontSize: 22, fontFamily: SERIF, color: GOLD, margin: "6px 0" }}>{fd(sc.value)}</div>
+                      <div style={{ fontSize: 11, color: t.mut }}>{sc.count} processes · {sc.level}</div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
+              <button onClick={() => setStep(6)} style={btnSecondary}>← Value Realization</button>
+            </div>
+          </div>
+        )}
+
+      </div>
+
+      {/* ─── TOAST NOTIFICATIONS ─── */}
+      {toasts.length > 0 && (
+        <div style={{ position: "fixed", bottom: 80, right: 24, zIndex: 9999, display: "flex", flexDirection: "column", gap: 8 }}>
+          {toasts.map(toast => (
+            <div key={toast.id} style={{ padding: "10px 18px", background: GREEN + "20", border: `1px solid ${GREEN}44`, borderRadius: 10, color: GREEN, fontSize: 13, fontFamily: FONT, fontWeight: 600, animation: "fadeIn 0.2s ease-in", backdropFilter: "blur(8px)" }}>
+              {toast.message}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ─── CALC EXPLAINER DRAWER ─── */}
       {calcExplainer && <CalcExplainerDrawer data={calcExplainer} onClose={() => { setCalcExplainer(null); setChallengeResult(null); }} mode={mode} />}
