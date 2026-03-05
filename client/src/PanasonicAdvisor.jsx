@@ -934,7 +934,7 @@ function SourcesPanel({ sources }) {
         <div style={{ marginTop: 12, padding: "16px 18px",
           background: C.surface, border: `1px solid ${C.border}`,
           borderRadius: 6 }}>
-          <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.7, marginBottom: 16,
+          <div style={{ fontSize: 11, color: C.text, lineHeight: 1.7, marginBottom: 16,
             fontStyle: "italic" }}>
             Chart Y-axis represents a composite transformation momentum index — not a single reported metric.
             Index components: analyst/investor confidence, enterprise customer revenue, internal adoption
@@ -949,7 +949,7 @@ function SourcesPanel({ sources }) {
                   fontFamily: "JetBrains Mono, monospace" }}>{s.company}</div>
               </div>
               {s.note && (
-                <div style={{ fontSize: 10, color: C.textDim, lineHeight: 1.6, marginBottom: 8, paddingLeft: 18 }}>
+                <div style={{ fontSize: 10, color: C.text, lineHeight: 1.6, marginBottom: 8, paddingLeft: 18 }}>
                   {s.note}
                 </div>
               )}
