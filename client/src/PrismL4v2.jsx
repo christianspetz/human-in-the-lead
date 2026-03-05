@@ -1007,6 +1007,14 @@ const SMART_QUESTIONS = {
       showWhen: (a) => a["q-pain"] === "Data quality issues" || a["q-pain"] === "System integration gaps" },
     { id: "q-reporting-freq", question: "How often is this data reported to management?", type: "dropdown", options: ["Real-time", "Daily", "Weekly", "Monthly", "Quarterly", "Ad-hoc only"], category: "leakage",
       showWhen: () => true },
+    { id: "q-decision-who", question: "Who makes decisions based on this data?", type: "dropdown", options: ["Frontline staff", "Team leads / supervisors", "Middle management", "Senior leadership", "Cross-functional committee", "No one — data not used for decisions"], category: "leakage",
+      showWhen: () => true },
+    { id: "q-decision-gap", question: "What decisions CANNOT be made because this data is missing or unreliable?", type: "text", category: "leakage",
+      showWhen: () => true },
+    { id: "q-freed-capacity", question: "If this process were fully automated, what would you do with the freed capacity?", type: "text", category: "leakage",
+      showWhen: () => true },
+    { id: "q-data-quality-issue", question: "What is the biggest data quality issue in this process today?", type: "text", category: "leakage",
+      showWhen: () => true },
     { id: "q-data-source", question: "Is there a single source of truth?", type: "dropdown", options: ["Yes — one system", "Partially — master + satellites", "No — multiple disconnected sources"], category: "leakage",
       showWhen: (a) => a["q-data-quality"] && !a["q-data-quality"].startsWith("Excellent") },
     { id: "q-manual-data", question: "What % of decisions rely on manually gathered data?", type: "number", unit: "%", category: "leakage", range: [0, 100],
@@ -1022,7 +1030,9 @@ const SMART_TO_BASELINE = {
   "q-ftes": "a_ftes", "q-volume": "a_volume", "q-automation": "a_automation",
   "q-rework": "a_rework", "q-cycle": "a_cycleTime", "q-error-rate": "a_errorRate",
   "q-bottleneck": "a_bottleneck", "q-data-quality": "b_dataQuality",
-  "q-reporting-freq": "b_reportFreq", "q-data-source": "b_ssot",
+  "q-reporting-freq": "b_reportFreq", "q-decision-who": "b_decisionWho",
+  "q-decision-gap": "b_decisionGap", "q-freed-capacity": "b_freedCapacity",
+  "q-data-quality-issue": "b_dataQualityIssue", "q-data-source": "b_ssot",
   "q-manual-data": "b_manualPct", "q-leakage-est": "b_leakage",
 };
 
@@ -1157,7 +1167,7 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
   // Company Financials (Feature 1)
   const [companyFinancials, setCompanyFinancials] = useState(initialData?.companyFinancials || null);
   const [financialsEntryMode, setFinancialsEntryMode] = useState(null); // "upload" | "manual"
-  const [financialsDraft, setFinancialsDraft] = useState({ revenue: "", cogs: "", grossProfit: "", sga: "", ebitda: "", headcount: "", financeHeadcount: "", annualPayroll: "", fiscalYear: "", currency: "USD", companyName: "", source: "manual" });
+  const [financialsDraft, setFinancialsDraft] = useState({ revenue: "", cogs: "", grossProfit: "", sga: "", ebitda: "", operatingIncome: "", netIncome: "", accountsReceivable: "", accountsPayable: "", inventory: "", capex: "", operatingCashFlow: "", depreciation: "", headcount: "", financeHeadcount: "", annualPayroll: "", fiscalYear: "", currency: "USD", companyName: "", source: "manual" });
   const [financialsExtracting, setFinancialsExtracting] = useState(false);
   const [financialsConfidence, setFinancialsConfidence] = useState({});
 
@@ -1831,6 +1841,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
     const qHint = (q) => {
       if (q.options) return q.options.join(" / ");
       if (q.type === "rating") return q.labels.join(" / ");
+      if (q.type === "text") return "Free text";
       if (q.unit) return `Enter ${q.unit}` + (q.range ? ` (${q.range[0]}-${q.range[1]})` : "");
       if (q.type === "number_with_unit") return `Enter number (${q.units.join(" or ")})`;
       return "";
@@ -2562,6 +2573,10 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
             leakage: {
               granularity: baselineData[`${proc.id}_b_granularity`] || null,
               reportFreq: baselineData[`${proc.id}_b_reportFreq`] || null,
+              decisionWho: baselineData[`${proc.id}_b_decisionWho`] || null,
+              decisionGap: baselineData[`${proc.id}_b_decisionGap`] || null,
+              freedCapacity: baselineData[`${proc.id}_b_freedCapacity`] || null,
+              dataQualityIssue: baselineData[`${proc.id}_b_dataQualityIssue`] || null,
               dataQuality: baselineData[`${proc.id}_b_dataQuality`] || null,
               manualPct: baselineData[`${proc.id}_b_manualPct`] || null,
               ssot: baselineData[`${proc.id}_b_ssot`] || null,
@@ -3935,6 +3950,9 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                             })}
                                             {questAnswers[`${focusProc}_${q.id}`] && <span style={{ fontSize: 10, color: GOLD, marginLeft: 4 }}>{q.labels[parseInt(questAnswers[`${focusProc}_${q.id}`]) - 1]}</span>}
                                           </div>
+                                        ) : q.type === "text" ? (
+                                          <textarea value={questAnswers[`${focusProc}_${q.id}`] || ""} onChange={e => setSmartAnswer(focusProc, q.id, e.target.value)}
+                                            placeholder="Enter your response..." rows={2} style={{ ...inputStyle, resize: "vertical", minHeight: 40 }} />
                                         ) : q.type === "number_with_unit" ? (
                                           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                                             <input type="number" value={questAnswers[`${focusProc}_${q.id}`] || ""} onChange={e => setSmartAnswer(focusProc, q.id, e.target.value)}
