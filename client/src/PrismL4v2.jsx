@@ -1182,6 +1182,11 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
   const [censusRawRows, setCensusRawRows] = useState([]);
   const [censusMapping, setCensusMapping] = useState({});
   const [censusCostType, setCensusCostType] = useState("loaded"); // "loaded" | "base"
+  const [processMapping, setProcessMapping] = useState(null); // array of {role, department, apqcL4Code, apqcL4Name, confidence}
+  const [processMappingLoading, setProcessMappingLoading] = useState(false);
+  const [processMappingError, setProcessMappingError] = useState(null);
+  const [processMappingOverrides, setProcessMappingOverrides] = useState({}); // idx -> {apqcL4Code, apqcL4Name}
+  const [processMappingSearch, setProcessMappingSearch] = useState({}); // idx -> search string
 
   // Multi-Year & Balance Sheet (Feature 2)
   const [multiYearRamp, setMultiYearRamp] = useState(initialData?.multiYearRamp || { erp: [30, 70, 100], agent: [0, 40, 100], costSpread: [70, 20, 10] });
@@ -4597,7 +4602,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                   rows: parsed,
                 };
                 setCensusData(result);
-                setCensusStep("done");
+                setCensusStep("process-mapping");
               };
 
               const clearCensus = () => {
@@ -4606,6 +4611,88 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                 setCensusRawHeaders([]);
                 setCensusRawRows([]);
                 setCensusMapping({});
+                setProcessMapping(null);
+                setProcessMappingError(null);
+                setProcessMappingOverrides({});
+                setProcessMappingSearch({});
+              };
+
+              const startProcessMapping = async (data) => {
+                const rows = data || censusData?.rows;
+                if (!rows || rows.length === 0) return;
+                setProcessMappingLoading(true);
+                setProcessMappingError(null);
+                try {
+                  // Deduplicate role+department pairs
+                  const seen = new Set();
+                  const uniqueRoles = [];
+                  for (const r of rows) {
+                    const key = `${r.department}|||${r.role}`;
+                    if (!seen.has(key)) {
+                      seen.add(key);
+                      uniqueRoles.push({ department: r.department, role: r.role });
+                    }
+                  }
+                  const res = await fetch("/api/map-roles", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ roles: uniqueRoles }),
+                  });
+                  const { result, error } = await res.json();
+                  if (!res.ok || error) throw new Error(error || "API request failed");
+                  // Parse JSON, handle markdown code fences
+                  let jsonStr = result.trim();
+                  if (jsonStr.startsWith("```")) {
+                    jsonStr = jsonStr.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
+                  }
+                  const mappings = JSON.parse(jsonStr);
+                  setProcessMapping(mappings);
+                  setProcessMappingOverrides({});
+                  setProcessMappingSearch({});
+                } catch (err) {
+                  console.error("Process mapping error:", err);
+                  setProcessMappingError(err.message);
+                } finally {
+                  setProcessMappingLoading(false);
+                }
+              };
+
+              const skipProcessMapping = () => {
+                setProcessMapping(null);
+                setCensusStep("done");
+              };
+
+              const acceptProcessMapping = () => {
+                if (!processMapping || !censusData) return;
+                // Build lookup from mappings + overrides
+                const lookup = {};
+                processMapping.forEach((m, i) => {
+                  const override = processMappingOverrides[i];
+                  const code = override ? override.apqcL4Code : m.apqcL4Code;
+                  const name = override ? override.apqcL4Name : m.apqcL4Name;
+                  lookup[`${m.department}|||${m.role}`] = { apqcL4Code: code, apqcL4Name: name };
+                });
+                // Apply to all rows
+                const updatedRows = censusData.rows.map(r => {
+                  const match = lookup[`${r.department}|||${r.role}`];
+                  return match ? { ...r, apqcL4Code: match.apqcL4Code, apqcL4Name: match.apqcL4Name } : r;
+                });
+                // Build byProcess aggregation
+                const byProc = {};
+                for (const r of updatedRows) {
+                  if (!r.apqcL4Code || r.apqcL4Code === "unmapped") continue;
+                  const key = r.apqcL4Code;
+                  if (!byProc[key]) byProc[key] = { apqcCode: r.apqcL4Code, apqcName: r.apqcL4Name, headcount: 0, fte: 0, totalCost: 0 };
+                  byProc[key].headcount += 1;
+                  byProc[key].fte += r.fte;
+                  byProc[key].totalCost += r.cost * r.fte;
+                }
+                const procArray = Object.values(byProc)
+                  .map(d => ({ ...d, avgCost: d.fte > 0 ? Math.round(d.totalCost / d.fte) : 0 }))
+                  .sort((a, b) => b.totalCost - a.totalCost);
+
+                setCensusData({ ...censusData, rows: updatedRows, byProcess: procArray });
+                setCensusStep("done");
               };
 
               const fmtCost = (v) => v != null && isFinite(v) ? "$" + Math.round(v).toLocaleString() : "—";
@@ -4620,44 +4707,6 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                         <span style={{ fontSize: 10, padding: "1px 8px", borderRadius: 4, background: t.bg, border: `1px solid ${t.bdr}`, color: t.mut, fontWeight: 600 }}>Optional</span>
                       </div>
                       <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.6, marginBottom: 10 }}>Upload employee data to replace benchmark labor costs with actuals.</div>
-
-                      {/* Loaded banner */}
-                      {hasCensus && censusStep === "done" && (
-                        <div>
-                          <div style={{ padding: "10px 16px", background: GREEN + "15", border: `1px solid ${GREEN}33`, borderRadius: 8, marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}>
-                            <span style={{ color: GREEN, fontWeight: 700 }}>✓</span>
-                            <span style={{ fontSize: 13, color: GREEN, fontWeight: 600 }}>Census loaded — {censusData.totalEmployees.toLocaleString()} employees, {censusData.totalFTE} FTE, {fmtCost(censusData.totalCost)} total cost</span>
-                            <div style={{ flex: 1 }} />
-                            <button onClick={clearCensus} style={{ fontSize: 11, padding: "4px 12px", borderRadius: 6, background: "transparent", border: `1px solid ${t.bdr}`, color: t.tx2, cursor: "pointer", fontFamily: FONT }}>Clear</button>
-                          </div>
-                          {/* Department breakdown */}
-                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 8 }}>
-                            <thead>
-                              <tr>
-                                <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 10, textTransform: "uppercase" }}>Department</th>
-                                <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "right", color: t.mut, fontSize: 10, textTransform: "uppercase" }}>Headcount</th>
-                                <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "right", color: t.mut, fontSize: 10, textTransform: "uppercase" }}>FTE</th>
-                                <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "right", color: t.mut, fontSize: 10, textTransform: "uppercase" }}>Total Cost</th>
-                                <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "right", color: t.mut, fontSize: 10, textTransform: "uppercase" }}>Avg / FTE</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {censusData.byDepartment.slice(0, 15).map((d, i) => (
-                                <tr key={i}>
-                                  <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx, fontWeight: 600 }}>{d.name || "(blank)"}</td>
-                                  <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", color: t.tx2 }}>{d.headcount}</td>
-                                  <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", color: t.tx2 }}>{d.fte.toFixed(1)}</td>
-                                  <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: PURPLE }}>{fmtCost(d.totalCost)}</td>
-                                  <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: t.tx2 }}>{fmtCost(d.avgCost)}</td>
-                                </tr>
-                              ))}
-                              {censusData.byDepartment.length > 15 && (
-                                <tr><td colSpan={5} style={{ padding: "5px 10px", color: t.mut, fontSize: 11, fontStyle: "italic" }}>+ {censusData.byDepartment.length - 15} more departments</td></tr>
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
 
                       {/* Upload prompt */}
                       {!hasCensus && !censusStep && (
@@ -4753,6 +4802,208 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                             <button onClick={() => { setCensusStep(null); setCensusRawHeaders([]); setCensusRawRows([]); }} style={{ fontSize: 12, padding: "8px 20px", borderRadius: 8, background: "transparent", border: `1px solid ${t.bdr}`, color: t.tx2, cursor: "pointer", fontFamily: FONT }}>Cancel</button>
                             <button onClick={confirmCensusMapping} style={{ fontSize: 12, padding: "8px 20px", borderRadius: 8, background: PURPLE, border: "none", color: "#111", cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>Confirm Mapping</button>
                           </div>
+                        </div>
+                      )}
+
+                      {/* AI Process Mapping step */}
+                      {censusStep === "process-mapping" && (
+                        <div style={{ marginTop: 12 }}>
+                          <div style={{ padding: "10px 16px", background: GREEN + "15", border: `1px solid ${GREEN}33`, borderRadius: 8, marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}>
+                            <span style={{ color: GREEN, fontWeight: 700 }}>✓</span>
+                            <span style={{ fontSize: 13, color: GREEN, fontWeight: 600 }}>Census loaded — {censusData.totalEmployees.toLocaleString()} employees, {censusData.totalFTE} FTE, {fmtCost(censusData.totalCost)} total cost</span>
+                          </div>
+
+                          <div style={{ padding: 16, background: t.bg, border: `1px solid ${PURPLE}33`, borderRadius: 10, marginBottom: 12 }}>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: t.tx, marginBottom: 4 }}>AI Process Mapping</div>
+                            <div style={{ fontSize: 12, color: t.tx2, marginBottom: 12 }}>Mapping job titles to APQC L4 processes</div>
+
+                            {/* Not started yet */}
+                            {!processMappingLoading && !processMapping && !processMappingError && (
+                              <div style={{ display: "flex", gap: 8 }}>
+                                <button onClick={() => startProcessMapping()} style={{ fontSize: 12, padding: "8px 20px", borderRadius: 8, background: PURPLE, border: "none", color: "#111", cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>Start Mapping</button>
+                                <button onClick={skipProcessMapping} style={{ fontSize: 12, padding: "8px 20px", borderRadius: 8, background: "transparent", border: `1px solid ${t.bdr}`, color: t.tx2, cursor: "pointer", fontFamily: FONT }}>Skip Mapping</button>
+                              </div>
+                            )}
+
+                            {/* Loading */}
+                            {processMappingLoading && (
+                              <div style={{ padding: 20, textAlign: "center" }}>
+                                <div style={{ fontSize: 24, marginBottom: 8, animation: "spin 1s linear infinite" }}>⚙️</div>
+                                <div style={{ fontSize: 13, color: t.tx2 }}>Mapping {(() => { const seen = new Set(); censusData.rows.forEach(r => seen.add(`${r.department}|||${r.role}`)); return seen.size; })()} unique roles to APQC processes...</div>
+                                <div style={{ fontSize: 11, color: t.mut, marginTop: 4 }}>This may take 15–30 seconds</div>
+                              </div>
+                            )}
+
+                            {/* Error */}
+                            {processMappingError && (
+                              <div>
+                                <div style={{ padding: "10px 16px", background: RED + "15", border: `1px solid ${RED}33`, borderRadius: 8, marginBottom: 10 }}>
+                                  <span style={{ fontSize: 12, color: RED }}>{processMappingError}</span>
+                                </div>
+                                <div style={{ display: "flex", gap: 8 }}>
+                                  <button onClick={() => { setProcessMappingError(null); startProcessMapping(); }} style={{ fontSize: 12, padding: "8px 20px", borderRadius: 8, background: PURPLE, border: "none", color: "#111", cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>Retry</button>
+                                  <button onClick={skipProcessMapping} style={{ fontSize: 12, padding: "8px 20px", borderRadius: 8, background: "transparent", border: `1px solid ${t.bdr}`, color: t.tx2, cursor: "pointer", fontFamily: FONT }}>Skip Mapping</button>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Results table */}
+                            {processMapping && !processMappingLoading && (
+                              <div>
+                                {(() => {
+                                  const highCount = processMapping.filter((m, i) => !processMappingOverrides[i] && m.confidence === "high").length + Object.keys(processMappingOverrides).length;
+                                  const mappedCount = processMapping.filter((m, i) => (processMappingOverrides[i]?.apqcL4Code || m.apqcL4Code) !== "unmapped").length;
+                                  return (
+                                    <div style={{ fontSize: 12, color: t.tx2, marginBottom: 10 }}>
+                                      {mappedCount} of {processMapping.length} roles mapped ({highCount} high confidence)
+                                    </div>
+                                  );
+                                })()}
+                                <div style={{ maxHeight: 400, overflowY: "auto", marginBottom: 10 }}>
+                                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                                    <thead>
+                                      <tr>
+                                        <th style={{ padding: "6px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 10, textTransform: "uppercase", position: "sticky", top: 0, background: t.bg }}>Department</th>
+                                        <th style={{ padding: "6px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 10, textTransform: "uppercase", position: "sticky", top: 0, background: t.bg }}>Role</th>
+                                        <th style={{ padding: "6px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 10, textTransform: "uppercase", position: "sticky", top: 0, background: t.bg }}>Mapped APQC Process</th>
+                                        <th style={{ padding: "6px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: "center", color: t.mut, fontSize: 10, textTransform: "uppercase", position: "sticky", top: 0, background: t.bg }}>Confidence</th>
+                                        <th style={{ padding: "6px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 10, textTransform: "uppercase", position: "sticky", top: 0, background: t.bg }}>Override</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {processMapping.map((m, i) => {
+                                        const override = processMappingOverrides[i];
+                                        const isUnmapped = (override?.apqcL4Code || m.apqcL4Code) === "unmapped";
+                                        const confColor = override ? GREEN : m.confidence === "high" ? GREEN : m.confidence === "medium" ? ORANGE : RED;
+                                        const confLabel = override ? "override" : m.confidence;
+                                        const searchVal = processMappingSearch[i] || "";
+                                        const filteredProcs = searchVal.length >= 2
+                                          ? ALL_PROCS.filter(p => p.label.toLowerCase().includes(searchVal.toLowerCase()) || p.l4.includes(searchVal)).slice(0, 10)
+                                          : [];
+                                        return (
+                                          <tr key={i} style={{ background: isUnmapped ? RED + "08" : "transparent" }}>
+                                            <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx2, fontSize: 11 }}>{m.department}</td>
+                                            <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx, fontWeight: 600, fontSize: 11 }}>{m.role}</td>
+                                            <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}40`, color: isUnmapped ? RED : PURPLE, fontSize: 11 }}>
+                                              {override ? `${override.apqcL4Code} — ${override.apqcL4Name}` : isUnmapped ? "Unmapped" : `${m.apqcL4Code} — ${m.apqcL4Name}`}
+                                            </td>
+                                            <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "center" }}>
+                                              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: confColor + "20", color: confColor, fontWeight: 600 }}>{confLabel}</span>
+                                            </td>
+                                            <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}40`, position: "relative" }}>
+                                              <input
+                                                type="text"
+                                                placeholder="Search APQC..."
+                                                value={searchVal}
+                                                onChange={e => setProcessMappingSearch(prev => ({ ...prev, [i]: e.target.value }))}
+                                                style={{ fontSize: 10, padding: "3px 6px", borderRadius: 4, border: `1px solid ${t.bdr}`, background: t.card, color: t.tx, fontFamily: FONT, width: 140 }}
+                                              />
+                                              {filteredProcs.length > 0 && (
+                                                <div style={{ position: "absolute", top: "100%", left: 8, zIndex: 100, background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 6, maxHeight: 180, overflowY: "auto", width: 300, boxShadow: "0 4px 12px rgba(0,0,0,0.3)" }}>
+                                                  {filteredProcs.map(p => (
+                                                    <div key={p.id} onClick={() => {
+                                                      setProcessMappingOverrides(prev => ({ ...prev, [i]: { apqcL4Code: p.l4, apqcL4Name: p.label } }));
+                                                      setProcessMappingSearch(prev => ({ ...prev, [i]: "" }));
+                                                    }} style={{ padding: "6px 10px", cursor: "pointer", fontSize: 11, color: t.tx, borderBottom: `1px solid ${t.bdr}30` }}
+                                                    onMouseEnter={e => e.currentTarget.style.background = t.hover}
+                                                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                                                      <span style={{ color: t.mut, fontFamily: "monospace", marginRight: 6 }}>{p.l4}</span>{p.label}
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                              )}
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                                  <button onClick={skipProcessMapping} style={{ fontSize: 12, padding: "8px 20px", borderRadius: 8, background: "transparent", border: `1px solid ${t.bdr}`, color: t.tx2, cursor: "pointer", fontFamily: FONT }}>Skip Mapping</button>
+                                  <button onClick={acceptProcessMapping} style={{ fontSize: 12, padding: "8px 20px", borderRadius: 8, background: PURPLE, border: "none", color: "#111", cursor: "pointer", fontFamily: FONT, fontWeight: 600 }}>Accept All</button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Summary panel — done state with department + process breakdowns */}
+                      {hasCensus && censusStep === "done" && (
+                        <div>
+                          <div style={{ padding: "10px 16px", background: GREEN + "15", border: `1px solid ${GREEN}33`, borderRadius: 8, marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}>
+                            <span style={{ color: GREEN, fontWeight: 700 }}>✓</span>
+                            <span style={{ fontSize: 13, color: GREEN, fontWeight: 600 }}>Census loaded — {censusData.totalEmployees.toLocaleString()} employees, {censusData.totalFTE} FTE, {fmtCost(censusData.totalCost)} total cost</span>
+                            <div style={{ flex: 1 }} />
+                            <button onClick={clearCensus} style={{ fontSize: 11, padding: "4px 12px", borderRadius: 6, background: "transparent", border: `1px solid ${t.bdr}`, color: t.tx2, cursor: "pointer", fontFamily: FONT }}>Clear</button>
+                          </div>
+                          {/* Department breakdown */}
+                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 8 }}>
+                            <thead>
+                              <tr>
+                                <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 10, textTransform: "uppercase" }}>Department</th>
+                                <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "right", color: t.mut, fontSize: 10, textTransform: "uppercase" }}>Headcount</th>
+                                <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "right", color: t.mut, fontSize: 10, textTransform: "uppercase" }}>FTE</th>
+                                <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "right", color: t.mut, fontSize: 10, textTransform: "uppercase" }}>Total Cost</th>
+                                <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "right", color: t.mut, fontSize: 10, textTransform: "uppercase" }}>Avg / FTE</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {censusData.byDepartment.slice(0, 15).map((d, i) => (
+                                <tr key={i}>
+                                  <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx, fontWeight: 600 }}>{d.name || "(blank)"}</td>
+                                  <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", color: t.tx2 }}>{d.headcount}</td>
+                                  <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", color: t.tx2 }}>{d.fte.toFixed(1)}</td>
+                                  <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: PURPLE }}>{fmtCost(d.totalCost)}</td>
+                                  <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: t.tx2 }}>{fmtCost(d.avgCost)}</td>
+                                </tr>
+                              ))}
+                              {censusData.byDepartment.length > 15 && (
+                                <tr><td colSpan={5} style={{ padding: "5px 10px", color: t.mut, fontSize: 11, fontStyle: "italic" }}>+ {censusData.byDepartment.length - 15} more departments</td></tr>
+                              )}
+                            </tbody>
+                          </table>
+
+                          {/* Process breakdown — only shown if mapping was done */}
+                          {censusData.byProcess && censusData.byProcess.length > 0 && (
+                            <div style={{ marginTop: 12 }}>
+                              <div style={{ fontSize: 10, color: t.mut, fontWeight: 700, textTransform: "uppercase", marginBottom: 6 }}>Process Breakdown (APQC L4)</div>
+                              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 8 }}>
+                                <thead>
+                                  <tr>
+                                    <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 10, textTransform: "uppercase" }}>APQC Process</th>
+                                    <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "right", color: t.mut, fontSize: 10, textTransform: "uppercase" }}>Headcount</th>
+                                    <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "right", color: t.mut, fontSize: 10, textTransform: "uppercase" }}>FTE</th>
+                                    <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "right", color: t.mut, fontSize: 10, textTransform: "uppercase" }}>Total Cost</th>
+                                    <th style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: "right", color: t.mut, fontSize: 10, textTransform: "uppercase" }}>Avg / FTE</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {censusData.byProcess.slice(0, 20).map((p, i) => (
+                                    <tr key={i}>
+                                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx }}>
+                                        <span style={{ fontFamily: "monospace", fontSize: 10, color: t.mut, marginRight: 6 }}>{p.apqcCode}</span>
+                                        <span style={{ fontWeight: 600 }}>{p.apqcName}</span>
+                                      </td>
+                                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", color: t.tx2 }}>{p.headcount}</td>
+                                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", color: t.tx2 }}>{p.fte.toFixed(1)}</td>
+                                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: PURPLE }}>{fmtCost(p.totalCost)}</td>
+                                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: t.tx2 }}>{fmtCost(p.avgCost)}</td>
+                                    </tr>
+                                  ))}
+                                  {censusData.byProcess.length > 20 && (
+                                    <tr><td colSpan={5} style={{ padding: "5px 10px", color: t.mut, fontSize: 11, fontStyle: "italic" }}>+ {censusData.byProcess.length - 20} more processes</td></tr>
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+
+                          {/* Map to Processes button — shown if mapping was skipped */}
+                          {!censusData.byProcess && (
+                            <button onClick={() => { setCensusStep("process-mapping"); }} style={{ fontSize: 11, padding: "6px 16px", borderRadius: 6, background: "transparent", border: `1px solid ${PURPLE}44`, color: PURPLE, cursor: "pointer", fontFamily: FONT, marginTop: 4 }}>Map to Processes</button>
+                          )}
                         </div>
                       )}
                     </div>

@@ -216,6 +216,51 @@ ${extractedText}`;
   }
 });
 
+// AI Role-to-APQC Process Mapping
+app.post('/api/map-roles', async (req, res) => {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: "API key not configured" });
+
+  try {
+    const { roles } = req.body;
+    if (!roles || !Array.isArray(roles) || roles.length === 0) {
+      return res.status(400).json({ error: "No roles provided" });
+    }
+
+    const systemPrompt = `You are an APQC process framework expert. Map each job title + department combination to the most relevant APQC Level 4 process. Return JSON only, no other text. Format: [{"role": "...", "department": "...", "apqcL4Code": "8.2.1", "apqcL4Name": "Evaluate Customer Creditworthiness", "confidence": "high|medium|low"}]. If a role spans multiple processes, return the primary one. If a role cannot be mapped to a specific L4 process, set apqcL4Code to "unmapped".`;
+
+    const userPrompt = `Map these role + department combinations to APQC L4 processes:\n\n${JSON.stringify(roles)}`;
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 4096,
+        system: systemPrompt,
+        messages: [{ role: "user", content: userPrompt }],
+      }),
+    });
+
+    const data = await response.json();
+    if (data.error) {
+      console.error("[map-roles] API error:", data.error);
+      return res.status(400).json({ error: data.error.message });
+    }
+
+    const text = data.content?.map(c => c.text || "").join("\n") || "";
+    console.log(`[map-roles] Mapped ${roles.length} unique roles`);
+    res.json({ result: text });
+  } catch (err) {
+    console.error("[map-roles] Error:", err);
+    res.status(500).json({ error: err.message || "Role mapping failed" });
+  }
+});
+
 // Serve React build in production
 const clientBuildPath = path.join(__dirname, '..', 'client', 'dist');
 app.use(express.static(clientBuildPath));
