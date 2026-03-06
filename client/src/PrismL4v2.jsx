@@ -946,7 +946,8 @@ const CalcExplainerDrawer = ({ data, onClose, mode }) => {
           })()}
           <div style={{ marginBottom: 16, padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
             <div style={{ fontSize: 10, color: t.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Formula</div>
-            <div style={{ fontSize: 12, fontFamily: "monospace", color: GOLD, lineHeight: 1.6 }}>gap × base amount × addressable% × scenario factor</div>
+            <div style={{ fontSize: 12, fontFamily: "monospace", color: GOLD, lineHeight: 1.6 }}>gap × base amount × addressable% × scenario factor × 1%</div>
+            <div style={{ fontSize: 10, color: t.mut, marginTop: 6, lineHeight: 1.5 }}>The 1% (0.01) factor converts KPI gap magnitude to financial impact — reflecting that not every percentage-point of process improvement translates 1:1 to cost reduction. Industry standard for this class of bottom-up model.</div>
           </div>
           <div style={{ marginBottom: 16, padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
             <div style={{ fontSize: 10, color: t.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Your Input</div>
@@ -956,7 +957,7 @@ const CalcExplainerDrawer = ({ data, onClose, mode }) => {
           <div style={{ marginBottom: 16, padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
             <div style={{ fontSize: 10, color: t.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Benchmark</div>
             <div style={{ fontSize: 13, color: t.tx, marginBottom: 2 }}><span style={{ fontFamily: "monospace", fontWeight: 600 }}>{data.benchmarkValue ?? "—"}</span> <span style={{ fontSize: 11, color: t.mut }}>{data.unit}</span></div>
-            <div style={{ fontSize: 11, color: t.tx2 }}>Source: <span style={{ fontWeight: 600 }}>{data.benchmarkSource}</span> {data.benchmarkYear} {data.sampleSize ? `n=${data.sampleSize}` : ""}</div>
+            <div style={{ fontSize: 11, color: t.tx2 }}>Source: <span style={{ fontWeight: 600 }}>{data.benchmarkSource}</span> {data.benchmarkYear}</div>
           </div>
           <div style={{ marginBottom: 16, padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
             <div style={{ fontSize: 10, color: t.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Gap</div>
@@ -964,7 +965,11 @@ const CalcExplainerDrawer = ({ data, onClose, mode }) => {
           </div>
           <div style={{ marginBottom: 16, padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
             <div style={{ fontSize: 10, color: t.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Base Amount</div>
-            <div style={{ fontSize: 13, color: t.tx }}><span style={{ fontFamily: "monospace", fontWeight: 600 }}>${data.baseAmount != null ? data.baseAmount.toLocaleString() : "—"}M</span> — <span style={{ fontSize: 11, color: t.tx2 }}>{data.baseAmountSource}</span></div>
+            <div style={{ fontSize: 13, color: t.tx, display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontFamily: "monospace", fontWeight: 600 }}>${data.baseAmount != null ? data.baseAmount.toLocaleString() : "—"}M</span>
+              {data.censusLaborCostM != null && <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, background: PURPLE + "20", color: PURPLE, fontWeight: 700 }}>CENSUS DATA</span>}
+            </div>
+            <div style={{ fontSize: 11, color: t.tx2, marginTop: 2 }}>{data.baseAmountSource}</div>
           </div>
           <div style={{ marginBottom: 16, padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
             <div style={{ fontSize: 10, color: t.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Addressable</div>
@@ -989,7 +994,7 @@ const CalcExplainerDrawer = ({ data, onClose, mode }) => {
             <div style={{ fontSize: 10, color: "#7CB9A8", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 10 }}>Why This Number Is Defensible</div>
             <div style={{ fontSize: 11, color: t.tx2, lineHeight: 1.7 }}>
               <div style={{ marginBottom: 8 }}><span style={{ fontWeight: 600, color: t.tx }}>Methodology:</span> Bottom-up process-level analysis, not top-down benchmarking. Each KPI gap is sized against your specific baseline, not industry averages.</div>
-              <div style={{ marginBottom: 8 }}><span style={{ fontWeight: 600, color: t.tx }}>Benchmark source:</span> {data.benchmarkSource || "APQC PCF"} publishes this benchmark based on n={data.sampleSize || "500+"} companies. Last updated {data.benchmarkYear || "2024"}.</div>
+              <div style={{ marginBottom: 8 }}><span style={{ fontWeight: 600, color: t.tx }}>Benchmark source:</span> {data.benchmarkSource || "APQC PCF"} publishes this benchmark. Last updated {data.benchmarkYear || "2024"}.</div>
               <div style={{ marginBottom: 8 }}><span style={{ fontWeight: 600, color: t.tx }}>Conservatism:</span> Your addressable % is set at {data.addressablePct}% — meaning {100 - data.addressablePct}% of the theoretical gap is excluded as non-addressable.</div>
               <div style={{ marginBottom: 8 }}><span style={{ fontWeight: 600, color: t.tx }}>Scenario used:</span> {data.scenarioLevel} ({data.scenarioFactor}) — {data.scenarioLevel === "Medium" ? "the middle scenario, our recommended planning assumption" : data.scenarioLevel === "High" ? "full addressable value — assumes excellent execution" : "minimum credible case — conservative"}.</div>
               <div style={{ fontSize: 10, color: t.mut, fontStyle: "italic", marginTop: 8, paddingTop: 8, borderTop: `1px solid ${t.bdr}` }}>This is not a guaranteed outcome. It is a directional estimate of potential value, sized using industry data and your baseline inputs.</div>
@@ -1119,6 +1124,7 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
 
   // Cascading scope selection
   const [scopeStage, setScopeStage] = useState(1);
+  const [expandedJobs, setExpandedJobs] = useState(new Set());
   const [selectedFunction, setSelectedFunction] = useState(initialData?.selectedFunction || null);
   const [selectedBlueprints, setSelectedBlueprints] = useState(new Set());
   const [entryPath, setEntryPath] = useState(null);
@@ -1233,6 +1239,7 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
   const [censusRawRows, setCensusRawRows] = useState([]);
   const [censusMapping, setCensusMapping] = useState({});
   const [censusCostType, setCensusCostType] = useState("loaded"); // "loaded" | "base"
+  const [loadedCostMultiplier, setLoadedCostMultiplier] = useState(1.30); // editable loaded cost multiplier
   const [processMapping, setProcessMapping] = useState(null); // array of {role, department, apqcL4Code, apqcL4Name, confidence}
   const [processMappingLoading, setProcessMappingLoading] = useState(false);
   const [processMappingError, setProcessMappingError] = useState(null);
@@ -1263,16 +1270,26 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
     const vals = procValues[proc.id] || {};
     const bmarks = procBenchmarks[proc.id] || {};
     const potential = procScenarios[proc.id]?.potential || scenarioLevel;
-    const addressablePct = procScenarios[proc.id]?.addressable || 80;
+    const addressablePct = procScenarios[proc.id]?.addressable || 60;
     const scenarioFactor = { High: 1.0, Medium: 0.65, Low: 0.35 }[potential];
     const m = scenarioFactor * (addressablePct / 100);
     const realCurrent = vals[`kpi_current_${ki}`];
     const current = realCurrent ?? kpi.current;
     const bench = bmarks[`bench_${ki}`] ?? kpi.benchmark;
-    const agentBench = kpi.agentBenchmark;
+    const rawAgentBench = kpi.agentBenchmark;
+    const agentBench = (rawAgentBench != null && kpi.unit === '%' && (kpi.benchmark ?? 0) <= 100)
+      ? Math.min(rawAgentBench, 99) : rawAgentBench;
     const lever = proc.valLevers?.[0];
     const fintype = lever?.fintype || 'SGA';
-    const baseAmt = fintype === 'Revenue' ? baseline.revenue : fintype === 'COGS' ? baseline.cogs : baseline.sga;
+    // Use census labor cost when available (matches computeValue logic exactly)
+    const censusMatch = censusData?.byProcess?.find(bp => bp.apqcCode === proc.l4);
+    const censusLaborCostM = censusMatch ? censusMatch.totalCost / 1_000_000 : null;
+    const rawBaseAmt = fintype === 'Revenue' ? baseline.revenue : fintype === 'COGS' ? baseline.cogs : baseline.sga;
+    const benchmarkSgaM = baseline.sga * 0.12;
+    const baseAmt = (fintype === 'SGA' && censusLaborCostM != null) ? censusLaborCostM : (fintype === 'SGA' ? benchmarkSgaM : rawBaseAmt);
+    const baseAmountSource = (fintype === 'SGA' && censusLaborCostM != null)
+      ? `Census: ${censusMatch.headcount} employees, ${censusMatch.fte?.toFixed(1)} FTE (actual labor cost)`
+      : fintype + ' from financial baseline';
     const selectedSource = bmarks[`src_${ki}`] || 'primary';
     const srcLabel = selectedSource === 'primary' ? (kpi.src || 'APQC') : selectedSource === 'sapvlm' ? 'SAP VLM' : selectedSource === 'hackett' ? 'Hackett' : 'Custom';
     const srcMeta = SOURCE_META[selectedSource] || SOURCE_META.custom;
@@ -1287,7 +1304,7 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
         const addressable = gap * m;
         result = kpi.unit === '%' ? (addressable / 100) * baseAmt * 0.01 : (bench !== 0 ? (addressable / Math.abs(bench)) : 0) * baseAmt * 0.01;
       }
-      return { procId: proc.id, kpiName: kpi.name, unit: kpi.unit, currentValue: current, benchmarkValue: bench, inputSource: realCurrent != null ? 'Questionnaire' : kpi.current != null ? 'Modeled estimate' : 'Not provided', benchmarkSource: srcLabel, benchmarkYear: srcMeta.year, sampleSize: sampleN, gapValue: gap, gapPct, baseAmount: baseAmt, baseAmountSource: fintype + ' from financial baseline', addressablePct, scenarioLevel: potential, scenarioFactor, resultFormatted: result > 0 ? (result < 1 ? '$' + Math.round(result * 1000) + 'K' : '$' + result.toFixed(1) + 'M') : '$0', confidence };
+      return { procId: proc.id, kpiName: kpi.name, unit: kpi.unit, currentValue: current, benchmarkValue: bench, inputSource: realCurrent != null ? 'Questionnaire' : kpi.current != null ? 'Modeled estimate' : 'Not provided', benchmarkSource: srcLabel, benchmarkYear: srcMeta.year, sampleSize: sampleN, gapValue: gap, gapPct, baseAmount: baseAmt, baseAmountSource, censusLaborCostM, addressablePct, scenarioLevel: potential, scenarioFactor, resultFormatted: result > 0 ? (result < 1 ? '$' + Math.round(result * 1000) + 'K' : '$' + result.toFixed(1) + 'M') : '$0', confidence };
     }
     // Agent type
     if (type === 'agent') {
@@ -1298,10 +1315,10 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
         const addressable = agentGap * m;
         agentResult = kpi.unit === '%' ? (addressable / 100) * baseAmt * 0.01 : (agentBench !== 0 ? (addressable / Math.abs(agentBench)) : 0) * baseAmt * 0.01;
       }
-      return { procId: proc.id, kpiName: kpi.name, unit: kpi.unit, currentValue: current, benchmarkValue: agentBench, inputSource: realCurrent != null ? 'Questionnaire' : kpi.current != null ? 'Modeled estimate' : 'Not provided', benchmarkSource: 'AI Agent benchmark', benchmarkYear: '2024', sampleSize: null, gapValue: agentGap, gapPct: agentGapPct, baseAmount: baseAmt, baseAmountSource: fintype + ' from financial baseline', addressablePct, scenarioLevel: potential, scenarioFactor, resultFormatted: agentResult > 0 ? (agentResult < 1 ? '$' + Math.round(agentResult * 1000) + 'K' : '$' + agentResult.toFixed(1) + 'M') : '$0', confidence };
+      return { procId: proc.id, kpiName: kpi.name, unit: kpi.unit, currentValue: current, benchmarkValue: agentBench, inputSource: realCurrent != null ? 'Questionnaire' : kpi.current != null ? 'Modeled estimate' : 'Not provided', benchmarkSource: 'AI Agent benchmark', benchmarkYear: '2024', sampleSize: null, gapValue: agentGap, gapPct: agentGapPct, baseAmount: baseAmt, baseAmountSource, censusLaborCostM, addressablePct, scenarioLevel: potential, scenarioFactor, resultFormatted: agentResult > 0 ? (agentResult < 1 ? '$' + Math.round(agentResult * 1000) + 'K' : '$' + agentResult.toFixed(1) + 'M') : '$0', confidence };
     }
     return null;
-  }, [procValues, procBenchmarks, procScenarios, scenarioLevel, baseline, baselineData]);
+  }, [procValues, procBenchmarks, procScenarios, scenarioLevel, baseline, baselineData, censusData]);
 
   // Challenge a value calculation via Catalyst
   const challengeCalcValue = useCallback(async (explainerData) => {
@@ -1558,7 +1575,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
       const vals = procValues[proc.id] || {};
       const bmarks = procBenchmarks[proc.id] || {};
       const potential = procScenarios[proc.id]?.potential || scenarioLevel;
-      const addressablePct = (procScenarios[proc.id]?.addressable || 80) / 100;
+      const addressablePct = (procScenarios[proc.id]?.addressable || 60) / 100;
       const m = multipliers[potential] * addressablePct;
       let procVal = 0;
       let procAgentVal = 0;
@@ -1593,7 +1610,10 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
         }
 
         // Agent uplift: incremental value from ERP benchmark to agent benchmark
-        const agentBench = kpi.agentBenchmark;
+        const rawAgentBench = kpi.agentBenchmark;
+        // Cap rate KPIs (%) at 99 — only when benchmark itself is ≤100 (i.e. actual rates, not ROI/index KPIs)
+        const agentBench = (rawAgentBench != null && kpi.unit === '%' && (kpi.benchmark ?? 0) <= 100)
+          ? Math.min(rawAgentBench, 99) : rawAgentBench;
         const benchVal = bmarks[`bench_${ki}`] ?? kpi.benchmark;
         if (agentBench != null && benchVal != null && benchVal !== 0 && agentBench !== benchVal) {
           const agentGap = Math.abs(benchVal - agentBench);
@@ -1626,7 +1646,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
       const vals = procValues[proc.id] || {};
       const bmarks = procBenchmarks[proc.id] || {};
       const wcPotential = procScenarios[proc.id]?.potential || scenarioLevel;
-      const wcAddrPct = (procScenarios[proc.id]?.addressable || 80) / 100;
+      const wcAddrPct = (procScenarios[proc.id]?.addressable || 60) / 100;
       const wcM = multipliers[wcPotential] * wcAddrPct;
 
       (proc.kpis || []).forEach((kpi, ki) => {
@@ -3487,8 +3507,13 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                 </div>
                                 {proc.jobs?.length > 0 && (
                                   <div style={{ marginLeft: 28, marginTop: 4, fontSize: 10, color: t.mut }}>
-                                    {proc.jobs.slice(0, 2).map((j, ji) => <span key={ji} style={{ marginRight: 8 }}>• {j}</span>)}
-                                    {proc.jobs.length > 2 && <span style={{ color: t.sub }}>+{proc.jobs.length - 2} more</span>}
+                                    {(expandedJobs.has(proc.id) ? proc.jobs : proc.jobs.slice(0, 2)).map((j, ji) => <span key={ji} style={{ marginRight: 8 }}>• {j}</span>)}
+                                    {proc.jobs.length > 2 && (
+                                      <span onClick={e => { e.stopPropagation(); setExpandedJobs(prev => { const n = new Set(prev); n.has(proc.id) ? n.delete(proc.id) : n.add(proc.id); return n; }); }}
+                                        style={{ color: t.sub, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 2 }}>
+                                        {expandedJobs.has(proc.id) ? "show less" : `+${proc.jobs.length - 2} more`}
+                                      </span>
+                                    )}
                                   </div>
                                 )}
                               </div>
@@ -4626,7 +4651,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                   showToast("Map at least Department, Role, Location, and Cost columns");
                   return;
                 }
-                const costMult = censusCostType === "base" ? 1.3 : 1.0;
+                const costMult = censusCostType === "base" ? loadedCostMultiplier : 1.0;
                 const parsed = [];
                 const byDept = {};
                 let totalFTE = 0, totalCost = 0;
@@ -4789,7 +4814,12 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                             </label>
                             <label style={{ fontSize: 12, color: t.tx, cursor: "pointer" }}>
                               <input type="radio" name="censusCostType" checked={censusCostType === "base"} onChange={() => setCensusCostType("base")} style={{ marginRight: 4 }} />
-                              Base salary (will apply 1.3x)
+                              Base salary (apply loaded cost multiplier:
+                              <input type="number" min={1.0} max={2.0} step={0.01}
+                                value={loadedCostMultiplier}
+                                onChange={e => setLoadedCostMultiplier(parseFloat(e.target.value) || 1.30)}
+                                style={{ width: 52, marginLeft: 6, marginRight: 2, padding: "1px 4px", borderRadius: 4, border: `1px solid ${GOLD}44`, background: "transparent", color: GOLD, fontFamily: "monospace", fontSize: 12 }} />
+                              <span title="Loaded cost multiplier accounts for benefits, payroll taxes, and overhead. Typical range: 1.25x–1.45x. Adjust based on your HR data." style={{ cursor: "help", color: t.mut, fontSize: 11 }}>ⓘ</span>)
                             </label>
                           </div>
 
@@ -5189,14 +5219,14 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                 const setBmark = (key, val) => setProcBenchmarks(prev => ({ ...prev, [proc.id]: { ...(prev[proc.id] || {}), [key]: val } }));
                 const vals = procValues[proc.id] || {};
                 const potential = procScenarios[proc.id]?.potential || scenarioLevel;
-                const m = { High: 1.0, Medium: 0.65, Low: 0.35 }[potential] * ((procScenarios[proc.id]?.addressable || 80) / 100);
+                const m = { High: 1.0, Medium: 0.65, Low: 0.35 }[potential] * ((procScenarios[proc.id]?.addressable || 60) / 100);
                 let procErpVal = 0, procAgentVal = 0;
                 const kpiRows = (proc.kpis || []).map((kpi, ki) => {
                   const realCurrent = vals[`kpi_current_${ki}`];
                   const current = realCurrent ?? kpi.current;
                   const isModeled = realCurrent == null && kpi.current != null;
                   const bench = bmarks[`bench_${ki}`] ?? kpi.benchmark;
-                  const agentBench = kpi.agentBenchmark;
+                  const agentBench = kpi.agentBenchmark != null && kpi.unit === '%' && (kpi.benchmark ?? 0) <= 100 ? Math.min(kpi.agentBenchmark, 99) : kpi.agentBenchmark;
                   const lever = proc.valLevers?.[0];
                   const baseAmt = lever?.fintype === "Revenue" ? baseline.revenue : lever?.fintype === "COGS" ? baseline.cogs : baseline.sga;
                   let erpImpact = 0, agentImpact = 0;
@@ -5276,14 +5306,14 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                             const adjHackett = kpi.benchmark ? adjustBenchmark(+(kpi.benchmark * jitter(2)).toFixed(1), baseline.industry, baseline.revenueBand, hib) : null;
                             const sources = [
                               { key: "primary", label: kpi.src || "APQC", value: adjPrimary },
-                              { key: "sapvlm", label: "SAP VLM", value: adjSapvlm },
-                              { key: "hackett", label: "Hackett", value: adjHackett },
+                              { key: "sapvlm", label: "SAP VLM (Illustrative)", value: adjSapvlm },
+                              { key: "hackett", label: "Hackett (Illustrative)", value: adjHackett },
                               { key: "custom", label: "Custom", value: bmarks[`bench_custom_${ki}`] ?? null },
                             ];
                             const activeBench = selectedSource === "custom" ? (bmarks[`bench_custom_${ki}`] ?? null) : sources.find(s => s.key === selectedSource)?.value ?? adjPrimary;
                             const gap = currentVal != null && activeBench != null ? Math.abs(currentVal - activeBench) : null;
                             const quartile = getQuartile(currentVal, activeBench, kpi);
-                            const peerN = getSampleSize("primary", seed);
+                            const peerN = null; // sample sizes removed — hash-generated values not displayed
                             return (
                               <div key={ki} style={{ padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
@@ -5293,8 +5323,8 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                     {gap != null && <span style={{ fontSize: 14, fontFamily: "monospace", color: gap > 0 ? RED : GREEN, fontWeight: 700 }}>Gap: {gap.toFixed(1)}</span>}
                                     {quartile && (
-                                      <span title={`Peer group: ${assessmentProfile.industry || baseline.industry || "Manufacturing"} ${assessmentProfile.revenueBand || baseline.revenueBand || "$1-5B"} (n=${peerN})`} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: quartile.color + "20", color: quartile.color, fontWeight: 700 }}>
-                                        {quartile.icon} {quartile.label} <span style={{ fontWeight: 400, opacity: 0.7 }}>n={peerN}</span>
+                                      <span title={`Peer group: ${assessmentProfile.industry || baseline.industry || "Manufacturing"} ${assessmentProfile.revenueBand || baseline.revenueBand || "$1-5B"}`} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: quartile.color + "20", color: quartile.color, fontWeight: 700 }}>
+                                        {quartile.icon} {quartile.label}
                                       </span>
                                     )}
                                   </div>
@@ -5312,7 +5342,6 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                   <tbody>
                                     {sources.map(src => {
                                       const meta = SOURCE_META[src.key] || SOURCE_META.custom;
-                                      const sn = getSampleSize(src.key, seed + (src.key === "sapvlm" ? 1 : src.key === "hackett" ? 2 : 0));
                                       const lo = src.value != null ? Math.round(src.value * 0.85 * 10) / 10 : null;
                                       const hi = src.value != null ? Math.round(src.value * 1.15 * 10) / 10 : null;
                                       return (
@@ -5324,7 +5353,6 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                         </td>
                                         <td style={{ padding: "4px 6px", borderBottom: `1px solid ${t.bdr}20`, color: selectedSource === src.key ? t.tx : t.tx2, fontWeight: selectedSource === src.key ? 600 : 400 }}>
                                           {src.label}
-                                          {sn && <span style={{ fontSize: 9, color: t.mut, marginLeft: 4 }}>n={sn}</span>}
                                         </td>
                                         <td style={{ padding: "4px 6px", borderBottom: `1px solid ${t.bdr}20`, textAlign: "right", fontFamily: "monospace" }} title={src.key !== "custom" ? `Adjusted for ${baseline.industry || "Manufacturing"}, ${baseline.revenueBand || "$1-5B"}` : undefined}>
                                           {src.key === "custom" ? (
@@ -5349,7 +5377,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                 {activeBench != null && (
                                   <div style={{ fontSize: 9, color: t.mut, marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
                                     <span>{sources.find(s => s.key === selectedSource)?.label || kpi.src} benchmark</span>
-                                    <span title={`Range: ${Math.round(activeBench * 0.85 * 10) / 10}–${Math.round(activeBench * 1.15 * 10) / 10}${kpi.unit === "%" ? "%" : ""} | n=${getSampleSize(selectedSource, seed)} | ${(SOURCE_META[selectedSource] || SOURCE_META.custom).year}`} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 12, height: 12, borderRadius: "50%", background: t.mut + "20", color: t.mut, fontSize: 7, fontWeight: 700, cursor: "help" }}>?</span>
+                                    <span title={`Range: ${Math.round(activeBench * 0.85 * 10) / 10}–${Math.round(activeBench * 1.15 * 10) / 10}${kpi.unit === "%" ? "%" : ""} | ${(SOURCE_META[selectedSource] || SOURCE_META.custom).year}`} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 12, height: 12, borderRadius: "50%", background: t.mut + "20", color: t.mut, fontSize: 7, fontWeight: 700, cursor: "help" }}>?</span>
                                   </div>
                                 )}
                                 {(() => { const ctx = getBenchmarkContext(proc.id, kpi.name); const lv = getSapLever(proc.id); return ctx && lv ? (
@@ -5427,7 +5455,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                   </div>
                                 );
                               })}
-                              <div style={{ marginTop: 10, fontSize: 9, color: t.mut }}>Source: APQC · n={getSampleSize("primary", proc.id.split("").reduce((a, c) => a + c.charCodeAt(0), 0))} · {baseline.industry || "Manufacturing"} {baseline.revenueBand || "$1-5B"} · 2023</div>
+                              <div style={{ marginTop: 10, fontSize: 9, color: t.mut }}>Source: APQC · {baseline.industry || "Manufacturing"} {baseline.revenueBand || "$1-5B"} · 2023</div>
                             </div>
                           );
                         })()}
