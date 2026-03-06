@@ -1158,6 +1158,7 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
   const [vrCollapsed, setVrCollapsed] = useState({ people: true, processes: true, data: true, technology: true, governance: true, operatingModel: true });
   const [vrAutoPopulated, setVrAutoPopulated] = useState(initialData?.vrAutoPopulated || false);
   const [vrLoading, setVrLoading] = useState({});
+  const [vrPeopleImpact, setVrPeopleImpact] = useState({}); // { "dept|||role": "Retrain"|"Redeploy"|"No change" }
 
   // UX progressive disclosure states
   const [implSpecCollapsed, setImplSpecCollapsed] = useState({});
@@ -6336,6 +6337,104 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                   </div>
                   {isOpen && (
                     <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
+                      {/* Census-powered People section */}
+                      {dim.key === "people" && censusData?.byProcess && (() => {
+                        // Collect all census rows mapped to any selected process
+                        const matchedRows = censusData.rows.filter(r => r.apqcL4Code && selProcs.some(p => p.l4 === r.apqcL4Code));
+                        if (matchedRows.length === 0) return null;
+                        const locations = new Set(matchedRows.map(r => r.location).filter(Boolean));
+                        const totalFTE = matchedRows.reduce((s, r) => s + (r.fte || 1), 0);
+                        const totalCost = matchedRows.reduce((s, r) => s + (r.cost || 0) * (r.fte || 1), 0);
+                        // Estimated automation rate from value calc (use SGA impact as proxy)
+                        const sgaBase = effectiveFinancials.sga || 1;
+                        const sgaImpact = (valResult.pnl?.sgaImpact || 0) + (valResult.pnl?.agentSgaImpact || 0);
+                        const autoRate = sgaBase > 0 ? Math.min(sgaImpact / sgaBase, 0.5) : 0.15;
+                        const postFTE = Math.round((totalFTE * (1 - autoRate)) * 10) / 10;
+                        const fteDelta = Math.round((totalFTE - postFTE) * 10) / 10;
+                        const avgCostPerFTE = totalFTE > 0 ? totalCost / totalFTE : 0;
+                        const costSavings = fteDelta * avgCostPerFTE;
+                        const fmtC = v => "$" + Math.round(v).toLocaleString();
+
+                        const copyToClipboard = () => {
+                          const header = "Role\tDepartment\tLocation\tAnnual Cost\tFTE\tImpact";
+                          const rows = matchedRows.map(r => {
+                            const key = `${r.department}|||${r.role}`;
+                            const impact = vrPeopleImpact[key] || "Retrain";
+                            return `${r.role}\t${r.department}\t${r.location}\t${Math.round(r.cost)}\t${r.fte}\t${impact}`;
+                          });
+                          navigator.clipboard.writeText(header + "\n" + rows.join("\n"));
+                          showToast("Copied " + matchedRows.length + " rows to clipboard");
+                        };
+
+                        return (
+                          <div style={{ marginBottom: 8 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                              <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: PURPLE + "20", color: PURPLE, fontWeight: 600 }}>Populated from workforce census</span>
+                              <div style={{ flex: 1 }} />
+                              <button onClick={copyToClipboard} style={{ fontSize: 10, padding: "4px 12px", borderRadius: 6, background: "transparent", border: `1px solid ${t.bdr}`, color: t.tx2, cursor: "pointer", fontFamily: FONT }}>Copy to Clipboard</button>
+                            </div>
+                            <div style={{ fontSize: 12, color: t.tx2, marginBottom: 8 }}>
+                              {matchedRows.length} employees across {locations.size} location{locations.size !== 1 ? "s" : ""}, {fmtC(totalCost)} total labor cost affected
+                            </div>
+
+                            {/* Headcount impact summary */}
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, marginBottom: 12 }}>
+                              {[
+                                { l: "Current FTE", v: totalFTE.toFixed(1), c: t.tx },
+                                { l: "Post-Impl FTE", v: postFTE.toFixed(1), c: GREEN },
+                                { l: "FTE Delta", v: "-" + fteDelta.toFixed(1), c: GOLD },
+                                { l: "Cost Savings", v: fmtC(costSavings), c: PURPLE },
+                              ].map(k => (
+                                <div key={k.l} style={{ padding: "8px 10px", background: t.bg, border: `1px solid ${t.bdr}`, borderRadius: 8, textAlign: "center" }}>
+                                  <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase", marginBottom: 2 }}>{k.l}</div>
+                                  <div style={{ fontSize: 16, fontFamily: SERIF, color: k.c, fontWeight: 600 }}>{k.v}</div>
+                                </div>
+                              ))}
+                            </div>
+                            <div style={{ fontSize: 10, color: t.mut, fontStyle: "italic", marginBottom: 10 }}>Estimates based on SAP lever automation rates. Actual impact depends on implementation scope.</div>
+
+                            {/* Workforce detail table */}
+                            <div style={{ maxHeight: 300, overflowY: "auto" }}>
+                              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                                <thead>
+                                  <tr>
+                                    {["Role", "Department", "Location", "Annual Cost", "FTE", "Impact"].map((h, i) => (
+                                      <th key={i} style={{ padding: "5px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: i === 3 ? "right" : "left", color: t.mut, fontSize: 10, textTransform: "uppercase", position: "sticky", top: 0, background: t.card }}>{h}</th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {matchedRows.slice(0, 100).map((r, i) => {
+                                    const key = `${r.department}|||${r.role}`;
+                                    const impact = vrPeopleImpact[key] || "Retrain";
+                                    const impactColor = impact === "Retrain" ? GOLD : impact === "Redeploy" ? PURPLE : t.mut;
+                                    return (
+                                      <tr key={i}>
+                                        <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx, fontWeight: 600 }}>{r.role}</td>
+                                        <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx2 }}>{r.department}</td>
+                                        <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx2 }}>{r.location}</td>
+                                        <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: PURPLE }}>{fmtC(r.cost)}</td>
+                                        <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "center", color: t.tx2 }}>{r.fte}</td>
+                                        <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40` }}>
+                                          <select value={impact} onChange={e => setVrPeopleImpact(prev => ({ ...prev, [key]: e.target.value }))}
+                                            style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, border: `1px solid ${t.bdr}`, background: t.bg, color: impactColor, fontFamily: FONT, fontWeight: 600 }}>
+                                            <option value="Retrain">Retrain</option>
+                                            <option value="Redeploy">Redeploy</option>
+                                            <option value="No change">No change</option>
+                                          </select>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                  {matchedRows.length > 100 && (
+                                    <tr><td colSpan={6} style={{ padding: "5px 8px", color: t.mut, fontSize: 10, fontStyle: "italic" }}>+ {matchedRows.length - 100} more rows</td></tr>
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        );
+                      })()}
                       {dim.fields.map(field => (
                         <div key={field.id}>
                           <div style={{ fontSize: 11, color: t.tx2, fontWeight: 600, marginBottom: 4 }}>{field.label}</div>
