@@ -1562,12 +1562,18 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
       let procVal = 0;
       let procAgentVal = 0;
 
+      // Census labor cost lookup for this process
+      const censusMatch = censusData?.byProcess?.find(bp => bp.apqcCode === proc.l4);
+      const censusLaborCostM = censusMatch ? censusMatch.totalCost / 1_000_000 : null;
+      const benchmarkSgaM = effectiveFinancials.sga;
+
       (proc.kpis || []).forEach((kpi, ki) => {
         const current = vals[`kpi_current_${ki}`] ?? kpi.current;
         const bench = bmarks[`bench_${ki}`] ?? kpi.benchmark;
         const lever = proc.valLevers?.[0];
+        const sgaBase = censusLaborCostM != null ? censusLaborCostM : benchmarkSgaM;
         const baseAmt = lever?.fintype === "Revenue" ? effectiveFinancials.revenue :
-          lever?.fintype === "COGS" ? effectiveFinancials.cogs : effectiveFinancials.sga;
+          lever?.fintype === "COGS" ? effectiveFinancials.cogs : sgaBase;
 
         if (current != null && bench != null && bench !== 0) {
           const gap = Math.abs(current - bench);
@@ -1605,7 +1611,8 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
       });
 
       totalAgentValue += procAgentVal;
-      procImpacts.push({ id: proc.id, label: proc.label, l4: proc.l4, value: procVal, agentValue: procAgentVal, e2e: proc.e2e, color: proc.l1Color, scenario: potential });
+      procImpacts.push({ id: proc.id, label: proc.label, l4: proc.l4, value: procVal, agentValue: procAgentVal, e2e: proc.e2e, color: proc.l1Color, scenario: potential,
+        censusMatch: censusMatch || null, censusLaborCostM, benchmarkSgaM });
       totalValue += procVal;
     });
 
@@ -1670,7 +1677,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
       balanceSheet: { receivablesImpact, payablesImpact, inventoryImpact,
         totalWorkingCapital: receivablesImpact + payablesImpact + inventoryImpact }
     };
-  }, [selProcs, procValues, procBenchmarks, scenarioLevel, procScenarios, baseline, effectiveFinancials]);
+  }, [selProcs, procValues, procBenchmarks, scenarioLevel, procScenarios, baseline, effectiveFinancials, censusData]);
 
   const valResult = useMemo(() => computeValue(), [computeValue]);
 
@@ -5711,7 +5718,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                     { id: "approach", title: "1. THE APPROACH", content: "PrismL4 uses a bottom-up methodology. We start with your actual processes, measure the gap between where you are and where best practice is, and size the financial impact of closing that gap. This is the same approach used by the Big 4 in Phase 0 business cases — we've just automated the 6-week exercise." },
                     { id: "benchmarks", title: "2. THE BENCHMARK DATA", content: `Benchmarks come from three sources:\n• APQC Process Classification Framework — the largest process benchmarking dataset globally, updated annually\n• SAP Value Lifecycle Management — SAP's own customer outcome database from thousands of S/4HANA implementations\n• Hackett Group — premium benchmarks for finance and supply chain processes\n\nEach benchmark is adjusted for your industry (${baseline.industry}) and revenue band (${baseline.revenueBand}), using published adjustment factors.` },
                     { id: "gap", title: "3. THE GAP CALCULATION", content: "For each KPI, we calculate: Gap = |Your baseline - Best practice benchmark|. We then ask: what % of that gap is realistically addressable? You set this — default is 40-60% depending on process complexity. The remaining gap is treated as non-addressable (organizational, structural, or market constraints)." },
-                    { id: "financial", title: "4. THE FINANCIAL TRANSLATION", content: `The gap in process terms (days, %, FTEs) is translated to dollars using your financial inputs. For example: a 2-day reduction in DSO x your annual revenue / 365 = working capital released. For headcount KPIs: FTE reduction x loaded cost per FTE = SG&A impact.${companyFinancials ? "\n\nYour calculations are anchored to " + (companyFinancials.companyName || baseline.company) + " FY" + companyFinancials.fiscalYear + " actuals." : "\n\nCurrently using revenue band estimates. Upload your P&L in Step 2 for exact figures."}` },
+                    { id: "financial", title: "4. THE FINANCIAL TRANSLATION", content: `The gap in process terms (days, %, FTEs) is translated to dollars using your financial inputs. For example: a 2-day reduction in DSO x your annual revenue / 365 = working capital released. For headcount KPIs: FTE reduction x loaded cost per FTE = SG&A impact.${companyFinancials ? "\n\nYour calculations are anchored to " + (companyFinancials.companyName || baseline.company) + " FY" + companyFinancials.fiscalYear + " actuals." : "\n\nCurrently using revenue band estimates. Upload your P&L in Step 2 for exact figures."}${censusData?.byProcess ? "\n\nLabor cost source: Company workforce census (" + censusData.totalEmployees + " employees, " + censusData.byProcess.length + " processes mapped). Processes with census matches use actual labor costs instead of industry benchmarks." : censusData ? "\n\nLabor cost source: Industry benchmark (" + (baseline.industry || "General") + ", " + (baseline.revenueBand || "Mid-market") + " peer group). Upload process mapping in Step 2 to use actual labor costs." : ""}` },
                     { id: "split", title: "5. THE ERP / AI SPLIT", content: "ERP value = what S/4HANA delivers by implementing best practice processes. Agent uplift = the additional improvement from intelligent automation on top of ERP. Agent benchmarks are set at 15-30% better than ERP benchmarks, based on outcomes from early AI agent deployments in finance processes." },
                     { id: "scenarios", title: "6. THE SCENARIO FACTORS", content: "Three scenarios reflect implementation risk:\n• High (100%): Full addressable value — assumes excellent execution and adoption\n• Medium (65%): Conservative — our recommended planning assumption\n• Low (35%): Minimum credible case — poor adoption, partial deployment\n\nAll headline numbers shown at Medium unless you change the scenario." },
                     { id: "defensible", title: "7. WHAT MAKES THIS DEFENSIBLE", content: `Three things make this number defensible in front of a CFO or board:\n1. It's anchored to your P&L — not a percentage of generic industry revenue\n2. It's process-level, not top-down — every dollar traces back to a specific process, a specific KPI, a specific benchmark with a source and sample size\n3. It's deliberately conservative — addressable % and scenario factor both reduce the theoretical maximum by 35-65%` },
@@ -5873,8 +5880,8 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
             {/* Process-level impact table */}
             <div style={labelStyle}>Value by L4 Process</div>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginBottom: 24 }}>
-              <thead><tr>{["APQC L4", "Process", "E2E", "Scenario", "Score", "ERP ($M)", "Agent ($M)", "Total ($M)"].map((h, i) => (
-                <th key={i} style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: i >= 5 ? "right" : "left", color: t.mut, fontWeight: 600, fontSize: 12 }}>{h}</th>
+              <thead><tr>{["APQC L4", "Process", "E2E", "Scenario", "Score", "Labor Cost Source", "ERP ($M)", "Agent ($M)", "Total ($M)"].map((h, i) => (
+                <th key={i} style={{ padding: "6px 10px", borderBottom: `2px solid ${t.bdr}`, textAlign: i >= 6 ? "right" : "left", color: t.mut, fontWeight: 600, fontSize: 12 }}>{h}</th>
               ))}</tr></thead>
               <tbody>
                 {valResult.impacts.filter(i => i.value > 0).map((imp, idx) => {
@@ -5895,20 +5902,31 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                   const lvl = imp.scenario || scenarioLevel;
                   const lvlColor = lvl === "High" ? GREEN : lvl === "Medium" ? GOLD : ORANGE;
 
-                  return (
-                    <tr key={idx}>
-                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, fontFamily: "monospace", fontSize: 11, color: t.mut }}>{imp.l4}</td>
-                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx }}>{imp.label}</td>
-                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40` }}>
+                  // Census badge logic
+                  const hasCensusData = !!censusData;
+                  const hasCensusMatch = !!imp.censusMatch;
+
+                  return (<React.Fragment key={idx}>
+                    <tr>
+                      <td style={{ padding: "5px 10px", borderBottom: hasCensusMatch ? "none" : `1px solid ${t.bdr}40`, fontFamily: "monospace", fontSize: 11, color: t.mut }}>{imp.l4}</td>
+                      <td style={{ padding: "5px 10px", borderBottom: hasCensusMatch ? "none" : `1px solid ${t.bdr}40`, color: t.tx }}>{imp.label}</td>
+                      <td style={{ padding: "5px 10px", borderBottom: hasCensusMatch ? "none" : `1px solid ${t.bdr}40` }}>
                         <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 3, background: imp.color + "15", color: imp.color, fontWeight: 600 }}>{imp.e2e}</span>
                       </td>
-                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40` }}>
+                      <td style={{ padding: "5px 10px", borderBottom: hasCensusMatch ? "none" : `1px solid ${t.bdr}40` }}>
                         <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 3, background: lvlColor + "15", color: lvlColor, fontWeight: 600 }}>{lvl}</span>
                       </td>
-                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40` }}>
+                      <td style={{ padding: "5px 10px", borderBottom: hasCensusMatch ? "none" : `1px solid ${t.bdr}40` }}>
                         {scoreLabel ? <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 3, background: scoreColor + "15", color: scoreColor, fontWeight: 600 }}>{scoreLabel}</span> : <span style={{ fontSize: 10, color: t.sub }}>—</span>}
                       </td>
-                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: GOLD, fontWeight: 700 }}>
+                      <td style={{ padding: "5px 10px", borderBottom: hasCensusMatch ? "none" : `1px solid ${t.bdr}40` }}>
+                        {hasCensusMatch ? (
+                          <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: PURPLE + "20", color: PURPLE, fontWeight: 600 }}>Census data</span>
+                        ) : hasCensusData ? (
+                          <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: t.bg, border: `1px solid ${t.bdr}`, color: t.mut, fontWeight: 600 }}>No census match</span>
+                        ) : null}
+                      </td>
+                      <td style={{ padding: "5px 10px", borderBottom: hasCensusMatch ? "none" : `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: GOLD, fontWeight: 700 }}>
                         {fd(imp.value)}
                         <ExplainerIcon color={GOLD} onClick={() => {
                           const p = PROC_MAP[imp.id];
@@ -5918,10 +5936,24 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                           }
                         }} />
                       </td>
-                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: GREEN, fontWeight: 600 }}>{imp.agentValue > 0 ? fd(imp.agentValue) : "—"}</td>
-                      <td style={{ padding: "5px 10px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: t.tx, fontWeight: 700 }}>{fd(imp.value + (imp.agentValue || 0))}</td>
+                      <td style={{ padding: "5px 10px", borderBottom: hasCensusMatch ? "none" : `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: GREEN, fontWeight: 600 }}>{imp.agentValue > 0 ? fd(imp.agentValue) : "—"}</td>
+                      <td style={{ padding: "5px 10px", borderBottom: hasCensusMatch ? "none" : `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: t.tx, fontWeight: 700 }}>{fd(imp.value + (imp.agentValue || 0))}</td>
                     </tr>
-                  );
+                    {hasCensusMatch && (
+                      <tr>
+                        <td colSpan={9} style={{ padding: "2px 10px 6px 10px", borderBottom: `1px solid ${t.bdr}40` }}>
+                          <div style={{ display: "flex", gap: 16, alignItems: "center", fontSize: 11, paddingLeft: 4 }}>
+                            <span style={{ color: t.mut, textDecoration: "line-through" }}>Benchmark: ${imp.benchmarkSgaM != null ? imp.benchmarkSgaM.toFixed(1) + "M SGA" : "—"}</span>
+                            <span style={{ color: PURPLE, fontWeight: 700 }}>Your actual: ${imp.censusLaborCostM != null ? imp.censusLaborCostM.toFixed(2) + "M" : "—"} ({imp.censusMatch.headcount} employees, {imp.censusMatch.fte.toFixed(1)} FTE)</span>
+                            {imp.censusLaborCostM != null && imp.benchmarkSgaM != null && (() => {
+                              const delta = imp.censusLaborCostM - imp.benchmarkSgaM;
+                              return <span style={{ fontFamily: "monospace", color: delta > 0 ? RED : GREEN, fontWeight: 600 }}>Delta: {delta > 0 ? "+" : ""}{delta.toFixed(2)}M</span>;
+                            })()}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>);
                 })}
               </tbody>
             </table>
