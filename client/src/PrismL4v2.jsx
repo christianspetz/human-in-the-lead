@@ -6587,16 +6587,16 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
             <div style={labelStyle}>Deliverables</div>
             <div style={{ ...cardStyle, textAlign: "center", padding: 24, marginBottom: 12 }}>
               <div style={{ fontSize: 32, marginBottom: 8 }}>📊</div>
-              <div style={{ fontSize: 18, fontFamily: SERIF, fontWeight: 700, color: GOLD, marginBottom: 6 }}>Executive Deck (4 slides)</div>
+              <div style={{ fontSize: 18, fontFamily: SERIF, fontWeight: 700, color: GOLD, marginBottom: 6 }}>Executive Deck (6 slides)</div>
               <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.5, marginBottom: 14 }}>Board-ready: value summary, P&L, decision leakage, next steps</div>
-                <button onClick={() => generateExecDeck({ baseline: { ...baseline, company: companyName }, selProcs, valResult, scenarioLevel, procValues, procBenchmarks, agentResults, baselineData, selectedFunction, totalKPIs, FUNCTIONS, PROC_MAP, getQuartile, BLUEPRINT_TIERS, valueRealization, processOwners: processOwnership, companyFinancials, multiYearRamp, assessmentProfile })} style={{ ...btnPrimary, padding: "14px 24px", fontSize: 15, width: "100%", background: GOLD }}>
+                <button onClick={() => generateExecDeck({ baseline: { ...baseline, company: companyName }, selProcs, valResult, scenarioLevel, procValues, procBenchmarks, agentResults, baselineData, selectedFunction, totalKPIs, FUNCTIONS, PROC_MAP, getQuartile, BLUEPRINT_TIERS, valueRealization, processOwners: processOwnership, companyFinancials, multiYearRamp, assessmentProfile, censusData })} style={{ ...btnPrimary, padding: "14px 24px", fontSize: 15, width: "100%", background: GOLD }}>
                   ↓ Download Executive PPTX
                 </button>
               </div>
               <div onClick={() => setMoreOptionsOpen(prev => ({ ...prev, step7downloads: !prev.step7downloads }))} style={{ fontSize: 12, color: t.mut, cursor: "pointer", marginBottom: 8 }}>{moreOptionsOpen.step7downloads ? "▾ Fewer options" : "▸ More downloads"}</div>
               {moreOptionsOpen.step7downloads && (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 28 }}>
-                <button onClick={() => generateDetailedDeck({ baseline: { ...baseline, company: companyName }, selProcs, valResult, scenarioLevel, procValues, procBenchmarks, agentResults, baselineData, selectedFunction, totalKPIs, FUNCTIONS, PROC_MAP, getQuartile, BLUEPRINT_TIERS, valueRealization, processOwners: processOwnership, companyFinancials, multiYearRamp, assessmentProfile })} style={{ ...btnSecondary, padding: "10px 16px", fontSize: 12 }}>
+                <button onClick={() => generateDetailedDeck({ baseline: { ...baseline, company: companyName }, selProcs, valResult, scenarioLevel, procValues, procBenchmarks, agentResults, baselineData, selectedFunction, totalKPIs, FUNCTIONS, PROC_MAP, getQuartile, BLUEPRINT_TIERS, valueRealization, processOwners: processOwnership, companyFinancials, multiYearRamp, assessmentProfile, censusData })} style={{ ...btnSecondary, padding: "10px 16px", fontSize: 12 }}>
                   ↓ Detailed PPTX (10 slides)
                 </button>
                 <button onClick={generatePhase0Report} style={{ ...btnSecondary, padding: "10px 16px", fontSize: 12 }}>
