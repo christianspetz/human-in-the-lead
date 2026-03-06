@@ -103,6 +103,56 @@ const APQC = [
     l1: "8.0 Manage Financial Resources", l1id: "8.0", e2e: "Order to Cash", color: BLUE, icon: "◆",
     groups: [
       {
+        l2: "8.1 Manage Sales Orders", l2id: "8.1",
+        subs: [
+          {
+            l3: "8.1.1 Process Sales Orders", l3id: "8.1.1",
+            procs: [
+              { id: "o2c-028", l4: "8.1.1.1", label: "Receive and validate sales orders", jobs: ["Capture order from all channels (EDI, portal, email, phone)","Validate customer account and credit status","Verify product/service codes and quantities","Check order against customer contract terms","Flag exceptions for manual review"], kpis: [
+                { name: "Order entry cycle time", unit: "minutes", current: null, benchmark: 8, agentBenchmark: 2.5, src: "APQC", method: "Avg minutes from order receipt to system entry", occurrence: "recurring", capability: "Intelligent Order Management" },
+                { name: "Touchless order rate", unit: "%", current: null, benchmark: 62, agentBenchmark: 85, src: "Hackett", method: "Orders requiring zero manual intervention / total orders × 100", occurrence: "recurring", capability: "Intelligent Order Management" },
+                { name: "Order error rate", unit: "%", current: null, benchmark: 1.5, agentBenchmark: 0.4, src: "APQC", method: "Orders with entry errors / total orders × 100", occurrence: "recurring", capability: "Intelligent Order Management" },
+              ], sap: [{ module: "SD-SLS", desc: "Sales order creation & validation", scenario: "Multi-channel order capture with AI validation against pricing, credit, and contract rules. Automatic exception routing." }],
+                valLevers: [{ lever: "Increase touchless order rate", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" },
+                  { lever: "Reduce order entry errors", vtype: "Tangible", vclass: "Standardization", fintype: "COGS", stmt: "Income Statement" }],
+                },
+              { id: "o2c-029", l4: "8.1.1.2", label: "Collect and maintain customer account information", jobs: ["Onboard new customer master data","Validate tax IDs, addresses, and payment terms","Maintain customer hierarchy and ship-to locations","Review and update account data periodically","Manage customer data change requests"], kpis: [
+                { name: "Customer master data accuracy", unit: "%", current: null, benchmark: 96, agentBenchmark: 99.2, src: "APQC", method: "Accurate customer records / total customer records × 100", occurrence: "recurring", capability: "Master Data Intelligence" },
+                { name: "New customer setup cycle time", unit: "hours", current: null, benchmark: 24, agentBenchmark: 4, src: "Hackett", method: "Avg hours from request to active customer account", occurrence: "recurring", capability: "Master Data Intelligence" },
+                { name: "Duplicate account rate", unit: "%", current: null, benchmark: 3, agentBenchmark: 0.5, src: "APQC", method: "Duplicate customer records / total customer records × 100", occurrence: "recurring", capability: "Master Data Intelligence" },
+              ], sap: [{ module: "SD-MD / MDG", desc: "Customer master data management", scenario: "AI-powered customer onboarding with automated validation, duplicate detection, and enrichment from external data sources." }],
+                valLevers: [{ lever: "Improve customer data quality", vtype: "Tangible", vclass: "Standardization", fintype: "SGA", stmt: "Income Statement" },
+                  { lever: "Reduce customer setup time", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }],
+                },
+              { id: "o2c-030", l4: "8.1.1.3", label: "Determine stock availability and delivery date", jobs: ["Run available-to-promise (ATP) check","Check inventory across warehouses and plants","Calculate earliest delivery date","Communicate availability to customer","Manage allocation for constrained products"], kpis: [
+                { name: "ATP accuracy", unit: "%", current: null, benchmark: 93, agentBenchmark: 98.5, src: "APQC", method: "Correct ATP responses / total ATP checks × 100", occurrence: "recurring", capability: "Intelligent Order Management" },
+                { name: "Order promise reliability", unit: "%", current: null, benchmark: 91, agentBenchmark: 97, src: "Hackett", method: "Orders delivered on promised date / total orders × 100", occurrence: "recurring", capability: "Intelligent Order Management" },
+                { name: "Order fill rate", unit: "%", current: null, benchmark: 95, agentBenchmark: 98.5, src: "APQC", method: "Orders shipped complete on first attempt / total orders × 100", occurrence: "recurring", capability: "Intelligent Order Management" },
+              ], sap: [{ module: "SD-SLS / MM-IM", desc: "ATP check & delivery scheduling", scenario: "Real-time global ATP with intelligent allocation based on customer priority, margin, and supply constraints. ML-based delivery date prediction." }],
+                valLevers: [{ lever: "Improve order fill rate", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" },
+                  { lever: "Increase delivery promise reliability", vtype: "Tangible", vclass: "Standardization", fintype: "Revenue", stmt: "Income Statement" }],
+                },
+              { id: "o2c-031", l4: "8.1.1.4", label: "Enter orders into system and confirm pricing", jobs: ["Enter or convert order into ERP","Apply pricing condition records and discounts","Validate against customer contract pricing","Generate order confirmation document","Send confirmation to customer"], kpis: [
+                { name: "Pricing accuracy rate", unit: "%", current: null, benchmark: 98.5, agentBenchmark: 99.8, src: "APQC", method: "Correctly priced orders / total orders × 100", occurrence: "recurring", capability: "Dynamic Pricing Intelligence" },
+                { name: "Order confirmation cycle time", unit: "minutes", current: null, benchmark: 30, agentBenchmark: 5, src: "Hackett", method: "Avg minutes from order entry to confirmation sent", occurrence: "recurring", capability: "Intelligent Order Management" },
+                { name: "Manual pricing overrides", unit: "%", current: null, benchmark: 5, agentBenchmark: 1.5, src: "APQC", method: "Orders with manual price changes / total orders × 100", occurrence: "recurring", capability: "Dynamic Pricing Intelligence" },
+              ], sap: [{ module: "SD-SLS / SD-BF", desc: "Order entry & pricing confirmation", scenario: "Automated order entry with AI pricing engine. Dynamic discounting per customer agreements and margin guardrails. Instant order confirmation." }],
+                valLevers: [{ lever: "Reduce pricing errors & revenue leakage", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" },
+                  { lever: "Accelerate order confirmation", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" }],
+                },
+              { id: "o2c-032", l4: "8.1.1.5", label: "Process back orders and updates", jobs: ["Monitor back-ordered items against incoming supply","Prioritize backlog based on customer tier and margin","Process order modifications and cancellations","Communicate status updates to customers","Release back orders when stock becomes available"], kpis: [
+                { name: "Backorder resolution cycle time", unit: "days", current: null, benchmark: 5, agentBenchmark: 2, src: "APQC", method: "Avg days from backorder creation to fulfillment", occurrence: "recurring", capability: "Intelligent Order Management" },
+                { name: "Backorder rate", unit: "%", current: null, benchmark: 4, agentBenchmark: 1.5, src: "Hackett", method: "Back-ordered lines / total order lines × 100", occurrence: "recurring", capability: "Intelligent Order Management" },
+                { name: "Order change processing time", unit: "hours", current: null, benchmark: 4, agentBenchmark: 0.5, src: "APQC", method: "Avg hours to process order modification", occurrence: "recurring", capability: "Intelligent Order Management" },
+              ], sap: [{ module: "SD-SLS", desc: "Backorder processing & order updates", scenario: "AI-prioritized backorder management with automated release when supply arrives. Self-service order modification portal with impact assessment." }],
+                valLevers: [{ lever: "Reduce backorder resolution time", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "Revenue", stmt: "Income Statement" },
+                  { lever: "Lower backorder rate", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
+                },
+            ]
+          },
+        ]
+      },
+      {
         l2: "8.2 Manage Revenue Accounting", l2id: "8.2",
         subs: [
           {
