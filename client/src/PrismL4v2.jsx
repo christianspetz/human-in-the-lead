@@ -946,8 +946,7 @@ const CalcExplainerDrawer = ({ data, onClose, mode }) => {
           })()}
           <div style={{ marginBottom: 16, padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
             <div style={{ fontSize: 10, color: t.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Formula</div>
-            <div style={{ fontSize: 12, fontFamily: "monospace", color: GOLD, lineHeight: 1.6 }}>gap × base amount × addressable% × scenario factor × 1%</div>
-            <div style={{ fontSize: 10, color: t.mut, marginTop: 6, lineHeight: 1.5 }}>The 1% (0.01) factor converts KPI gap magnitude to financial impact — reflecting that not every percentage-point of process improvement translates 1:1 to cost reduction. Industry standard for this class of bottom-up model.</div>
+            <div style={{ fontSize: 12, fontFamily: "monospace", color: GOLD, lineHeight: 1.6 }}>gap × base amount × addressable% × scenario factor</div>
           </div>
           <div style={{ marginBottom: 16, padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
             <div style={{ fontSize: 10, color: t.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Your Input</div>
@@ -957,7 +956,7 @@ const CalcExplainerDrawer = ({ data, onClose, mode }) => {
           <div style={{ marginBottom: 16, padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
             <div style={{ fontSize: 10, color: t.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Benchmark</div>
             <div style={{ fontSize: 13, color: t.tx, marginBottom: 2 }}><span style={{ fontFamily: "monospace", fontWeight: 600 }}>{data.benchmarkValue ?? "—"}</span> <span style={{ fontSize: 11, color: t.mut }}>{data.unit}</span></div>
-            <div style={{ fontSize: 11, color: t.tx2 }}>Source: <span style={{ fontWeight: 600 }}>{data.benchmarkSource}</span> {data.benchmarkYear}</div>
+            <div style={{ fontSize: 11, color: t.tx2 }}>Source: <span style={{ fontWeight: 600 }}>{data.benchmarkSource}</span> {data.benchmarkYear} {data.sampleSize ? `n=${data.sampleSize}` : ""}</div>
           </div>
           <div style={{ marginBottom: 16, padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
             <div style={{ fontSize: 10, color: t.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Gap</div>
@@ -965,11 +964,7 @@ const CalcExplainerDrawer = ({ data, onClose, mode }) => {
           </div>
           <div style={{ marginBottom: 16, padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
             <div style={{ fontSize: 10, color: t.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Base Amount</div>
-            <div style={{ fontSize: 13, color: t.tx, display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontFamily: "monospace", fontWeight: 600 }}>${data.baseAmount != null ? data.baseAmount.toLocaleString() : "—"}M</span>
-              {data.censusLaborCostM != null && <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, background: PURPLE + "20", color: PURPLE, fontWeight: 700 }}>CENSUS DATA</span>}
-            </div>
-            <div style={{ fontSize: 11, color: t.tx2, marginTop: 2 }}>{data.baseAmountSource}</div>
+            <div style={{ fontSize: 13, color: t.tx }}><span style={{ fontFamily: "monospace", fontWeight: 600 }}>${data.baseAmount != null ? data.baseAmount.toLocaleString() : "—"}M</span> — <span style={{ fontSize: 11, color: t.tx2 }}>{data.baseAmountSource}</span></div>
           </div>
           <div style={{ marginBottom: 16, padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
             <div style={{ fontSize: 10, color: t.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Addressable</div>
@@ -994,7 +989,7 @@ const CalcExplainerDrawer = ({ data, onClose, mode }) => {
             <div style={{ fontSize: 10, color: "#7CB9A8", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 10 }}>Why This Number Is Defensible</div>
             <div style={{ fontSize: 11, color: t.tx2, lineHeight: 1.7 }}>
               <div style={{ marginBottom: 8 }}><span style={{ fontWeight: 600, color: t.tx }}>Methodology:</span> Bottom-up process-level analysis, not top-down benchmarking. Each KPI gap is sized against your specific baseline, not industry averages.</div>
-              <div style={{ marginBottom: 8 }}><span style={{ fontWeight: 600, color: t.tx }}>Benchmark source:</span> {data.benchmarkSource || "APQC PCF"} publishes this benchmark. Last updated {data.benchmarkYear || "2024"}.</div>
+              <div style={{ marginBottom: 8 }}><span style={{ fontWeight: 600, color: t.tx }}>Benchmark source:</span> {data.benchmarkSource || "APQC PCF"} publishes this benchmark based on n={data.sampleSize || "500+"} companies. Last updated {data.benchmarkYear || "2024"}.</div>
               <div style={{ marginBottom: 8 }}><span style={{ fontWeight: 600, color: t.tx }}>Conservatism:</span> Your addressable % is set at {data.addressablePct}% — meaning {100 - data.addressablePct}% of the theoretical gap is excluded as non-addressable.</div>
               <div style={{ marginBottom: 8 }}><span style={{ fontWeight: 600, color: t.tx }}>Scenario used:</span> {data.scenarioLevel} ({data.scenarioFactor}) — {data.scenarioLevel === "Medium" ? "the middle scenario, our recommended planning assumption" : data.scenarioLevel === "High" ? "full addressable value — assumes excellent execution" : "minimum credible case — conservative"}.</div>
               <div style={{ fontSize: 10, color: t.mut, fontStyle: "italic", marginTop: 8, paddingTop: 8, borderTop: `1px solid ${t.bdr}` }}>This is not a guaranteed outcome. It is a directional estimate of potential value, sized using industry data and your baseline inputs.</div>
@@ -1124,7 +1119,6 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
 
   // Cascading scope selection
   const [scopeStage, setScopeStage] = useState(1);
-  const [expandedJobs, setExpandedJobs] = useState(new Set());
   const [selectedFunction, setSelectedFunction] = useState(initialData?.selectedFunction || null);
   const [selectedBlueprints, setSelectedBlueprints] = useState(new Set());
   const [entryPath, setEntryPath] = useState(null);
@@ -1239,7 +1233,6 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
   const [censusRawRows, setCensusRawRows] = useState([]);
   const [censusMapping, setCensusMapping] = useState({});
   const [censusCostType, setCensusCostType] = useState("loaded"); // "loaded" | "base"
-  const [loadedCostMultiplier, setLoadedCostMultiplier] = useState(1.30); // editable loaded cost multiplier
   const [processMapping, setProcessMapping] = useState(null); // array of {role, department, apqcL4Code, apqcL4Name, confidence}
   const [processMappingLoading, setProcessMappingLoading] = useState(false);
   const [processMappingError, setProcessMappingError] = useState(null);
@@ -1270,26 +1263,16 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
     const vals = procValues[proc.id] || {};
     const bmarks = procBenchmarks[proc.id] || {};
     const potential = procScenarios[proc.id]?.potential || scenarioLevel;
-    const addressablePct = procScenarios[proc.id]?.addressable || 60;
+    const addressablePct = procScenarios[proc.id]?.addressable || 80;
     const scenarioFactor = { High: 1.0, Medium: 0.65, Low: 0.35 }[potential];
     const m = scenarioFactor * (addressablePct / 100);
     const realCurrent = vals[`kpi_current_${ki}`];
     const current = realCurrent ?? kpi.current;
     const bench = bmarks[`bench_${ki}`] ?? kpi.benchmark;
-    const rawAgentBench = kpi.agentBenchmark;
-    const agentBench = (rawAgentBench != null && kpi.unit === '%' && (kpi.benchmark ?? 0) <= 100)
-      ? Math.min(rawAgentBench, 99) : rawAgentBench;
+    const agentBench = kpi.agentBenchmark;
     const lever = proc.valLevers?.[0];
     const fintype = lever?.fintype || 'SGA';
-    // Use census labor cost when available (matches computeValue logic exactly)
-    const censusMatch = censusData?.byProcess?.find(bp => bp.apqcCode === proc.l4);
-    const censusLaborCostM = censusMatch ? censusMatch.totalCost / 1_000_000 : null;
-    const rawBaseAmt = fintype === 'Revenue' ? baseline.revenue : fintype === 'COGS' ? baseline.cogs : baseline.sga;
-    const benchmarkSgaM = baseline.sga * 0.12;
-    const baseAmt = (fintype === 'SGA' && censusLaborCostM != null) ? censusLaborCostM : (fintype === 'SGA' ? benchmarkSgaM : rawBaseAmt);
-    const baseAmountSource = (fintype === 'SGA' && censusLaborCostM != null)
-      ? `Census: ${censusMatch.headcount} employees, ${censusMatch.fte?.toFixed(1)} FTE (actual labor cost)`
-      : fintype + ' from financial baseline';
+    const baseAmt = fintype === 'Revenue' ? baseline.revenue : fintype === 'COGS' ? baseline.cogs : baseline.sga;
     const selectedSource = bmarks[`src_${ki}`] || 'primary';
     const srcLabel = selectedSource === 'primary' ? (kpi.src || 'APQC') : selectedSource === 'sapvlm' ? 'SAP VLM' : selectedSource === 'hackett' ? 'Hackett' : 'Custom';
     const srcMeta = SOURCE_META[selectedSource] || SOURCE_META.custom;
@@ -1304,7 +1287,7 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
         const addressable = gap * m;
         result = kpi.unit === '%' ? (addressable / 100) * baseAmt * 0.01 : (bench !== 0 ? (addressable / Math.abs(bench)) : 0) * baseAmt * 0.01;
       }
-      return { procId: proc.id, kpiName: kpi.name, unit: kpi.unit, currentValue: current, benchmarkValue: bench, inputSource: realCurrent != null ? 'Questionnaire' : kpi.current != null ? 'Modeled estimate' : 'Not provided', benchmarkSource: srcLabel, benchmarkYear: srcMeta.year, sampleSize: sampleN, gapValue: gap, gapPct, baseAmount: baseAmt, baseAmountSource, censusLaborCostM, addressablePct, scenarioLevel: potential, scenarioFactor, resultFormatted: result > 0 ? (result < 1 ? '$' + Math.round(result * 1000) + 'K' : '$' + result.toFixed(1) + 'M') : '$0', confidence };
+      return { procId: proc.id, kpiName: kpi.name, unit: kpi.unit, currentValue: current, benchmarkValue: bench, inputSource: realCurrent != null ? 'Questionnaire' : kpi.current != null ? 'Modeled estimate' : 'Not provided', benchmarkSource: srcLabel, benchmarkYear: srcMeta.year, sampleSize: sampleN, gapValue: gap, gapPct, baseAmount: baseAmt, baseAmountSource: fintype + ' from financial baseline', addressablePct, scenarioLevel: potential, scenarioFactor, resultFormatted: result > 0 ? (result < 1 ? '$' + Math.round(result * 1000) + 'K' : '$' + result.toFixed(1) + 'M') : '$0', confidence };
     }
     // Agent type
     if (type === 'agent') {
@@ -1315,10 +1298,10 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
         const addressable = agentGap * m;
         agentResult = kpi.unit === '%' ? (addressable / 100) * baseAmt * 0.01 : (agentBench !== 0 ? (addressable / Math.abs(agentBench)) : 0) * baseAmt * 0.01;
       }
-      return { procId: proc.id, kpiName: kpi.name, unit: kpi.unit, currentValue: current, benchmarkValue: agentBench, inputSource: realCurrent != null ? 'Questionnaire' : kpi.current != null ? 'Modeled estimate' : 'Not provided', benchmarkSource: 'AI Agent benchmark', benchmarkYear: '2024', sampleSize: null, gapValue: agentGap, gapPct: agentGapPct, baseAmount: baseAmt, baseAmountSource, censusLaborCostM, addressablePct, scenarioLevel: potential, scenarioFactor, resultFormatted: agentResult > 0 ? (agentResult < 1 ? '$' + Math.round(agentResult * 1000) + 'K' : '$' + agentResult.toFixed(1) + 'M') : '$0', confidence };
+      return { procId: proc.id, kpiName: kpi.name, unit: kpi.unit, currentValue: current, benchmarkValue: agentBench, inputSource: realCurrent != null ? 'Questionnaire' : kpi.current != null ? 'Modeled estimate' : 'Not provided', benchmarkSource: 'AI Agent benchmark', benchmarkYear: '2024', sampleSize: null, gapValue: agentGap, gapPct: agentGapPct, baseAmount: baseAmt, baseAmountSource: fintype + ' from financial baseline', addressablePct, scenarioLevel: potential, scenarioFactor, resultFormatted: agentResult > 0 ? (agentResult < 1 ? '$' + Math.round(agentResult * 1000) + 'K' : '$' + agentResult.toFixed(1) + 'M') : '$0', confidence };
     }
     return null;
-  }, [procValues, procBenchmarks, procScenarios, scenarioLevel, baseline, baselineData, censusData]);
+  }, [procValues, procBenchmarks, procScenarios, scenarioLevel, baseline, baselineData]);
 
   // Challenge a value calculation via Catalyst
   const challengeCalcValue = useCallback(async (explainerData) => {
@@ -1575,7 +1558,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
       const vals = procValues[proc.id] || {};
       const bmarks = procBenchmarks[proc.id] || {};
       const potential = procScenarios[proc.id]?.potential || scenarioLevel;
-      const addressablePct = (procScenarios[proc.id]?.addressable || 60) / 100;
+      const addressablePct = (procScenarios[proc.id]?.addressable || 80) / 100;
       const m = multipliers[potential] * addressablePct;
       let procVal = 0;
       let procAgentVal = 0;
@@ -1610,10 +1593,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
         }
 
         // Agent uplift: incremental value from ERP benchmark to agent benchmark
-        const rawAgentBench = kpi.agentBenchmark;
-        // Cap rate KPIs (%) at 99 — only when benchmark itself is ≤100 (i.e. actual rates, not ROI/index KPIs)
-        const agentBench = (rawAgentBench != null && kpi.unit === '%' && (kpi.benchmark ?? 0) <= 100)
-          ? Math.min(rawAgentBench, 99) : rawAgentBench;
+        const agentBench = kpi.agentBenchmark;
         const benchVal = bmarks[`bench_${ki}`] ?? kpi.benchmark;
         if (agentBench != null && benchVal != null && benchVal !== 0 && agentBench !== benchVal) {
           const agentGap = Math.abs(benchVal - agentBench);
@@ -1646,7 +1626,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
       const vals = procValues[proc.id] || {};
       const bmarks = procBenchmarks[proc.id] || {};
       const wcPotential = procScenarios[proc.id]?.potential || scenarioLevel;
-      const wcAddrPct = (procScenarios[proc.id]?.addressable || 60) / 100;
+      const wcAddrPct = (procScenarios[proc.id]?.addressable || 80) / 100;
       const wcM = multipliers[wcPotential] * wcAddrPct;
 
       (proc.kpis || []).forEach((kpi, ki) => {
@@ -3507,13 +3487,8 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                 </div>
                                 {proc.jobs?.length > 0 && (
                                   <div style={{ marginLeft: 28, marginTop: 4, fontSize: 10, color: t.mut }}>
-                                    {(expandedJobs.has(proc.id) ? proc.jobs : proc.jobs.slice(0, 2)).map((j, ji) => <span key={ji} style={{ marginRight: 8 }}>• {j}</span>)}
-                                    {proc.jobs.length > 2 && (
-                                      <span onClick={e => { e.stopPropagation(); setExpandedJobs(prev => { const n = new Set(prev); n.has(proc.id) ? n.delete(proc.id) : n.add(proc.id); return n; }); }}
-                                        style={{ color: t.sub, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 2 }}>
-                                        {expandedJobs.has(proc.id) ? "show less" : `+${proc.jobs.length - 2} more`}
-                                      </span>
-                                    )}
+                                    {proc.jobs.slice(0, 2).map((j, ji) => <span key={ji} style={{ marginRight: 8 }}>• {j}</span>)}
+                                    {proc.jobs.length > 2 && <span style={{ color: t.sub }}>+{proc.jobs.length - 2} more</span>}
                                   </div>
                                 )}
                               </div>
@@ -4101,7 +4076,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                   })()}
 
                                   {/* MiningLinker */}
-                                  {uploadedMining[focusProc] && baselineData[`${focusProc}_a_ftes`] && (
+                                  {uploadedMining[focusProc] && baselineData[`${focusProc}_a_ftes`] && uploadedMining[focusProc].variants && uploadedMining[focusProc].conformance && (
                                     <Suspense fallback={null}>
                                       <MiningLinker procId={focusProc} proc={PROC_MAP[focusProc]} miningData={uploadedMining[focusProc]} baselineData={baselineData} theme={t} />
                                     </Suspense>
@@ -4306,7 +4281,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                             ))}
                           </div>
                           {/* MiningLinker comparison */}
-                          {uploadedMining[signavioView] && baselineData[`${signavioView}_a_ftes`] && (
+                          {uploadedMining[signavioView] && baselineData[`${signavioView}_a_ftes`] && uploadedMining[signavioView].variants && uploadedMining[signavioView].conformance && (
                             <div style={{ marginTop: 12 }}>
                               <Suspense fallback={null}>
                                 <MiningLinker procId={signavioView} proc={PROC_MAP[signavioView]} miningData={uploadedMining[signavioView]} baselineData={baselineData} theme={t} />
@@ -4651,7 +4626,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                   showToast("Map at least Department, Role, Location, and Cost columns");
                   return;
                 }
-                const costMult = censusCostType === "base" ? loadedCostMultiplier : 1.0;
+                const costMult = censusCostType === "base" ? 1.3 : 1.0;
                 const parsed = [];
                 const byDept = {};
                 let totalFTE = 0, totalCost = 0;
@@ -4814,12 +4789,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                             </label>
                             <label style={{ fontSize: 12, color: t.tx, cursor: "pointer" }}>
                               <input type="radio" name="censusCostType" checked={censusCostType === "base"} onChange={() => setCensusCostType("base")} style={{ marginRight: 4 }} />
-                              Base salary (apply loaded cost multiplier:
-                              <input type="number" min={1.0} max={2.0} step={0.01}
-                                value={loadedCostMultiplier}
-                                onChange={e => setLoadedCostMultiplier(parseFloat(e.target.value) || 1.30)}
-                                style={{ width: 52, marginLeft: 6, marginRight: 2, padding: "1px 4px", borderRadius: 4, border: `1px solid ${GOLD}44`, background: "transparent", color: GOLD, fontFamily: "monospace", fontSize: 12 }} />
-                              <span title="Loaded cost multiplier accounts for benefits, payroll taxes, and overhead. Typical range: 1.25x–1.45x. Adjust based on your HR data." style={{ cursor: "help", color: t.mut, fontSize: 11 }}>ⓘ</span>)
+                              Base salary (will apply 1.3x)
                             </label>
                           </div>
 
@@ -5219,14 +5189,14 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                 const setBmark = (key, val) => setProcBenchmarks(prev => ({ ...prev, [proc.id]: { ...(prev[proc.id] || {}), [key]: val } }));
                 const vals = procValues[proc.id] || {};
                 const potential = procScenarios[proc.id]?.potential || scenarioLevel;
-                const m = { High: 1.0, Medium: 0.65, Low: 0.35 }[potential] * ((procScenarios[proc.id]?.addressable || 60) / 100);
+                const m = { High: 1.0, Medium: 0.65, Low: 0.35 }[potential] * ((procScenarios[proc.id]?.addressable || 80) / 100);
                 let procErpVal = 0, procAgentVal = 0;
                 const kpiRows = (proc.kpis || []).map((kpi, ki) => {
                   const realCurrent = vals[`kpi_current_${ki}`];
                   const current = realCurrent ?? kpi.current;
                   const isModeled = realCurrent == null && kpi.current != null;
                   const bench = bmarks[`bench_${ki}`] ?? kpi.benchmark;
-                  const agentBench = kpi.agentBenchmark != null && kpi.unit === '%' && (kpi.benchmark ?? 0) <= 100 ? Math.min(kpi.agentBenchmark, 99) : kpi.agentBenchmark;
+                  const agentBench = bmarks[`agent_bench_${ki}`] ?? kpi.agentBenchmark;
                   const lever = proc.valLevers?.[0];
                   const baseAmt = lever?.fintype === "Revenue" ? baseline.revenue : lever?.fintype === "COGS" ? baseline.cogs : baseline.sga;
                   let erpImpact = 0, agentImpact = 0;
@@ -5265,9 +5235,9 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                     {/* Section Tabs */}
                     <div style={{ display: "flex", gap: 2, marginBottom: 12, borderBottom: `1px solid ${t.bdr}` }}>
                       {[
-                        { key: "sap", label: "SAP Lever", color: BLUE },
-                        { key: "agents", label: "AI Agents", color: GOLD },
-                        { key: "benchmarks", label: "Benchmarks", color: GREEN },
+                        { key: "sap", label: "① ERP Benchmark", color: BLUE },
+                        { key: "agents", label: "② Agent Uplift", color: GOLD },
+                        { key: "benchmarks", label: "③ Summary", color: GREEN },
                       ].map(tab => (
                         <button key={tab.key} onClick={() => setTab(tab.key)} style={{
                           fontSize: 11, padding: "6px 14px", fontWeight: procTab === tab.key ? 700 : 500,
@@ -5281,11 +5251,15 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                       ))}
                     </div>
 
-                    {/* Section A: Benchmarks & Quartile Scoring */}
+                    {/* Section A: Summary */}
                     {procTab === "benchmarks" && (
                       <div>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                          <div style={{ fontSize: 11, color: t.tx2 }}>{assessmentProfile.industry && assessmentProfile.revenueBand ? <>Benchmarks — <span style={{ color: GOLD, fontWeight: 600 }}>{assessmentProfile.industry}, {assessmentProfile.revenueBand}</span> peer group</> : <span style={{ color: t.mut, fontStyle: "italic" }}>Complete company setup to see peer benchmarks</span>}</div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                          <div style={{ fontSize: 11, color: t.tx2 }}>
+                            {assessmentProfile.industry && assessmentProfile.revenueBand
+                              ? <>Peer group: <span style={{ color: GOLD, fontWeight: 600 }}>{assessmentProfile.industry}, {assessmentProfile.revenueBand}</span></>
+                              : <span style={{ color: t.mut, fontStyle: "italic" }}>Complete company setup to filter by peer group</span>}
+                          </div>
                           <button onClick={() => callCatalyst(proc.id,
                             `You are a benchmarking expert for ${baseline.industry} companies. For the process "${proc.label}" (APQC ${proc.l4}), provide TWO sections:\n\nSECTION 1 — TRADITIONAL BENCHMARKS\nProvide 3-5 specific benchmark suggestions from published sources. Include: KPI name, benchmark value with unit, source/year, and brief calculation methodology.\n\nSECTION 2 — AI AGENT IMPACT BENCHMARKS\nFor this same process, what efficiency gains have AI agents achieved? Include: agent type, % efficiency improvement, source/case study. Be specific and quantitative.`,
                             setCatalystResults, setCatalystLoading
@@ -5293,6 +5267,101 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                             style={{ fontSize: 10, padding: "4px 12px", borderRadius: 6, background: GOLD + "15", border: `1px solid ${GOLD}33`, color: GOLD, cursor: catalystLoading[proc.id] ? "wait" : "pointer", fontFamily: FONT, fontWeight: 600 }}>
                             {catalystLoading[proc.id] ? (catalystLoadingMsg[proc.id] || "Analyzing...") : "⚡ Catalyst"}
                           </button>
+                        </div>
+
+                        {/* Full KPI summary table: Current → ERP → Agent */}
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 12 }}>
+                          <thead><tr>
+                            {[
+                              { label: "KPI", align: "left" },
+                              { label: "Current", align: "right" },
+                              { label: "ERP Target", align: "right", color: BLUE },
+                              { label: "Agent Target", align: "right", color: GREEN },
+                              { label: "ERP Value", align: "right", color: BLUE },
+                              { label: "Agent Uplift", align: "right", color: GREEN },
+                            ].map((h, i) => (
+                              <th key={i} style={{ padding: "5px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: h.align, color: h.color || t.mut, fontWeight: 600, fontSize: 10, textTransform: "uppercase", letterSpacing: ".5px" }}>{h.label}</th>
+                            ))}
+                          </tr></thead>
+                          <tbody>
+                            {kpiRows.map(({ kpi, ki, current, isModeled, bench, agentBench, erpImpact, agentImpact }) => {
+                              const hib = /rate|score|adoption|fill|perfect|touchless|match|auto|straight/i.test(kpi.name);
+                              const gapRatio = (current != null && bench != null && bench !== 0) ? Math.abs(current - bench) / Math.abs(bench) : null;
+                              const rowColor = gapRatio != null ? (gapRatio > 0.35 ? RED : gapRatio > 0.1 ? GOLD : GREEN) : t.mut;
+                              return (
+                                <tr key={ki} style={{ borderBottom: `1px solid ${t.bdr}20` }}>
+                                  <td style={{ padding: "6px 8px", color: t.tx2, fontSize: 11 }}>{kpi.name} <span style={{ color: t.sub, fontSize: 9 }}>({kpi.unit})</span></td>
+                                  <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: "monospace", fontWeight: 600, color: isModeled ? t.sub : rowColor, fontStyle: isModeled ? "italic" : "normal" }}>
+                                    {current != null ? current : "—"}
+                                  </td>
+                                  <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: "monospace", color: BLUE, fontWeight: 600 }}>{bench ?? "—"}</td>
+                                  <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: "monospace", color: GREEN, fontWeight: 600 }}>{agentBench ?? "—"}</td>
+                                  <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: "monospace", color: BLUE, fontSize: 11 }}>
+                                    {erpImpact > 0 ? `+$${erpImpact < 1 ? `${(erpImpact * 1000).toFixed(0)}K` : `${erpImpact.toFixed(1)}M`}` : "—"}
+                                  </td>
+                                  <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: "monospace", color: GREEN, fontSize: 11 }}>
+                                    {agentImpact > 0 ? `+$${agentImpact < 1 ? `${(agentImpact * 1000).toFixed(0)}K` : `${agentImpact.toFixed(1)}M`}` : "—"}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+
+                        {/* ERP + Agent = Total */}
+                        <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "stretch" }}>
+                          <div style={{ flex: 1, padding: "10px 14px", borderRadius: 8, background: BLUE + "10", border: `1px solid ${BLUE}30`, textAlign: "center" }}>
+                            <div style={{ fontSize: 9, color: BLUE, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 2 }}>ERP Value</div>
+                            <div style={{ fontSize: 20, fontFamily: "monospace", fontWeight: 700, color: BLUE }}>{procErpVal > 0 ? `$${procErpVal.toFixed(1)}M` : "—"}</div>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", fontSize: 20, color: t.sub, fontWeight: 300 }}>+</div>
+                          <div style={{ flex: 1, padding: "10px 14px", borderRadius: 8, background: GREEN + "10", border: `1px solid ${GREEN}30`, textAlign: "center" }}>
+                            <div style={{ fontSize: 9, color: GREEN, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 2 }}>Agent Uplift</div>
+                            <div style={{ fontSize: 20, fontFamily: "monospace", fontWeight: 700, color: GREEN }}>{procAgentVal > 0 ? `$${procAgentVal.toFixed(1)}M` : "—"}</div>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", fontSize: 20, color: t.sub, fontWeight: 300 }}>=</div>
+                          <div style={{ flex: 1.2, padding: "10px 14px", borderRadius: 8, background: t.card, border: `2px solid ${t.bdr}`, textAlign: "center" }}>
+                            <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 2 }}>Total Opportunity</div>
+                            <div style={{ fontSize: 20, fontFamily: "monospace", fontWeight: 700, color: t.tx }}>{(procErpVal + procAgentVal) > 0 ? `$${(procErpVal + procAgentVal).toFixed(1)}M` : "—"}</div>
+                          </div>
+                        </div>
+
+                        {catalystResults[proc.id] && (
+                          <div style={{ marginTop: 10, padding: 12, background: GOLD + "08", border: `1px solid ${GOLD}22`, borderRadius: 8 }}>
+                            <div style={{ fontSize: 10, color: GOLD, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>⚡ Catalyst — Benchmarks & Agent Impact</div>
+                            <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{catalystResults[proc.id]}</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Section B: SAP Lever — Story + ERP Benchmark Selector */}
+                    {procTab === "sap" && (
+                      <div>
+                        {/* Lever story card */}
+                        {(() => {
+                          const leverData = getSapLever(proc.id);
+                          if (!leverData) return (
+                            <div style={{ padding: 20, textAlign: "center", color: t.mut, border: `2px dashed ${t.bdr}`, borderRadius: 10, marginBottom: 12 }}>No SAP lever mapped for this process</div>
+                          );
+                          const lv = leverData.lever;
+                          const depColor = lv.deploymentType === "Optimization" ? PURPLE : BLUE;
+                          return (
+                            <div style={{ padding: "12px 14px", background: BLUE + "08", borderRadius: 10, border: `1px solid ${BLUE}22`, marginBottom: 14 }}>
+                              <div style={{ fontSize: 10, color: BLUE, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 8 }}>What S/4HANA Activates</div>
+                              <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
+                                <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: BLUE + "18", color: BLUE, fontWeight: 700, fontFamily: "monospace" }}>{lv.module}</span>
+                                <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: depColor + "15", color: depColor, fontWeight: 600 }}>{lv.deploymentType}</span>
+                              </div>
+                              <div style={{ fontSize: 15, fontWeight: 700, color: t.tx, marginBottom: 3 }}>{lv.name}</div>
+                              <div style={{ fontSize: 12, color: "#888", fontStyle: "italic", lineHeight: 1.5 }}>{lv.capability}</div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Per-KPI ERP benchmark selector */}
+                        <div style={{ fontSize: 10, color: t.mut, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 8 }}>
+                          Set ERP target benchmark — what S/4HANA gets you to
                         </div>
                         <div style={{ display: "grid", gap: 10 }}>
                           {(proc.kpis || []).map((kpi, ki) => {
@@ -5306,387 +5375,181 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                             const adjHackett = kpi.benchmark ? adjustBenchmark(+(kpi.benchmark * jitter(2)).toFixed(1), baseline.industry, baseline.revenueBand, hib) : null;
                             const sources = [
                               { key: "primary", label: kpi.src || "APQC", value: adjPrimary },
-                              { key: "sapvlm", label: "SAP VLM (Illustrative)", value: adjSapvlm },
-                              { key: "hackett", label: "Hackett (Illustrative)", value: adjHackett },
+                              { key: "sapvlm", label: "SAP VLM", value: adjSapvlm },
+                              { key: "hackett", label: "Hackett", value: adjHackett },
                               { key: "custom", label: "Custom", value: bmarks[`bench_custom_${ki}`] ?? null },
                             ];
                             const activeBench = selectedSource === "custom" ? (bmarks[`bench_custom_${ki}`] ?? null) : sources.find(s => s.key === selectedSource)?.value ?? adjPrimary;
                             const gap = currentVal != null && activeBench != null ? Math.abs(currentVal - activeBench) : null;
-                            const quartile = getQuartile(currentVal, activeBench, kpi);
-                            const peerN = null; // sample sizes removed — hash-generated values not displayed
+                            const improvLabel = gap != null ? (hib ? `+${gap.toFixed(1)}${kpi.unit === "%" ? "pp" : " " + kpi.unit}` : `-${gap.toFixed(1)} ${kpi.unit}`) : null;
+                            const { erpImpact } = kpiRows[ki] || {};
                             return (
-                              <div key={ki} style={{ padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                              <div key={ki} style={{ padding: "12px 14px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
+                                <div style={{ fontSize: 12, color: t.tx, fontWeight: 600, marginBottom: 10 }}>
+                                  {kpi.name} <span style={{ fontSize: 10, color: t.mut, fontWeight: 400 }}>({kpi.unit})</span>
+                                  {kpi.method && <span title={kpi.method} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 14, height: 14, borderRadius: "50%", background: t.mut + "20", color: t.mut, fontSize: 8, fontWeight: 700, cursor: "help", marginLeft: 4, verticalAlign: "middle" }}>?</span>}
+                                </div>
+                                {/* Current → ERP Target inline */}
+                                <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 12 }}>
                                   <div>
-                                    <div style={{ fontSize: 13, color: t.tx, fontWeight: 500 }}>{kpi.name} <span style={{ fontSize: 10, color: t.mut }}>({kpi.unit})</span>{kpi.method && <span title={kpi.method} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 14, height: 14, borderRadius: "50%", background: t.mut + "20", color: t.mut, fontSize: 8, fontWeight: 700, cursor: "help", marginLeft: 4, verticalAlign: "middle" }}>?</span>}</div>
+                                    <div style={{ fontSize: 9, color: t.mut, marginBottom: 2 }}>Current</div>
+                                    <div style={{ fontSize: 18, fontFamily: "monospace", fontWeight: 700, color: t.tx }}>{currentVal ?? "—"}</div>
                                   </div>
+                                  <span style={{ fontSize: 18, color: t.sub }}>→</span>
+                                  <div>
+                                    <div style={{ fontSize: 9, color: BLUE, marginBottom: 2 }}>ERP Target</div>
+                                    <div style={{ fontSize: 18, fontFamily: "monospace", fontWeight: 700, color: BLUE }}>{activeBench ?? "—"}</div>
+                                  </div>
+                                  {improvLabel && <div style={{ marginLeft: "auto", textAlign: "right" }}>
+                                    <div style={{ fontSize: 9, color: t.mut, marginBottom: 2 }}>Improvement</div>
+                                    <div style={{ fontSize: 15, fontFamily: "monospace", fontWeight: 700, color: GREEN }}>{improvLabel}</div>
+                                  </div>}
+                                  {erpImpact > 0 && <div style={{ textAlign: "right" }}>
+                                    <div style={{ fontSize: 9, color: t.mut, marginBottom: 2 }}>ERP Value</div>
+                                    <div style={{ fontSize: 15, fontFamily: "monospace", fontWeight: 700, color: BLUE }}>+${erpImpact < 1 ? `${(erpImpact * 1000).toFixed(0)}K` : `${erpImpact.toFixed(1)}M`}</div>
+                                  </div>}
+                                </div>
+                                {/* Benchmark source pills */}
+                                <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: selectedSource === "custom" ? 8 : 0 }}>
+                                  {sources.map(src => (
+                                    <button key={src.key} onClick={() => {
+                                      setBmark(`src_${ki}`, src.key);
+                                      const val = src.key === "custom" ? (bmarks[`bench_custom_${ki}`] ?? null) : src.value;
+                                      if (val != null) setBmark(`bench_${ki}`, val);
+                                    }} style={{
+                                      fontSize: 10, padding: "4px 11px", borderRadius: 12, cursor: "pointer", fontFamily: FONT,
+                                      background: selectedSource === src.key ? BLUE + "18" : "transparent",
+                                      border: `1px solid ${selectedSource === src.key ? BLUE : t.bdr}`,
+                                      color: selectedSource === src.key ? BLUE : t.mut,
+                                      fontWeight: selectedSource === src.key ? 700 : 400,
+                                    }}>
+                                      {src.label}{src.value != null && src.key !== "custom" ? ` · ${src.value}` : ""}
+                                    </button>
+                                  ))}
+                                </div>
+                                {selectedSource === "custom" && (
                                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                    {gap != null && <span style={{ fontSize: 14, fontFamily: "monospace", color: gap > 0 ? RED : GREEN, fontWeight: 700 }}>Gap: {gap.toFixed(1)}</span>}
-                                    {quartile && (
-                                      <span title={`Peer group: ${assessmentProfile.industry || baseline.industry || "Manufacturing"} ${assessmentProfile.revenueBand || baseline.revenueBand || "$1-5B"}`} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: quartile.color + "20", color: quartile.color, fontWeight: 700 }}>
-                                        {quartile.icon} {quartile.label}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                                  <span style={{ fontSize: 10, color: t.mut, minWidth: 50 }}>Current:</span>
-                                  <span style={{ fontSize: 14, fontFamily: "monospace", color: currentVal != null ? t.tx : t.sub }}>{currentVal ?? "—"} <span style={{ fontSize: 9, color: t.mut }}>{kpi.unit}</span></span>
-                                </div>
-                                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
-                                  <thead><tr>
-                                    {["", "Source", "Value", "Range", "Fresh"].map((h, i) => (
-                                      <th key={i} style={{ padding: "3px 6px", borderBottom: `1px solid ${t.bdr}40`, textAlign: i === 2 || i === 3 ? "right" : "left", color: t.mut, fontWeight: 600, fontSize: 10 }}>{h}</th>
-                                    ))}
-                                  </tr></thead>
-                                  <tbody>
-                                    {sources.map(src => {
-                                      const meta = SOURCE_META[src.key] || SOURCE_META.custom;
-                                      const lo = src.value != null ? Math.round(src.value * 0.85 * 10) / 10 : null;
-                                      const hi = src.value != null ? Math.round(src.value * 1.15 * 10) / 10 : null;
-                                      return (
-                                      <tr key={src.key} style={{ background: selectedSource === src.key ? (src.key === "primary" ? GREEN : GOLD) + "08" : "transparent" }}>
-                                        <td style={{ padding: "4px 6px", borderBottom: `1px solid ${t.bdr}20`, width: 30 }}>
-                                          <input type="radio" name={`src_${proc.id}_${ki}`} checked={selectedSource === src.key}
-                                            onChange={() => { setBmark(`src_${ki}`, src.key); const val = src.key === "custom" ? (bmarks[`bench_custom_${ki}`] ?? null) : src.value; if (val != null) setBmark(`bench_${ki}`, val); }}
-                                            style={{ accentColor: GREEN, cursor: "pointer" }} />
-                                        </td>
-                                        <td style={{ padding: "4px 6px", borderBottom: `1px solid ${t.bdr}20`, color: selectedSource === src.key ? t.tx : t.tx2, fontWeight: selectedSource === src.key ? 600 : 400 }}>
-                                          {src.label}
-                                        </td>
-                                        <td style={{ padding: "4px 6px", borderBottom: `1px solid ${t.bdr}20`, textAlign: "right", fontFamily: "monospace" }} title={src.key !== "custom" ? `Adjusted for ${baseline.industry || "Manufacturing"}, ${baseline.revenueBand || "$1-5B"}` : undefined}>
-                                          {src.key === "custom" ? (
-                                            <input type="number" value={bmarks[`bench_custom_${ki}`] ?? ""} onChange={e => { const v = parseFloat(e.target.value) || null; setBmark(`bench_custom_${ki}`, v); if (selectedSource === "custom") setBmark(`bench_${ki}`, v); }}
-                                              placeholder="—" style={{ width: 60, background: t.card, border: `1px solid ${GOLD}33`, borderRadius: 4, padding: "2px 4px", color: GOLD, fontFamily: "monospace", fontSize: 12, textAlign: "center" }} />
-                                          ) : (
-                                            <span style={{ color: selectedSource === src.key ? GREEN : t.mut }}>{src.value ?? "—"}</span>
-                                          )}
-                                        </td>
-                                        <td style={{ padding: "4px 6px", borderBottom: `1px solid ${t.bdr}20`, textAlign: "right", fontSize: 9, color: t.mut, fontFamily: "monospace" }}>
-                                          {lo != null ? `${lo}–${hi}${kpi.unit === "%" ? "%" : ""}` : "—"}
-                                        </td>
-                                        <td style={{ padding: "4px 6px", borderBottom: `1px solid ${t.bdr}20`, fontSize: 9 }}>
-                                          <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: meta.freshColor, marginRight: 4, verticalAlign: "middle" }} />
-                                          <span style={{ color: t.mut }}>{meta.quarter}</span>
-                                        </td>
-                                      </tr>
-                                      );
-                                    })}
-                                  </tbody>
-                                </table>
-                                {activeBench != null && (
-                                  <div style={{ fontSize: 9, color: t.mut, marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
-                                    <span>{sources.find(s => s.key === selectedSource)?.label || kpi.src} benchmark</span>
-                                    <span title={`Range: ${Math.round(activeBench * 0.85 * 10) / 10}–${Math.round(activeBench * 1.15 * 10) / 10}${kpi.unit === "%" ? "%" : ""} | ${(SOURCE_META[selectedSource] || SOURCE_META.custom).year}`} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 12, height: 12, borderRadius: "50%", background: t.mut + "20", color: t.mut, fontSize: 7, fontWeight: 700, cursor: "help" }}>?</span>
+                                    <span style={{ fontSize: 10, color: t.mut }}>Custom target:</span>
+                                    <input type="number" value={bmarks[`bench_custom_${ki}`] ?? ""}
+                                      onChange={e => { const v = parseFloat(e.target.value) || null; setBmark(`bench_custom_${ki}`, v); setBmark(`bench_${ki}`, v); }}
+                                      placeholder="—" style={{ width: 80, background: t.card, border: `1px solid ${BLUE}44`, borderRadius: 6, padding: "4px 8px", color: BLUE, fontFamily: "monospace", fontSize: 13 }} />
+                                    <span style={{ fontSize: 10, color: t.mut }}>{kpi.unit}</span>
                                   </div>
                                 )}
-                                {(() => { const ctx = getBenchmarkContext(proc.id, kpi.name); const lv = getSapLever(proc.id); return ctx && lv ? (
-                                  <div style={{ fontSize: 9, color: GOLD, fontStyle: "italic", marginTop: 4, lineHeight: 1.4 }}>Benchmark requires <span style={{ fontWeight: 600 }}>{lv.lever.name}</span> to be achievable — {ctx}</div>
-                                ) : null; })()}
                               </div>
                             );
                           })}
                         </div>
-                        {catalystResults[proc.id] && (
-                          <div style={{ marginTop: 10, padding: 12, background: GOLD + "08", border: `1px solid ${GOLD}22`, borderRadius: 8 }}>
-                            <div style={{ fontSize: 10, color: GOLD, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>⚡ Catalyst — Benchmarks & Agent Impact</div>
-                            <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{catalystResults[proc.id]}</div>
+                        {/* ERP total */}
+                        <div style={{ marginTop: 12, padding: "12px 16px", borderRadius: 8, background: BLUE + "10", border: `1px solid ${BLUE}25`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div>
+                            <div style={{ fontSize: 9, color: BLUE, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 2 }}>Total ERP Value</div>
+                            <div style={{ fontSize: 10, color: t.mut }}>What S/4HANA alone delivers</div>
                           </div>
-                        )}
+                          <div style={{ fontSize: 22, fontFamily: "monospace", fontWeight: 700, color: BLUE }}>{procErpVal > 0 ? `$${procErpVal.toFixed(1)}M` : "—"}</div>
+                        </div>
+                        <div style={{ marginTop: 8, padding: "8px 12px", background: t.bg, borderRadius: 6, border: `1px solid ${t.bdr}` }}>
+                          <div style={{ fontSize: 10, color: t.mut }}>→ Next: go to <span style={{ color: GOLD, fontWeight: 600 }}>② Agent Uplift</span> to see what AI adds on top of this</div>
+                        </div>
                       </div>
                     )}
 
-                    {/* Section B: SAP Lever — Story Card */}
-                    {procTab === "sap" && (
-                      <div>
-                        {(() => {
-                          const leverData = getSapLever(proc.id);
-                          if (!leverData) return (
-                            <div style={{ padding: 20, textAlign: "center", color: t.mut, border: `2px dashed ${t.bdr}`, borderRadius: 10 }}>No SAP lever mapped for this process</div>
-                          );
-                          const lv = leverData.lever;
-                          const depColor = lv.deploymentType === "Optimization" ? PURPLE : BLUE;
-                          return (
-                            <div style={{ padding: "16px 18px", background: t.bg, borderRadius: 10, border: `1px solid ${BLUE}20`, marginBottom: 8 }}>
-                              <div style={{ fontSize: 10, color: BLUE, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 10 }}>What S/4HANA Activates</div>
-                              <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
-                                <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: BLUE + "18", color: BLUE, fontWeight: 700, fontFamily: "monospace" }}>{lv.module}</span>
-                                <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: depColor + "15", color: depColor, fontWeight: 600 }}>{lv.deploymentType}</span>
-                              </div>
-                              <div style={{ fontSize: 16, fontWeight: 700, color: t.tx, marginBottom: 4 }}>{lv.name}</div>
-                              <div style={{ fontSize: 13, color: "#888", fontStyle: "italic", lineHeight: 1.5, marginBottom: 14 }}>{lv.capability}</div>
-                              <div style={{ borderTop: `1px solid ${t.bdr}`, paddingTop: 12 }}>
-                                <div style={{ fontSize: 10, color: t.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 8 }}>KPIs this lever impacts</div>
-                                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                                  <thead><tr>
-                                    <th style={{ padding: "4px 8px", textAlign: "left", color: t.mut, fontSize: 10, fontWeight: 600, borderBottom: `1px solid ${t.bdr}40` }}>KPI</th>
-                                    <th style={{ padding: "4px 8px", textAlign: "right", color: t.mut, fontSize: 10, fontWeight: 600, borderBottom: `1px solid ${t.bdr}40` }}>Current</th>
-                                    <th style={{ padding: "4px 0", textAlign: "center", color: t.mut, fontSize: 10, borderBottom: `1px solid ${t.bdr}40`, width: 24 }}></th>
-                                    <th style={{ padding: "4px 8px", textAlign: "right", color: t.mut, fontSize: 10, fontWeight: 600, borderBottom: `1px solid ${t.bdr}40` }}>With Lever</th>
-                                    <th style={{ padding: "4px 8px", textAlign: "right", color: t.mut, fontSize: 10, fontWeight: 600, borderBottom: `1px solid ${t.bdr}40` }}>Improvement</th>
-                                  </tr></thead>
-                                  <tbody>
-                                    {kpiRows.map(({ kpi, ki, current, bench }) => {
-                                      const hib = /rate|score|adoption|fill|perfect|touchless|match|auto|straight/i.test(kpi.name);
-                                      const gap = current != null && bench != null ? Math.abs(current - bench) : null;
-                                      const improvLabel = gap != null ? (hib ? `+${gap.toFixed(1)}${kpi.unit === "%" ? "pp" : " " + kpi.unit}` : `-${gap.toFixed(1)} ${kpi.unit}`) : null;
-                                      return (
-                                        <tr key={ki}>
-                                          <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}20`, color: t.tx2, fontSize: 11 }}>{kpi.name} <span style={{ color: t.sub, fontSize: 9 }}>({kpi.unit})</span></td>
-                                          <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}20`, textAlign: "right", fontFamily: "monospace", color: "#888" }}>{current ?? "—"}</td>
-                                          <td style={{ padding: "5px 0", borderBottom: `1px solid ${t.bdr}20`, textAlign: "center", color: GOLD, fontSize: 13 }}>→</td>
-                                          <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}20`, textAlign: "right", fontFamily: "monospace", color: GOLD, fontWeight: 600 }}>{bench ?? "—"}</td>
-                                          <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}20`, textAlign: "right", fontSize: 10, color: GREEN, fontWeight: 600 }}>{improvLabel || "—"}</td>
-                                        </tr>
-                                      );
-                                    })}
-                                  </tbody>
-                                </table>
-                              </div>
-                              {/* Benchmark context per KPI */}
-                              {kpiRows.map(({ kpi, ki }) => {
-                                const ctx = getBenchmarkContext(proc.id, kpi.name);
-                                if (!ctx) return null;
-                                return (
-                                  <div key={ki} style={{ marginTop: 8, padding: "6px 10px", background: GOLD + "08", borderRadius: 6, border: `1px solid ${GOLD}18` }}>
-                                    <div style={{ fontSize: 10, color: GOLD, fontStyle: "italic", lineHeight: 1.5 }}>
-                                      <span style={{ fontWeight: 600 }}>{kpi.name}:</span> {ctx}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                              <div style={{ marginTop: 10, fontSize: 9, color: t.mut }}>Source: APQC · {baseline.industry || "Manufacturing"} {baseline.revenueBand || "$1-5B"} · 2023</div>
-                            </div>
-                          );
-                        })()}
-                        {/* Also show original SAP modules for reference */}
-                        {(proc.sap || []).length > 0 && (
-                          <div style={{ marginTop: 8 }}>
-                            {(proc.sap || []).map((sap, si) => (
-                              <div key={si} style={{ padding: "8px 12px", background: t.bg, borderRadius: 6, border: `1px solid ${BLUE}10`, marginBottom: 3 }}>
-                                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                                  <SapBadge module={sap.module} />
-                                  <span style={{ fontSize: 11, color: t.tx2 }}>{sap.desc}</span>
-                                </div>
-                                {sap.scenario && <div style={{ fontSize: 11, color: t.mut, lineHeight: 1.4, fontStyle: "italic", marginTop: 3 }}>{sap.scenario}</div>}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Section C: AI Agent Assessment */}
+                    {/* Section C: AI Agent Uplift */}
                     {procTab === "agents" && (
                       <div>
-                        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-                          <button onClick={() => callCatalyst(proc.id,
-                            `You are an AI transformation consultant for ${baseline.industry} companies. For the process "${proc.label}" (APQC ${proc.l4}), provide a detailed AI agent assessment:\n\n1. AGENT NAME & TYPE\n2. WHAT IT DOES — Specific actions\n3. QUANTITATIVE IMPACT — Labor efficiency, cycle time, error reduction with numbers\n4. PUBLISHED CASE STUDIES — 2-3 real deployments\n5. IMPLEMENTATION — Complexity, timeline, prerequisites\n\nBe specific and quantitative.`,
-                            setAgentResults, setAgentLoading
-                          )} disabled={agentLoading[proc.id]}
-                            style={{ fontSize: 11, padding: "6px 16px", borderRadius: 8, background: GOLD, border: "none", color: "#111", cursor: agentLoading[proc.id] ? "wait" : "pointer", fontFamily: FONT, fontWeight: 600 }}>
-                            {agentLoading[proc.id] ? "⟳ Generating..." : "⚡ Generate Agent"}
-                          </button>
-                        </div>
-
-                        {/* Three-column KPI comparison */}
-                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 12 }}>
-                          <thead><tr>
-                            {[
-                              { label: "KPI", sub: "", align: "left" },
-                              { label: "Current State", sub: "Your baseline", align: "right" },
-                              { label: "", sub: "", align: "center", arrow: true },
-                              { label: "ERP Benchmark", sub: "S/4HANA best practice", align: "right" },
-                              { label: "", sub: "", align: "center", arrow: true },
-                              { label: "ERP + AI Agent", sub: "With intelligent automation", align: "right" },
-                              { label: "Value Impact", sub: "Annual $ improvement", align: "right" },
-                            ].map((h, i) => (
-                              <th key={i} style={{ padding: h.arrow ? "5px 0" : "5px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: h.align, color: t.mut, fontWeight: 600, fontSize: 10, textTransform: "uppercase", letterSpacing: ".5px", width: h.arrow ? 24 : "auto" }}>
-                                {h.arrow ? <span style={{ fontSize: 14, color: t.sub }}>→</span> : <>{h.label}{h.sub && <div style={{ fontSize: 8, fontWeight: 400, textTransform: "none", letterSpacing: 0, color: t.sub, marginTop: 1 }}>{h.sub}</div>}</>}
-                              </th>
-                            ))}
-                          </tr></thead>
-                          <tbody>
-                            {kpiRows.map(({ kpi, ki, current, isModeled, bench, agentBench, erpImpact, agentImpact }) => {
-                              const gapRatio = (current != null && bench != null && bench !== 0) ? Math.abs(current - bench) / Math.abs(bench) : null;
-                              const todayColor = gapRatio != null ? (gapRatio > 0.35 ? RED : gapRatio > 0.1 ? GOLD : GREEN) : t.mut;
-                              return (
-                                <tr key={ki}>
-                                  <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx2, fontSize: 11 }}>{kpi.name} <span style={{ color: t.sub, fontSize: 9 }}>({kpi.unit})</span></td>
-                                  <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", fontWeight: 600, color: isModeled ? t.sub : todayColor, fontStyle: isModeled ? "italic" : "normal" }}>
-                                    {current != null ? <>{current}{isModeled && <span style={{ fontSize: 8, color: t.mut, fontStyle: "italic", marginLeft: 2 }}>(est.)</span>}</> : "—"}
-                                  </td>
-                                  <td style={{ padding: "4px 0", borderBottom: `1px solid ${t.bdr}40`, textAlign: "center", color: t.sub, fontSize: 13 }}>→</td>
-                                  <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: GOLD, fontWeight: 600 }}>{bench != null ? bench : "—"}</td>
-                                  <td style={{ padding: "4px 0", borderBottom: `1px solid ${t.bdr}40`, textAlign: "center", color: t.sub, fontSize: 13 }}>→</td>
-                                  <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontFamily: "monospace", color: GREEN, fontWeight: 600 }}>{agentBench != null ? agentBench : "—"}</td>
-                                  <td style={{ padding: "4px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "right", fontSize: 10, lineHeight: 1.4 }}>
-                                    {erpImpact > 0 && <div style={{ color: GOLD, fontFamily: "monospace" }}>ERP: +${erpImpact < 1 ? `${(erpImpact * 1000).toFixed(0)}K` : `${erpImpact.toFixed(1)}M`}</div>}
-                                    {agentImpact > 0 && <div style={{ color: GREEN, fontFamily: "monospace" }}>Agent: +${agentImpact < 1 ? `${(agentImpact * 1000).toFixed(0)}K` : `${agentImpact.toFixed(1)}M`}</div>}
-                                    {erpImpact === 0 && agentImpact === 0 && <span style={{ color: t.sub }}>—</span>}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-
-                        {/* Three value boxes: ERP + Agent = Total */}
-                        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                          <div style={{ flex: 1, padding: "10px 12px", borderRadius: 8, background: GOLD + "10", border: `1px solid ${GOLD}30`, textAlign: "center" }}>
-                            <div style={{ fontSize: 9, color: GOLD, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 2 }}>ERP Value</div>
-                            <div style={{ fontSize: 18, fontFamily: "monospace", fontWeight: 700, color: GOLD }}>{procErpVal > 0 ? `$${procErpVal.toFixed(1)}M` : "—"}</div>
-                          </div>
-                          <div style={{ display: "flex", alignItems: "center", fontSize: 18, color: t.sub, fontWeight: 300 }}>+</div>
-                          <div style={{ flex: 1, padding: "10px 12px", borderRadius: 8, background: GREEN + "10", border: `1px solid ${GREEN}30`, textAlign: "center" }}>
-                            <div style={{ fontSize: 9, color: GREEN, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 2 }}>Agent Uplift</div>
-                            <div style={{ fontSize: 18, fontFamily: "monospace", fontWeight: 700, color: GREEN }}>{procAgentVal > 0 ? `$${procAgentVal.toFixed(1)}M` : "—"}</div>
-                          </div>
-                          <div style={{ display: "flex", alignItems: "center", fontSize: 18, color: t.sub, fontWeight: 300 }}>=</div>
-                          <div style={{ flex: 1, padding: "10px 12px", borderRadius: 8, background: t.card, border: `2px solid ${t.bdr}`, textAlign: "center" }}>
-                            <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 2 }}>Total Opportunity</div>
-                            <div style={{ fontSize: 18, fontFamily: "monospace", fontWeight: 700, color: t.tx }}>{(procErpVal + procAgentVal) > 0 ? `$${(procErpVal + procAgentVal).toFixed(1)}M` : "—"}</div>
-                          </div>
-                        </div>
-
-                        {/* What SAP delivers / What agents add */}
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-                          <div style={{ padding: "8px 10px", borderRadius: 6, background: GOLD + "06", border: `1px solid ${GOLD}18` }}>
-                            <div style={{ fontSize: 9, color: GOLD, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 4 }}>What S/4HANA delivers</div>
-                            {(proc.sap || []).length > 0 ? (proc.sap || []).slice(0, 3).map((s, si) => (
-                              <div key={si} style={{ fontSize: 10, color: t.tx2, lineHeight: 1.5, paddingLeft: 8, borderLeft: `2px solid ${GOLD}30`, marginBottom: 3 }}><SapBadge module={s.module} /> {s.desc}</div>
-                            )) : <div style={{ fontSize: 10, color: t.sub, fontStyle: "italic" }}>No SAP modules mapped</div>}
-                          </div>
-                          <div style={{ padding: "8px 10px", borderRadius: 6, background: GREEN + "06", border: `1px solid ${GREEN}18` }}>
-                            <div style={{ fontSize: 9, color: GREEN, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 4 }}>What AI agents add</div>
-                            {agentResults[proc.id] ? (
-                              <div style={{ fontSize: 10, color: t.tx2, lineHeight: 1.5, maxHeight: 60, overflow: "hidden" }}>{agentResults[proc.id].slice(0, 200)}...</div>
-                            ) : (
-                              <div style={{ fontSize: 10, color: t.sub, fontStyle: "italic" }}>Generate agent for details</div>
-                            )}
-                          </div>
-                        </div>
-
-
-                        {/* Agent Implementation Spec */}
+                        {/* Agent capability card */}
                         {(() => {
                           const spec = AGENT_SPECS[proc.id];
-                          if (!spec) return null;
-                          const fColor = spec.feasibility >= 80 ? GREEN : spec.feasibility >= 60 ? GOLD : spec.feasibility >= 40 ? ORANGE : RED;
-                          const eColor = spec.effort === "Low" ? GREEN : spec.effort === "Medium" ? GOLD : RED;
-                          const annualAgentVal = procAgentVal > 0 ? procAgentVal : 0;
-                          const roi = spec.implCost > 0 && annualAgentVal > 0 ? Math.round((annualAgentVal * 1000 / spec.implCost) * 100) : null;
+                          if (spec) {
+                            const fColor = spec.feasibility >= 80 ? GREEN : spec.feasibility >= 60 ? GOLD : spec.feasibility >= 40 ? ORANGE : RED;
+                            return (
+                              <div style={{ padding: "12px 14px", background: GREEN + "06", borderRadius: 10, border: `1px solid ${GREEN}22`, marginBottom: 14 }}>
+                                <div style={{ fontSize: 10, color: GREEN, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 8 }}>What AI Agents Add on Top of ERP</div>
+                                <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
+                                  <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: fColor + "18", color: fColor, fontWeight: 700 }}>{spec.agentType}</span>
+                                  <div style={{ flex: 1, height: 6, background: t.bdr, borderRadius: 3 }}>
+                                    <div style={{ height: "100%", width: `${spec.feasibility}%`, background: `linear-gradient(90deg, ${fColor}88, ${fColor})`, borderRadius: 3 }} />
+                                  </div>
+                                  <span style={{ fontSize: 10, color: fColor, fontWeight: 700 }}>{spec.feasibility}/100</span>
+                                </div>
+                                <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.5 }}>{spec.description}</div>
+                              </div>
+                            );
+                          }
                           return (
-                            <div style={{ marginBottom: 12 }}>
-                              {/* Feasibility Gauge */}
-                              <div style={{ padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}`, marginBottom: 8 }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                                  <div style={{ fontSize: 10, color: t.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px" }}>Feasibility Score</div>
-                                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                    <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: fColor + "18", color: fColor, fontWeight: 700 }}>{spec.agentType}</span>
-                                    <span style={{ fontSize: 16, fontFamily: "monospace", fontWeight: 700, color: fColor }}>{spec.feasibility}</span>
-                                  </div>
-                                </div>
-                                <div style={{ height: 8, background: t.bdr, borderRadius: 4, overflow: "hidden" }}>
-                                  <div style={{ height: "100%", width: `${spec.feasibility}%`, background: `linear-gradient(90deg, ${fColor}88, ${fColor})`, borderRadius: 4, transition: "width 0.5s" }} />
-                                </div>
-                                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}>
-                                  <span style={{ fontSize: 8, color: t.sub }}>0</span>
-                                  <span style={{ fontSize: 8, color: t.sub }}>100</span>
-                                </div>
-                              </div>
-
-                              {/* Implementation Spec Card — collapsed by default */}
-                              <div style={{ padding: "12px 14px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}`, marginBottom: 8 }}>
-                                <div onClick={() => setImplSpecCollapsed(prev => ({ ...prev, [proc.id]: !prev[proc.id] }))} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
-                                  <div style={{ fontSize: 10, color: GOLD, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px" }}>Implementation Specification</div>
-                                  <span style={{ fontSize: 11, color: t.mut }}>{implSpecCollapsed[proc.id] ? "▾ Hide" : "▸ Show details"}</span>
-                                </div>
-                                {implSpecCollapsed[proc.id] && <>
-                                <div style={{ fontSize: 11, color: t.tx2, lineHeight: 1.6, marginBottom: 10, marginTop: 8 }}>{spec.description}</div>
-                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 10 }}>
-                                  <div style={{ textAlign: "center", padding: 6, borderRadius: 6, background: eColor + "0C", border: `1px solid ${eColor}22` }}>
-                                    <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase" }}>Effort</div>
-                                    <div style={{ fontSize: 14, fontWeight: 700, color: eColor }}>{spec.effort}</div>
-                                  </div>
-                                  <div style={{ textAlign: "center", padding: 6, borderRadius: 6, background: BLUE + "0C", border: `1px solid ${BLUE}22` }}>
-                                    <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase" }}>Timeline</div>
-                                    <div style={{ fontSize: 14, fontWeight: 700, color: BLUE }}>{spec.implMonths}mo</div>
-                                  </div>
-                                  <div style={{ textAlign: "center", padding: 6, borderRadius: 6, background: PURPLE + "0C", border: `1px solid ${PURPLE}22` }}>
-                                    <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase" }}>Cost</div>
-                                    <div style={{ fontSize: 14, fontWeight: 700, color: PURPLE }}>${spec.implCost}K</div>
-                                  </div>
-                                </div>
-                                <div style={{ marginBottom: 8 }}>
-                                  <div style={{ fontSize: 9, color: t.mut, fontWeight: 600, marginBottom: 3 }}>PREREQUISITES</div>
-                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                                    {spec.prerequisites.map((p, pi) => (
-                                      <span key={pi} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: GREEN + "10", color: GREEN, border: `1px solid ${GREEN}25` }}>{p}</span>
-                                    ))}
-                                  </div>
-                                </div>
-                                <div style={{ marginBottom: 8 }}>
-                                  <div style={{ fontSize: 9, color: t.mut, fontWeight: 600, marginBottom: 3 }}>RISK FACTORS</div>
-                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                                    {spec.riskFactors.map((r, ri) => (
-                                      <span key={ri} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: RED + "10", color: RED, border: `1px solid ${RED}25` }}>{r}</span>
-                                    ))}
-                                  </div>
-                                </div>
-                                <div>
-                                  <div style={{ fontSize: 9, color: t.mut, fontWeight: 600, marginBottom: 3 }}>TECH STACK</div>
-                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                                    {spec.techStack.map((ts, ti) => (
-                                      <span key={ti} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: BLUE + "10", color: BLUE, border: `1px solid ${BLUE}25` }}>{ts}</span>
-                                    ))}
-                                  </div>
-                                </div>
-                              </>}
-                              </div>
-
-                              {/* ROI Timeline — collapsed by default */}
-                              <div style={{ padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
-                                <div onClick={() => setRoiTimelineCollapsed(prev => ({ ...prev, [proc.id]: !prev[proc.id] }))} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
-                                  <div style={{ fontSize: 10, color: GOLD, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px" }}>ROI Timeline</div>
-                                  <span style={{ fontSize: 11, color: t.mut }}>{roiTimelineCollapsed[proc.id] ? "▾ Hide" : "▸ Show timeline"}</span>
-                                </div>
-                                {roiTimelineCollapsed[proc.id] && <>
-                                <div style={{ display: "flex", gap: 12, alignItems: "flex-end", height: 50, marginBottom: 6 }}>
-                                  <div style={{ flex: 1, textAlign: "center" }}>
-                                    <div style={{ fontSize: 10, fontFamily: "monospace", color: RED, fontWeight: 700, marginBottom: 2 }}>-${spec.implCost}K</div>
-                                    <div style={{ height: 24, background: RED + "30", borderRadius: 4, border: `1px solid ${RED}40` }} />
-                                    <div style={{ fontSize: 8, color: t.sub, marginTop: 2 }}>Investment</div>
-                                  </div>
-                                  <div style={{ flex: 1, textAlign: "center" }}>
-                                    <div style={{ fontSize: 10, fontFamily: "monospace", color: GOLD, fontWeight: 700, marginBottom: 2 }}>{spec.paybackMonths}mo</div>
-                                    <div style={{ height: 16, background: GOLD + "30", borderRadius: 4, border: `1px solid ${GOLD}40` }} />
-                                    <div style={{ fontSize: 8, color: t.sub, marginTop: 2 }}>Payback</div>
-                                  </div>
-                                  <div style={{ flex: 1, textAlign: "center" }}>
-                                    <div style={{ fontSize: 10, fontFamily: "monospace", color: GREEN, fontWeight: 700, marginBottom: 2 }}>{annualAgentVal > 0 ? `$${annualAgentVal.toFixed(1)}M` : "TBD"}</div>
-                                    <div style={{ height: 32, background: GREEN + "30", borderRadius: 4, border: `1px solid ${GREEN}40` }} />
-                                    <div style={{ fontSize: 8, color: t.sub, marginTop: 2 }}>Annual Value</div>
-                                  </div>
-                                </div>
-                                {roi != null && <div style={{ fontSize: 10, color: t.tx2, textAlign: "center" }}>Estimated ROI: <span style={{ fontWeight: 700, color: roi > 200 ? GREEN : roi > 100 ? GOLD : ORANGE }}>{roi}%</span></div>}
-                              </>}
-                              </div>
+                            <div style={{ padding: "12px 14px", background: t.bg, borderRadius: 10, border: `2px dashed ${t.bdr}`, marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <span style={{ fontSize: 12, color: t.mut, fontStyle: "italic" }}>No agent spec yet — generate to see what AI adds beyond ERP</span>
+                              <button onClick={() => callCatalyst(proc.id, `You are an AI transformation consultant for ${baseline.industry} companies. For the process "${proc.label}" (APQC ${proc.l4}), provide a concise AI agent assessment: 1. Agent type and what it does specifically. 2. Quantitative uplift beyond S/4HANA best practice. 3. One real case study. Be specific and quantitative.`, setAgentResults, setAgentLoading)} disabled={agentLoading[proc.id]}
+                                style={{ fontSize: 11, padding: "6px 14px", borderRadius: 8, background: GOLD, border: "none", color: "#111", cursor: agentLoading[proc.id] ? "wait" : "pointer", fontFamily: FONT, fontWeight: 600 }}>
+                                {agentLoading[proc.id] ? "⟳ Generating..." : "⚡ Generate"}
+                              </button>
                             </div>
                           );
                         })()}
-                        {agentResults[proc.id] ? (
-                          <div style={{ padding: 14, background: GOLD + "08", border: `1px solid ${GOLD}22`, borderRadius: 10 }}>
-                            <div style={{ fontSize: 10, color: GOLD, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 8 }}>⚡ AI Agent Scenario</div>
-                            <div style={{ fontSize: 12, color: t.tx2, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{agentResults[proc.id]}</div>
+
+                        {/* Per-KPI: ERP target → Agent target */}
+                        <div style={{ fontSize: 10, color: t.mut, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 8 }}>
+                          Confirm agent target per KPI — edit to adjust
+                        </div>
+                        <div style={{ display: "grid", gap: 10 }}>
+                          {kpiRows.map(({ kpi, ki, bench, agentBench, erpImpact, agentImpact }) => {
+                            const activeAgentBench = bmarks[`agent_bench_${ki}`] ?? agentBench;
+                            const hib = /rate|score|adoption|fill|perfect|touchless|match|auto|straight/i.test(kpi.name);
+                            const agentGap = bench != null && activeAgentBench != null ? Math.abs(activeAgentBench - bench) : null;
+                            const agentImprovLabel = agentGap != null && agentGap > 0 ? (hib ? `+${agentGap.toFixed(1)}${kpi.unit === "%" ? "pp" : " " + kpi.unit}` : `-${agentGap.toFixed(1)} ${kpi.unit}`) : null;
+                            return (
+                              <div key={ki} style={{ padding: "12px 14px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
+                                <div style={{ fontSize: 12, color: t.tx, fontWeight: 600, marginBottom: 10 }}>{kpi.name} <span style={{ fontSize: 10, color: t.mut, fontWeight: 400 }}>({kpi.unit})</span></div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 8 }}>
+                                  <div>
+                                    <div style={{ fontSize: 9, color: BLUE, marginBottom: 2 }}>ERP Target</div>
+                                    <div style={{ fontSize: 16, fontFamily: "monospace", fontWeight: 700, color: BLUE }}>{bench ?? "—"}</div>
+                                  </div>
+                                  <span style={{ fontSize: 18, color: t.sub }}>→</span>
+                                  <div>
+                                    <div style={{ fontSize: 9, color: GREEN, marginBottom: 2 }}>Agent Target</div>
+                                    <input type="number" value={bmarks[`agent_bench_${ki}`] ?? agentBench ?? ""}
+                                      onChange={e => { const v = parseFloat(e.target.value) || null; setBmark(`agent_bench_${ki}`, v); }}
+                                      style={{ width: 75, background: t.card, border: `1px solid ${GREEN}44`, borderRadius: 6, padding: "3px 8px", color: GREEN, fontFamily: "monospace", fontSize: 16, fontWeight: 700 }} />
+                                  </div>
+                                  {agentImprovLabel && <div style={{ marginLeft: "auto", textAlign: "right" }}>
+                                    <div style={{ fontSize: 9, color: t.mut, marginBottom: 2 }}>Additional uplift</div>
+                                    <div style={{ fontSize: 14, fontFamily: "monospace", fontWeight: 700, color: GREEN }}>{agentImprovLabel}</div>
+                                  </div>}
+                                </div>
+                                <div style={{ display: "flex", gap: 12, fontSize: 10, borderTop: `1px solid ${t.bdr}20`, paddingTop: 8 }}>
+                                  {erpImpact > 0 && <span style={{ color: BLUE }}>ERP: +${erpImpact < 1 ? `${(erpImpact * 1000).toFixed(0)}K` : `${erpImpact.toFixed(1)}M`}</span>}
+                                  {agentImpact > 0 && <span style={{ color: GREEN }}>Agent adds: +${agentImpact < 1 ? `${(agentImpact * 1000).toFixed(0)}K` : `${agentImpact.toFixed(1)}M`}</span>}
+                                  {erpImpact === 0 && agentImpact === 0 && <span style={{ color: t.sub, fontStyle: "italic" }}>No baseline data — enter current values in step 2</span>}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* ERP + Agent = Total */}
+                        <div style={{ display: "flex", gap: 8, marginTop: 14, alignItems: "stretch" }}>
+                          <div style={{ flex: 1, padding: "12px 14px", borderRadius: 8, background: BLUE + "10", border: `1px solid ${BLUE}30`, textAlign: "center" }}>
+                            <div style={{ fontSize: 9, color: BLUE, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 4 }}>ERP Value</div>
+                            <div style={{ fontSize: 22, fontFamily: "monospace", fontWeight: 700, color: BLUE }}>{procErpVal > 0 ? `$${procErpVal.toFixed(1)}M` : "—"}</div>
+                            <div style={{ fontSize: 9, color: t.mut, marginTop: 2 }}>S/4HANA best practice</div>
                           </div>
-                        ) : (
-                          <div style={{ padding: 24, border: `2px dashed ${t.bdr}`, borderRadius: 10, textAlign: "center" }}>
-                            <div style={{ fontSize: 24, marginBottom: 6, opacity: 0.5 }}>🤖</div>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: t.tx2, marginBottom: 4 }}>No agent assessment yet</div>
-                            <div style={{ fontSize: 11, color: t.mut }}>Click "Generate Agent" above to create one</div>
+                          <div style={{ display: "flex", alignItems: "center", fontSize: 22, color: t.sub, fontWeight: 300 }}>+</div>
+                          <div style={{ flex: 1, padding: "12px 14px", borderRadius: 8, background: GREEN + "10", border: `1px solid ${GREEN}30`, textAlign: "center" }}>
+                            <div style={{ fontSize: 9, color: GREEN, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 4 }}>Agent Uplift</div>
+                            <div style={{ fontSize: 22, fontFamily: "monospace", fontWeight: 700, color: GREEN }}>{procAgentVal > 0 ? `$${procAgentVal.toFixed(1)}M` : "—"}</div>
+                            <div style={{ fontSize: 9, color: t.mut, marginTop: 2 }}>Incremental from agents</div>
                           </div>
-                        )}
+                          <div style={{ display: "flex", alignItems: "center", fontSize: 22, color: t.sub, fontWeight: 300 }}>=</div>
+                          <div style={{ flex: 1.2, padding: "12px 14px", borderRadius: 8, background: t.card, border: `2px solid ${t.bdr}`, textAlign: "center" }}>
+                            <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 4 }}>Total Opportunity</div>
+                            <div style={{ fontSize: 22, fontFamily: "monospace", fontWeight: 700, color: t.tx }}>{(procErpVal + procAgentVal) > 0 ? `$${(procErpVal + procAgentVal).toFixed(1)}M` : "—"}</div>
+                            <div style={{ fontSize: 9, color: t.mut, marginTop: 2 }}>Combined annual value</div>
+                          </div>
+                        </div>
+                        <div style={{ marginTop: 8, padding: "8px 12px", background: t.bg, borderRadius: 6, border: `1px solid ${t.bdr}` }}>
+                          <div style={{ fontSize: 10, color: t.mut }}>→ Next: go to <span style={{ color: GREEN, fontWeight: 600 }}>③ Summary</span> to review all KPIs and confirm before proceeding</div>
+                        </div>
                       </div>
                     )}
                   </div>

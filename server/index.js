@@ -264,6 +264,12 @@ app.post('/api/map-roles', async (req, res) => {
 // Serve React build in production
 const clientBuildPath = path.join(__dirname, '..', 'client', 'dist');
 app.use(express.static(clientBuildPath));
+
+// Static standalone pages
+app.get('/eudia', (req, res) => {
+  res.sendFile(path.join(clientBuildPath, 'eudia.html'));
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(clientBuildPath, 'index.html'));
 });
