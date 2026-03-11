@@ -58,7 +58,8 @@ function slideCover(pptx, data, params) {
   s.addText(coName, { x: 0.5, y: 0.8, w: 6.5, h: 0.8, fontSize: 36, fontFace: FONT, color: "FFFFFF", bold: true });
 
   // Title
-  s.addText(`${fnName} Value Assessment`, { x: 0.5, y: 1.6, w: 6.5, h: 0.5, fontSize: 22, fontFace: FONT, color: GOLD });
+  const titleName = e2eNames || fnName;
+  s.addText(`${titleName} Value Assessment`, { x: 0.5, y: 1.6, w: 6.5, h: 0.5, fontSize: 22, fontFace: FONT, color: GOLD });
 
   // E2E and function
   s.addText(`End-to-End Process: ${e2eNames}`, { x: 0.5, y: 2.1, w: 6.5, h: 0.3, fontSize: 12, fontFace: FONT, color: "8899AA" });
@@ -340,7 +341,7 @@ function slideWhatItTakes(pptx, data, params) {
     },
   ];
 
-  const colW = 4.15, colH = 1.7, gapX = 0.4, gapY = 0.3, startY = 1.15;
+  const colW = 4.15, colH = 2.0, gapX = 0.4, gapY = 0.3, startY = 1.0;
   dims.forEach((dim, i) => {
     const col = i % 2, row = Math.floor(i / 2);
     const cx = 0.5 + col * (colW + gapX);
@@ -353,10 +354,10 @@ function slideWhatItTakes(pptx, data, params) {
     s.addShape(pptx.shapes.RECTANGLE, { x: cx, y: cy + 0.25, w: colW, h: 0.15, fill: { color: dim.color } });
     s.addText(dim.title, { x: cx, y: cy, w: colW, h: 0.4, fontSize: 12, fontFace: FONT, color: "FFFFFF", bold: true, align: "center" });
 
-    const lines = dim.getLines();
+    const lines = dim.getLines()?.map(l => l.substring(0, 90)) || [];
     if (lines && lines.length > 0) {
-      const bullets = lines.map(l => `  ${l}`).join("\n\n");
-      s.addText(bullets, { x: cx + 0.15, y: cy + 0.5, w: colW - 0.3, h: colH - 0.6, fontSize: 9, fontFace: FONT, color: NAVY_TEXT, lineSpacingMultiple: 1.4 });
+      const bullets = lines.map(l => `  ${l}`).join("\n");
+      s.addText(bullets, { x: cx + 0.15, y: cy + 0.5, w: colW - 0.3, h: colH - 0.6, fontSize: 8, fontFace: FONT, color: NAVY_TEXT, lineSpacingMultiple: 1.2 });
     }
   });
 
@@ -472,7 +473,7 @@ function slideRisksAssumptions(pptx, data, params) {
   const assumptions = [
     { title: "Addressable Gap", detail: "Default 80% of the benchmark gap is addressable through process and technology change. Structural, regulatory, and market constraints account for the remaining 20%." },
     { title: "Adoption Curve", detail: `${scenarioLevel} scenario assumes ${(multipliers[scenarioLevel] * 100).toFixed(0)}% of addressable gap is realized. Actual adoption depends on change management effectiveness, training quality, and executive sponsorship.` },
-    { title: "Implementation Timeline", detail: "16-week timeline assumes dedicated project team, available SMEs, and no major scope changes. ERP configuration complexity may extend Phase 2." },
+    { title: "Impl. Timeline", detail: "16-week timeline assumes dedicated project team, available SMEs, and no major scope changes. ERP configuration complexity may extend Phase 2." },
     { title: "Data Quality", detail: `Value calculations assume clean master data migration. Data quality issues in ${coName}'s source systems may require additional remediation effort.` },
     { title: "Change Management", detail: "Process redesign requires active change management. Role changes, retraining, and organizational alignment are critical success factors." },
   ];
