@@ -58,8 +58,7 @@ function slideCover(pptx, data, params) {
   s.addText(coName, { x: 0.5, y: 0.8, w: 6.5, h: 0.8, fontSize: 36, fontFace: FONT, color: "FFFFFF", bold: true });
 
   // Title
-  const titleName = e2eNames || fnName;
-  s.addText(`${titleName} Value Assessment`, { x: 0.5, y: 1.6, w: 6.5, h: 0.5, fontSize: 22, fontFace: FONT, color: GOLD });
+  s.addText(`${fnName} Value Assessment`, { x: 0.5, y: 1.6, w: 6.5, h: 0.5, fontSize: 22, fontFace: FONT, color: GOLD });
 
   // E2E and function
   s.addText(`End-to-End Process: ${e2eNames}`, { x: 0.5, y: 2.1, w: 6.5, h: 0.3, fontSize: 12, fontFace: FONT, color: "8899AA" });
@@ -82,6 +81,13 @@ function slideCover(pptx, data, params) {
 
   // Right side accent block
   s.addShape(pptx.shapes.RECTANGLE, { x: 7.5, y: 0, w: 2.5, h: 5.625, fill: { color: "0A1520" } });
+  // SAP modules on right accent block
+  const sapMods = [...new Set((data.imps || []).flatMap(i => (i.sap || []).map(m => m.module)))].slice(0,4).join("\n") || "SAP S/4HANA";
+  s.addText("SAP S/4HANA", { x: 7.55, y: 0.5, w: 2.4, h: 0.3, fontSize: 10, fontFace: FONT, color: GOLD, bold: true, align: "center" });
+  s.addText(sapMods, { x: 7.55, y: 0.85, w: 2.4, h: 1.2, fontSize: 8, fontFace: FONT, color: "8899AA", align: "center", lineSpacingMultiple: 1.5 });
+  s.addShape(pptx.shapes.RECTANGLE, { x: 7.75, y: 2.2, w: 2.0, h: 0.003, fill: { color: "1A3A55" } });
+  s.addText("Joule Studio\non SAP BTP", { x: 7.55, y: 2.3, w: 2.4, h: 0.5, fontSize: 9, fontFace: FONT, color: GOLD, align: "center", bold: true });
+  s.addText("AI Agents — GA Q1 2026", { x: 7.55, y: 2.8, w: 2.4, h: 0.25, fontSize: 8, fontFace: FONT, color: "556677", align: "center" });
   s.addText("Prepared by\nHuman in the Lead", { x: 7.6, y: 4.2, w: 2.3, h: 0.8, fontSize: 9, fontFace: FONT, color: "556677", align: "center", lineSpacingMultiple: 1.4 });
 
   addFooter(s, true);
@@ -131,7 +137,12 @@ function slideWhatWeFound(pptx, data, params) {
   // Scenario context
   const multipliers = { High: "100%", Medium: "65%", Low: "35%" };
   s.addText(`Scenario: ${scenarioLevel} (${multipliers[scenarioLevel] || "65%"} of addressable gap)  —  ${scenarioLevel === "Medium" ? "Recommended planning assumption" : scenarioLevel === "Low" ? "Minimum credible case" : "Full potential, assumes excellent execution"}`, {
-    x: 0.5, y: 3.2, w: 9, h: 0.3, fontSize: 10, fontFace: FONT, color: NAVY_TEXT
+    x: 0.5, y: 3.1, w: 6.5, h: 0.3, fontSize: 10, fontFace: FONT, color: NAVY_TEXT
+  });
+  // SAP + Joule badge
+  const sapModList = [...new Set((imps || []).flatMap(i => (i.sap || []).map(m => m.module)))].slice(0,4).join("  ·  ") || "SAP S/4HANA";
+  s.addText(`SAP S/4HANA: ${sapModList}   |   AI Agents via Joule Studio on BTP (GA Q1 2026)`, {
+    x: 0.5, y: 3.38, w: 9, h: 0.22, fontSize: 8.5, fontFace: FONT, color: GOLD, bold: false
   });
 
   // Process breakdown table
@@ -341,7 +352,7 @@ function slideWhatItTakes(pptx, data, params) {
     },
   ];
 
-  const colW = 4.15, colH = 2.0, gapX = 0.4, gapY = 0.3, startY = 1.0;
+  const colW = 4.15, colH = 1.7, gapX = 0.4, gapY = 0.3, startY = 1.15;
   dims.forEach((dim, i) => {
     const col = i % 2, row = Math.floor(i / 2);
     const cx = 0.5 + col * (colW + gapX);
@@ -354,10 +365,10 @@ function slideWhatItTakes(pptx, data, params) {
     s.addShape(pptx.shapes.RECTANGLE, { x: cx, y: cy + 0.25, w: colW, h: 0.15, fill: { color: dim.color } });
     s.addText(dim.title, { x: cx, y: cy, w: colW, h: 0.4, fontSize: 12, fontFace: FONT, color: "FFFFFF", bold: true, align: "center" });
 
-    const lines = dim.getLines()?.map(l => l.substring(0, 90)) || [];
+    const lines = dim.getLines();
     if (lines && lines.length > 0) {
-      const bullets = lines.map(l => `  ${l}`).join("\n");
-      s.addText(bullets, { x: cx + 0.15, y: cy + 0.5, w: colW - 0.3, h: colH - 0.6, fontSize: 8, fontFace: FONT, color: NAVY_TEXT, lineSpacingMultiple: 1.2 });
+      const bullets = lines.map(l => `  ${l}`).join("\n\n");
+      s.addText(bullets, { x: cx + 0.15, y: cy + 0.5, w: colW - 0.3, h: colH - 0.6, fontSize: 9, fontFace: FONT, color: NAVY_TEXT, lineSpacingMultiple: 1.4 });
     }
   });
 
@@ -473,7 +484,7 @@ function slideRisksAssumptions(pptx, data, params) {
   const assumptions = [
     { title: "Addressable Gap", detail: "Default 80% of the benchmark gap is addressable through process and technology change. Structural, regulatory, and market constraints account for the remaining 20%." },
     { title: "Adoption Curve", detail: `${scenarioLevel} scenario assumes ${(multipliers[scenarioLevel] * 100).toFixed(0)}% of addressable gap is realized. Actual adoption depends on change management effectiveness, training quality, and executive sponsorship.` },
-    { title: "Impl. Timeline", detail: "16-week timeline assumes dedicated project team, available SMEs, and no major scope changes. ERP configuration complexity may extend Phase 2." },
+    { title: "Implementation Timeline", detail: "16-week timeline assumes dedicated project team, available SMEs, and no major scope changes. ERP configuration complexity may extend Phase 2." },
     { title: "Data Quality", detail: `Value calculations assume clean master data migration. Data quality issues in ${coName}'s source systems may require additional remediation effort.` },
     { title: "Change Management", detail: "Process redesign requires active change management. Role changes, retraining, and organizational alignment are critical success factors." },
   ];
