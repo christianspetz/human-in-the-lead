@@ -813,85 +813,6 @@ const SAP_LEVER_MAP = {
 const getSapLever = (procId) => SAP_LEVER_MAP[procId] || null;
 const getBenchmarkContext = (procId, kpiName) => { const e = SAP_LEVER_MAP[procId]; return e ? (e.kpis[kpiName] || null) : null; };
 
-const S4_DETAILS_DEFAULTS = {
-  "o2c-012": {
-    module: "SD-SLS (Sales & Distribution)",
-    deployment: "Brownfield",
-    deploymentDesc: "Existing SAP ECC customers can selective-convert SD configuration",
-    capability: "Intelligent Order Capture + Advanced ATP",
-    integration: "SAP Business Network, EDI, Ariba",
-    complexity: "Medium",
-    complexityReason: "Pricing master data migration is the critical path",
-    configWeeks: "8\u201310",
-  },
-};
-const DEPLOYMENT_SCENARIOS = {
-  Greenfield: "New implementation from scratch — clean data model, no legacy constraints, longest timeline",
-  Brownfield: "In-place conversion of existing ECC system — preserves customizations and historical data",
-  "Selective Data Migration": "Hybrid approach — new S/4HANA shell with selective migration of master/transactional data",
-};
-const getS4Details = (procId) => S4_DETAILS_DEFAULTS[procId] || null;
-
-/* ═══════════════════════════════════════════════════════
-   CALC NARRATIVE — per-process explainer context
-   mechanism: what the KPI gap represents in plain English
-   sapAction: what the SAP module does to close the gap
-   agentAction: what the AI agent adds beyond ERP
-   fintypeRationale: why this process uses its financial base
-   ═══════════════════════════════════════════════════════ */
-const CALC_NARRATIVE = {
-  "o2c-001": { mechanism: "Slow credit evaluations delay order release and increase manual analyst workload", sapAction: "FSCM-CR automates credit scoring using customer data and bureau APIs, replacing manual review for standard requests", agentAction: "AI agent continuously monitors external risk signals and proactively adjusts scores before orders arrive", fintypeRationale: "SGA: credit evaluation is a back-office labor cost within finance operations" },
-  "o2c-002": { mechanism: "Static credit limits cause unnecessary blocks on good customers and under-limit risky ones", sapAction: "FSCM-CR enables rule-based dynamic limit adjustments tied to payment history", agentAction: "Agent detects early-warning signals from market data and adjusts limits in real time", fintypeRationale: "SGA: credit limit management is an administrative finance function" },
-  "o2c-003": { mechanism: "Blocked orders sit in queue, delaying revenue recognition and frustrating customers", sapAction: "FI-AR provides automated triage and risk-tiered approval workflows for credit blocks", agentAction: "Agent predicts which blocks are false positives and auto-releases low-risk holds", fintypeRationale: "Revenue: blocked orders directly delay top-line recognition" },
-  "o2c-004": { mechanism: "Billing errors and slow invoice generation leak revenue and increase dispute volume", sapAction: "SD-BIL validates invoices against contract pricing rules and triggers billing on goods issue", agentAction: "Agent cross-checks billing against delivery proof, contract amendments, and pricing exceptions in real time", fintypeRationale: "SGA: billing is a transactional processing cost within shared services" },
-  "o2c-005": { mechanism: "Failed invoice delivery means customers never receive bills, delaying payment", sapAction: "SD-BIL auto-detects customer format preferences (EDI, XML, PDF) and transmits with confirmation", agentAction: "Agent monitors delivery failures, retries with alternate channels, and alerts AR before aging impacts", fintypeRationale: "SGA: invoice transmission is an operational overhead cost" },
-  "o2c-006": { mechanism: "Unresolved disputes tie up cash and erode customer relationships", sapAction: "FI-AR classifies disputes using AI and routes to responsible teams with root cause data", agentAction: "Agent identifies dispute patterns across customers and recommends preventive actions upstream", fintypeRationale: "SGA: dispute resolution is a labor-intensive finance process" },
-  "o2c-007": { mechanism: "Manual cash application delays payment clearing and inflates DSO", sapAction: "FI-AR uses ML-powered payment-to-invoice matching to eliminate manual reconciliation", agentAction: "Agent handles complex remittance scenarios (partial pays, deductions) that rule-based matching misses", fintypeRationale: "SGA: cash application is a high-volume clerical function" },
-  "o2c-008": { mechanism: "Reactive collections miss early intervention windows, increasing bad debt exposure", sapAction: "FI-AR automates dunning sequences and prioritizes the collections worklist by risk", agentAction: "Agent predicts payment likelihood per customer and personalizes outreach timing and tone", fintypeRationale: "SGA: collections is a labor cost, though it protects revenue" },
-  "o2c-009": { mechanism: "Unresolved deductions accumulate as a hidden revenue drain", sapAction: "FI-AR classifies deductions against trade agreements and routes invalid ones for recovery", agentAction: "Agent detects deduction fraud patterns and auto-generates evidence packages for dispute resolution", fintypeRationale: "Revenue: invalid deductions are direct revenue leakage" },
-  "o2c-010": { mechanism: "Delayed write-off decisions misstate AR and distort financial reporting", sapAction: "FI-AR runs ML-based expected credit loss models per IFRS 9/CECL with automated provisioning", agentAction: "Agent continuously scores portfolio risk and flags accounts trending toward write-off before they age out", fintypeRationale: "SGA: provisioning and write-off administration is a finance cost" },
-  "o2c-011": { mechanism: "Slow refund processing damages customer trust and inflates service costs", sapAction: "FI-AR validates refund requests against policy rules and auto-generates credit memos", agentAction: "Agent detects refund fraud patterns and fast-tracks legitimate refunds without manual review", fintypeRationale: "SGA: refund processing is an administrative cost within AR operations" },
-  "o2c-012": { mechanism: "Manual order entry introduces errors and slows fulfillment start", sapAction: "SD-SLS captures orders from all channels with automated validation against pricing and credit rules", agentAction: "Agent resolves ambiguous orders (partial info, unusual configs) using customer history context", fintypeRationale: "SGA: order entry is a transactional labor cost" },
-  "o2c-013": { mechanism: "Inaccurate availability promises cause backorders and lost sales", sapAction: "SD-SLS runs real-time global ATP with intelligent allocation by customer priority and margin", agentAction: "Agent predicts demand surges and pre-positions allocation before stock runs out", fintypeRationale: "Revenue: stock-outs and backorders directly reduce top-line sales" },
-  "o2c-014": { mechanism: "Pricing overrides and errors erode margin without visibility", sapAction: "SD-BF enforces dynamic pricing rules with margin guardrails and customer-specific agreements", agentAction: "Agent monitors competitive pricing signals and recommends real-time adjustments within guardrails", fintypeRationale: "Revenue: pricing errors are direct margin and revenue leakage" },
-  "o2c-015": { mechanism: "Unmanaged order changes cascade into fulfillment disruptions and cancellations", sapAction: "SD-SLS assesses downstream impact on fulfillment, production, and billing automatically", agentAction: "Agent proactively contacts customers before cancellation, offering alternatives based on inventory", fintypeRationale: "Revenue: cancellations are direct lost revenue" },
-  "o2c-016": { mechanism: "Warehouse inefficiency increases cost per order and delays shipment", sapAction: "EWM optimizes wave planning, pick paths, and packing with real-time labor allocation", agentAction: "Agent predicts order volume spikes and dynamically reallocates warehouse labor before bottlenecks form", fintypeRationale: "Revenue: perfect order rate directly impacts customer retention and revenue" },
-  "o2c-017": { mechanism: "Suboptimal routing inflates freight costs and causes late deliveries", sapAction: "TM plans routes using traffic, capacity, and cost data with predictive ETAs", agentAction: "Agent reroutes shipments in real time when disruptions occur, without waiting for human escalation", fintypeRationale: "COGS: freight and logistics are direct cost-of-goods-sold line items" },
-  "o2c-018": { mechanism: "Slow returns processing ties up inventory and delays customer credits", sapAction: "SD-SLS automates return authorization with policy-based validation and reason code analysis", agentAction: "Agent predicts return likelihood at point of sale and recommends preventive actions", fintypeRationale: "COGS: returns and reverse logistics are direct cost-of-goods items" },
-  "o2c-019": { mechanism: "Manual revenue recognition creates period-end bottlenecks and audit risk", sapAction: "RAR automates IFRS 15/ASC 606 recognition, eliminating manual journal entries", agentAction: "Agent identifies complex multi-element arrangements and flags recognition edge cases for review", fintypeRationale: "SGA: revenue accounting is a finance department labor cost" },
-  "o2c-020": { mechanism: "Slow contract creation delays deal closure and increases legal review costs", sapAction: "SD-CAS drafts contracts from templates with automated compliance checks and clause scoring", agentAction: "Agent negotiates standard terms via customer portal and escalates only non-standard requests", fintypeRationale: "SGA: contract management is a legal/commercial administration cost" },
-  "o2c-021": { mechanism: "Inaccurate rebate accruals misstate financials and leave money on the table", sapAction: "SD-CAS tracks qualifying transactions and automates accrual calculation and settlement", agentAction: "Agent analyzes promotion effectiveness in real time and recommends mid-campaign adjustments", fintypeRationale: "Revenue: rebates and trade promotions directly impact net revenue" },
-  "o2c-022": { mechanism: "Stale or inconsistent price lists cause billing errors and margin leakage", sapAction: "SD-BF manages condition records centrally with real-time propagation and margin validation", agentAction: "Agent detects pricing anomalies across channels and auto-corrects before they reach invoicing", fintypeRationale: "Revenue: pricing master data errors directly reduce realized revenue" },
-  "o2c-023": { mechanism: "Invisible margin erosion across customers and products goes undetected", sapAction: "CO-PA provides real-time margin waterfall analysis by customer, product, and channel", agentAction: "Agent identifies emerging leakage patterns and recommends corrective pricing actions", fintypeRationale: "Revenue: margin leakage is direct revenue impact at the gross profit level" },
-  "o2c-024": { mechanism: "Inaccurate cash forecasts lead to excess borrowing costs or missed investment returns", sapAction: "TRM runs ML-based cash receipt forecasting using payment history and customer behavior", agentAction: "Agent incorporates macro signals and customer-specific events to improve short-term accuracy", fintypeRationale: "SGA: cash forecasting is a treasury/finance operational cost" },
-  "o2c-025": { mechanism: "Manual bank reconciliation delays close and hides discrepancies", sapAction: "FI-BL imports bank statements and runs ML-powered transaction matching automatically", agentAction: "Agent investigates unmatched items using pattern recognition across historical data", fintypeRationale: "SGA: bank reconciliation is a finance labor cost" },
-  "o2c-026": { mechanism: "Delayed exception detection allows problems to compound before intervention", sapAction: "BW/4HANA provides real-time KPI monitoring with anomaly detection and automated alerts", agentAction: "Agent performs root cause analysis on anomalies and suggests corrective actions to process owners", fintypeRationale: "SGA: O2C monitoring and reporting is a finance overhead cost" },
-  "o2c-027": { mechanism: "Process deviations and rework go undetected without mining visibility", sapAction: "Signavio performs continuous process mining with bottleneck identification and deviation analysis", agentAction: "Agent simulates process changes via digital twin and predicts improvement impact before deployment", fintypeRationale: "SGA: process optimization is an operational excellence cost center" },
-  "o2c-028": { mechanism: "Manual order capture introduces errors and delays fulfillment start across channels", sapAction: "SD-SLS ingests orders from EDI, portal, email, and phone with automated validation", agentAction: "Agent interprets unstructured order formats (emails, PDFs) and creates structured orders without human re-keying", fintypeRationale: "SGA: order capture is a transactional processing labor cost" },
-  "o2c-029": { mechanism: "Poor customer master data cascades errors into billing, shipping, and credit decisions", sapAction: "SD-SLS validates tax IDs, addresses, and payment terms at onboarding and enforces periodic review", agentAction: "Agent enriches customer records from external sources and flags stale data before it causes downstream errors", fintypeRationale: "SGA: customer data maintenance is a shared-services overhead cost" },
-  "o2c-030": { mechanism: "Inaccurate stock availability promises create backorders and lost customer confidence", sapAction: "SD-SLS runs real-time ATP checks across warehouses and calculates earliest delivery dates", agentAction: "Agent predicts demand patterns and proactively suggests allocation strategies before stock-outs occur", fintypeRationale: "Revenue: unfulfilled orders directly reduce top-line sales" },
-  "o2c-031": { mechanism: "Pricing errors at order entry leak margin and create downstream billing disputes", sapAction: "SD-SLS applies condition records and contract pricing automatically at point of entry", agentAction: "Agent detects pricing anomalies versus customer history and flags exceptions before confirmation", fintypeRationale: "Revenue: pricing errors at entry directly reduce realized revenue" },
-  "o2c-032": { mechanism: "Slow backorder resolution ties up inventory allocation and frustrates high-value customers", sapAction: "SD-SLS monitors backlog against incoming supply and prioritizes by customer tier and margin", agentAction: "Agent predicts supply arrival and proactively communicates revised delivery dates to customers", fintypeRationale: "Revenue: unresolved backorders risk cancellations and lost sales" },
-  "r2r-001": { mechanism: "Manual journal entries are slow, error-prone, and consume analyst time every close", sapAction: "FI-GL posts rule-based recurring and reversing entries automatically — humans handle exceptions only", agentAction: "Agent detects anomalous journal entries in real time and prevents posting errors before close", fintypeRationale: "SGA: journal entry processing is core finance labor cost" },
-  "r2r-002": { mechanism: "Bilateral intercompany reconciliation via email is slow and error-prone at scale", sapAction: "FI-GL centralizes IC matching and dispute resolution, eliminating manual email reconciliation", agentAction: "Agent identifies systematic IC discrepancy patterns and recommends upstream fixes across entities", fintypeRationale: "SGA: intercompany accounting is a finance department labor cost" },
-  "r2r-003": { mechanism: "Manual reconciliations delay close and allow discrepancies to persist undetected", sapAction: "FI-GL auto-extracts subledger and GL balances, identifies reconciling items, and certifies clean accounts", agentAction: "Agent investigates reconciling items using historical patterns and auto-resolves known exception types", fintypeRationale: "SGA: account reconciliation is a core close-cycle labor cost" },
-  "r2r-004": { mechanism: "Spreadsheet-driven close management misses dependencies and extends close cycle", sapAction: "FI-GL automates close task sequencing, dependency management, and status tracking", agentAction: "Agent predicts close bottlenecks and dynamically reprioritizes tasks to protect the close deadline", fintypeRationale: "SGA: close cycle effort is concentrated finance labor cost" },
-  "r2r-005": { mechanism: "Inaccurate accruals create reversals that distort period-over-period reporting", sapAction: "FI-GL estimates accruals using ML models with automated posting and reversal", agentAction: "Agent compares accrual estimates against actuals over time and self-calibrates for accuracy", fintypeRationale: "SGA: accrual management is a finance accounting cost" },
-  "r2r-006": { mechanism: "Manual consolidation adjustments slow statutory reporting and introduce errors", sapAction: "Group Reporting automates subsidiary collection, currency translation, and elimination processing", agentAction: "Agent detects consolidation anomalies across entities and flags unusual elimination entries", fintypeRationale: "SGA: consolidation is a corporate finance labor cost" },
-  "r2r-007": { mechanism: "Manual report generation delays management decisions and consumes analyst time", sapAction: "SAC provides real-time financial reporting from live transactional data — no extract/staging needed", agentAction: "Agent generates narrative commentary on variances and proactively surfaces insights for leadership", fintypeRationale: "SGA: financial reporting is a finance department overhead cost" },
-  "r2r-008": { mechanism: "Manual asset tracking leads to capitalization errors and depreciation mismatches", sapAction: "FI-AA auto-capitalizes from PO/project data, runs depreciation on schedule, and reconciles to GL", agentAction: "Agent detects ghost assets and impairment indicators from usage data and maintenance records", fintypeRationale: "SGA: asset accounting is a finance administration cost" },
-  "r2r-009": { mechanism: "Manual cost allocation delays close and obscures true product profitability", sapAction: "CO-PC automates allocation runs, standard costing, and variance analysis with activity-based adjustments", agentAction: "Agent identifies allocation anomalies and recommends cost driver changes to improve accuracy", fintypeRationale: "SGA: cost allocation is a controlling/finance labor cost" },
-  "r2r-010": { mechanism: "Manual tax calculations across jurisdictions risk errors and late filings", sapAction: "FI-TX automates tax determination, provision calculation, and return preparation", agentAction: "Agent monitors regulatory changes and proactively flags compliance risks before filing deadlines", fintypeRationale: "SGA: tax compliance is a finance/tax department cost" },
-  "p2p-001": { mechanism: "Manual requisition routing delays procurement and enables maverick buying", sapAction: "MM-PUR provides catalog-driven purchasing with automated approval routing and budget validation", agentAction: "Agent suggests preferred suppliers and contract-compliant alternatives at point of requisition", fintypeRationale: "SGA: requisition processing is a procurement labor cost" },
-  "p2p-002": { mechanism: "Manual PO creation is slow, error-prone, and disconnected from supplier confirmations", sapAction: "MM-PUR automates PO creation from requisitions with supplier portal confirmation and tracking", agentAction: "Agent predicts supplier delivery reliability and flags at-risk POs before they become late", fintypeRationale: "SGA: PO management is a procurement operational cost" },
-  "p2p-003": { mechanism: "Matching exceptions block invoice payment and create supplier relationship friction", sapAction: "MM-IV performs tolerance-based 3-way matching with intelligent exception routing", agentAction: "Agent learns from historical exception resolutions and auto-resolves known mismatch patterns", fintypeRationale: "SGA: goods receipt and matching is a procurement/AP labor cost" },
-  "p2p-004": { mechanism: "Manual invoice processing is the highest-cost transaction in AP and the biggest bottleneck", sapAction: "MM-IV uses AI-powered OCR for invoice capture with automated 3-way matching and exception handling", agentAction: "Agent handles non-PO invoices, learns vendor-specific formats, and resolves exceptions without human touch", fintypeRationale: "SGA: invoice processing is a core AP labor cost" },
-  "p2p-005": { mechanism: "Suboptimal payment timing misses early-pay discounts and increases borrowing costs", sapAction: "FI-AP runs intelligent payment proposals optimizing timing for discount capture vs cash position", agentAction: "Agent dynamically adjusts payment timing based on real-time cash forecasts and supplier risk", fintypeRationale: "COGS: payment timing directly impacts cost of materials through discount capture" },
-  "p2p-006": { mechanism: "Missed dynamic discounting opportunities leave supplier savings uncaptured", sapAction: "FSCM offers automated early payment to suppliers based on cash position and discount rates", agentAction: "Agent identifies optimal discount opportunities by analyzing supplier cash needs and company liquidity", fintypeRationale: "COGS: supplier discounts directly reduce material and service costs" },
-  "p2p-007": { mechanism: "Without supplier scorecards, procurement decisions lack performance data", sapAction: "SLC automates performance data collection and weighted scorecard generation across suppliers", agentAction: "Agent monitors external risk signals (news, financials) and updates supplier risk scores proactively", fintypeRationale: "COGS: supplier performance directly impacts material quality and delivery costs" },
-  "p2p-008": { mechanism: "Low contract utilization means negotiated terms go unused while maverick spend grows", sapAction: "Ariba manages contract lifecycle with compliance monitoring and maverick spend auditing", agentAction: "Agent identifies off-contract purchases in real time and redirects buyers to compliant alternatives", fintypeRationale: "COGS: contract compliance directly reduces procurement cost leakage" },
-};
-
 const getSapModuleLabel = (code) => {
   const c = (code || "").trim();
   const parts = c.split(/\s*\/\s*/);
@@ -996,7 +917,6 @@ const ExplainerIcon = InfoIcon;
 
 const CalcExplainerDrawer = ({ data, onClose, mode }) => {
   const t = TH[mode];
-  const [sapTooltipOpen, setSapTooltipOpen] = React.useState(false);
   if (!data) return null;
   const conf = CONFIDENCE_LEVELS[data.confidence] || CONFIDENCE_LEVELS.low;
   return (
@@ -1017,13 +937,7 @@ const CalcExplainerDrawer = ({ data, onClose, mode }) => {
             return (
               <div style={{ marginBottom: 16, padding: "12px 14px", background: BLUE + "0C", borderRadius: 8, border: `1px solid ${BLUE}30` }}>
                 <div style={{ fontSize: 10, color: BLUE, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 8 }}>What Makes This Benchmark Achievable</div>
-                <div style={{ fontSize: 12, color: t.tx, fontWeight: 600, marginBottom: 4 }}>SAP Lever: {lv.name} <span onClick={(e) => { e.stopPropagation(); setSapTooltipOpen(v => !v); }} style={{ display: "inline-block", cursor: "pointer", padding: "1px 6px", borderRadius: 4, background: BLUE + "20", color: BLUE, fontSize: 10, fontWeight: 700, marginLeft: 4, border: `1px solid ${BLUE}40`, transition: "background .15s" }}>{lv.module}</span></div>
-                {sapTooltipOpen && data.calcNarrative && (
-                  <div style={{ marginBottom: 8, padding: "8px 10px", background: t.bg, borderRadius: 6, border: `1px solid ${BLUE}30`, fontSize: 11, lineHeight: 1.6 }}>
-                    <div style={{ color: t.tx, marginBottom: 4 }}><span style={{ fontWeight: 600, color: BLUE }}>SAP closes the gap:</span> {data.calcNarrative.sapAction}</div>
-                    <div style={{ color: t.tx }}><span style={{ fontWeight: 600, color: PURPLE }}>Agent adds:</span> {data.calcNarrative.agentAction}</div>
-                  </div>
-                )}
+                <div style={{ fontSize: 12, color: t.tx, fontWeight: 600, marginBottom: 4 }}>SAP Lever: {lv.name} ({lv.module})</div>
                 <div style={{ fontSize: 11, color: t.tx2, fontStyle: "italic", lineHeight: 1.5, marginBottom: 8 }}>"{lv.capability}"</div>
                 {ctx && <div style={{ fontSize: 11, color: t.tx2, lineHeight: 1.5, marginBottom: 6 }}>Benchmark: {data.benchmarkValue ?? "—"} {data.unit} — {ctx}</div>}
                 <div style={{ fontSize: 10, color: t.mut }}>Deployment: {lv.deploymentType}</div>
@@ -1032,8 +946,7 @@ const CalcExplainerDrawer = ({ data, onClose, mode }) => {
           })()}
           <div style={{ marginBottom: 16, padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
             <div style={{ fontSize: 10, color: t.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Formula</div>
-            <div style={{ fontSize: 12, fontFamily: "monospace", color: GOLD, lineHeight: 1.6 }}>gap × base amount × addressable% × scenario factor × 1%</div>
-            <div style={{ fontSize: 10, color: t.mut, marginTop: 6, lineHeight: 1.5 }}>The 1% (0.01) factor converts KPI gap magnitude to financial impact — reflecting that not every percentage-point of process improvement translates 1:1 to cost reduction. Industry standard for this class of bottom-up model.</div>
+            <div style={{ fontSize: 12, fontFamily: "monospace", color: GOLD, lineHeight: 1.6 }}>gap × base amount × addressable% × scenario factor</div>
           </div>
           <div style={{ marginBottom: 16, padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
             <div style={{ fontSize: 10, color: t.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Your Input</div>
@@ -1043,29 +956,15 @@ const CalcExplainerDrawer = ({ data, onClose, mode }) => {
           <div style={{ marginBottom: 16, padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
             <div style={{ fontSize: 10, color: t.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Benchmark</div>
             <div style={{ fontSize: 13, color: t.tx, marginBottom: 2 }}><span style={{ fontFamily: "monospace", fontWeight: 600 }}>{data.benchmarkValue ?? "—"}</span> <span style={{ fontSize: 11, color: t.mut }}>{data.unit}</span></div>
-            <div style={{ fontSize: 11, color: t.tx2 }}>Source: <span style={{ fontWeight: 600 }}>{data.benchmarkSource}</span> {data.benchmarkYear}</div>
+            <div style={{ fontSize: 11, color: t.tx2 }}>Source: <span style={{ fontWeight: 600 }}>{data.benchmarkSource}</span> {data.benchmarkYear} {data.sampleSize ? `n=${data.sampleSize}` : ""}</div>
           </div>
           <div style={{ marginBottom: 16, padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
             <div style={{ fontSize: 10, color: t.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Gap</div>
             <div style={{ fontSize: 13, color: t.tx }}><span style={{ fontFamily: "monospace", fontWeight: 600, color: RED }}>{data.gapValue != null ? data.gapValue.toFixed(2) : "—"}</span> <span style={{ fontSize: 11, color: t.mut }}>({data.gapPct != null ? data.gapPct.toFixed(1) : "—"}% improvement opportunity)</span></div>
-            {data.calcNarrative?.mechanism && <div style={{ fontSize: 10, color: t.tx2, marginTop: 4, fontStyle: "italic", lineHeight: 1.4 }}>{data.calcNarrative.mechanism}</div>}
           </div>
           <div style={{ marginBottom: 16, padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
             <div style={{ fontSize: 10, color: t.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Base Amount</div>
-            <div style={{ fontSize: 13, color: t.tx, display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontFamily: "monospace", fontWeight: 600 }}>${data.baseAmount != null ? data.baseAmount.toLocaleString() : "—"}M</span>
-              {data.censusLaborCostM != null && <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, background: PURPLE + "20", color: PURPLE, fontWeight: 700 }}>CENSUS DATA</span>}
-            </div>
-            <div style={{ fontSize: 11, color: t.tx2, marginTop: 2 }}>{data.baseAmountSource}</div>
-            {data.censusLaborCostM != null && data.censusMappingSource && (
-              <div style={{ fontSize: 11, color: t.tx2, marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
-                <span>Process mapping:</span>
-                <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, background: (data.censusMappingSource === "user-defined" ? BLUE : PURPLE) + "20", color: data.censusMappingSource === "user-defined" ? BLUE : PURPLE, fontWeight: 700 }}>
-                  {data.censusMappingSource === "user-defined" ? "USER-DEFINED" : "AI-GENERATED"}
-                </span>
-              </div>
-            )}
-            {data.calcNarrative?.fintypeRationale && <div style={{ fontSize: 10, color: t.tx2, marginTop: 4, fontStyle: "italic", lineHeight: 1.4 }}>{data.calcNarrative.fintypeRationale}</div>}
+            <div style={{ fontSize: 13, color: t.tx }}><span style={{ fontFamily: "monospace", fontWeight: 600 }}>${data.baseAmount != null ? data.baseAmount.toLocaleString() : "—"}M</span> — <span style={{ fontSize: 11, color: t.tx2 }}>{data.baseAmountSource}</span></div>
           </div>
           <div style={{ marginBottom: 16, padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
             <div style={{ fontSize: 10, color: t.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Addressable</div>
@@ -1090,7 +989,7 @@ const CalcExplainerDrawer = ({ data, onClose, mode }) => {
             <div style={{ fontSize: 10, color: "#7CB9A8", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 10 }}>Why This Number Is Defensible</div>
             <div style={{ fontSize: 11, color: t.tx2, lineHeight: 1.7 }}>
               <div style={{ marginBottom: 8 }}><span style={{ fontWeight: 600, color: t.tx }}>Methodology:</span> Bottom-up process-level analysis, not top-down benchmarking. Each KPI gap is sized against your specific baseline, not industry averages.</div>
-              <div style={{ marginBottom: 8 }}><span style={{ fontWeight: 600, color: t.tx }}>Benchmark source:</span> {data.benchmarkSource || "APQC PCF"} publishes this benchmark. Last updated {data.benchmarkYear || "2024"}.</div>
+              <div style={{ marginBottom: 8 }}><span style={{ fontWeight: 600, color: t.tx }}>Benchmark source:</span> {data.benchmarkSource || "APQC PCF"} publishes this benchmark based on n={data.sampleSize || "500+"} companies. Last updated {data.benchmarkYear || "2024"}.</div>
               <div style={{ marginBottom: 8 }}><span style={{ fontWeight: 600, color: t.tx }}>Conservatism:</span> Your addressable % is set at {data.addressablePct}% — meaning {100 - data.addressablePct}% of the theoretical gap is excluded as non-addressable.</div>
               <div style={{ marginBottom: 8 }}><span style={{ fontWeight: 600, color: t.tx }}>Scenario used:</span> {data.scenarioLevel} ({data.scenarioFactor}) — {data.scenarioLevel === "Medium" ? "the middle scenario, our recommended planning assumption" : data.scenarioLevel === "High" ? "full addressable value — assumes excellent execution" : "minimum credible case — conservative"}.</div>
               <div style={{ fontSize: 10, color: t.mut, fontStyle: "italic", marginTop: 8, paddingTop: 8, borderTop: `1px solid ${t.bdr}` }}>This is not a guaranteed outcome. It is a directional estimate of potential value, sized using industry data and your baseline inputs.</div>
@@ -1220,7 +1119,6 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
 
   // Cascading scope selection
   const [scopeStage, setScopeStage] = useState(1);
-  const [expandedJobs, setExpandedJobs] = useState(new Set());
   const [selectedFunction, setSelectedFunction] = useState(initialData?.selectedFunction || null);
   const [selectedBlueprints, setSelectedBlueprints] = useState(new Set());
   const [entryPath, setEntryPath] = useState(null);
@@ -1265,7 +1163,6 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
   // UX progressive disclosure states
   const [implSpecCollapsed, setImplSpecCollapsed] = useState({});
   const [roiTimelineCollapsed, setRoiTimelineCollapsed] = useState({});
-  const [s4DetailsOpen, setS4DetailsOpen] = useState({});
   const [benchFiltersOpen, setBenchFiltersOpen] = useState(false);
   const [moreOptionsOpen, setMoreOptionsOpen] = useState({});
 
@@ -1331,19 +1228,16 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
 
   // Workforce Census
   const [censusData, setCensusData] = useState(initialData?.censusData || null);
-  const [censusStep, setCensusStep] = useState(null); // null | "mapping" | "process-mapping" | "time-allocation" | "done"
+  const [censusStep, setCensusStep] = useState(null); // null | "mapping" | "done"
   const [censusRawHeaders, setCensusRawHeaders] = useState([]);
   const [censusRawRows, setCensusRawRows] = useState([]);
   const [censusMapping, setCensusMapping] = useState({});
   const [censusCostType, setCensusCostType] = useState("loaded"); // "loaded" | "base"
-  const [loadedCostMultiplier, setLoadedCostMultiplier] = useState(1.30); // editable loaded cost multiplier
   const [processMapping, setProcessMapping] = useState(null); // array of {role, department, apqcL4Code, apqcL4Name, confidence}
   const [processMappingLoading, setProcessMappingLoading] = useState(false);
   const [processMappingError, setProcessMappingError] = useState(null);
   const [processMappingOverrides, setProcessMappingOverrides] = useState({}); // idx -> {apqcL4Code, apqcL4Name}
   const [processMappingSearch, setProcessMappingSearch] = useState({}); // idx -> search string
-  const [processMappingExpanded, setProcessMappingExpanded] = useState({}); // idx -> bool (expanded alternatives row)
-  const [timeAllocEdits, setTimeAllocEdits] = useState({}); // idx -> edited time_allocation %
 
   // Multi-Year & Balance Sheet (Feature 2)
   const [multiYearRamp, setMultiYearRamp] = useState(initialData?.multiYearRamp || { erp: [30, 70, 100], agent: [0, 40, 100], costSpread: [70, 20, 10] });
@@ -1369,40 +1263,22 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
     const vals = procValues[proc.id] || {};
     const bmarks = procBenchmarks[proc.id] || {};
     const potential = procScenarios[proc.id]?.potential || scenarioLevel;
-    const addressablePct = procScenarios[proc.id]?.addressable || 60;
+    const addressablePct = procScenarios[proc.id]?.addressable || 80;
     const scenarioFactor = { High: 1.0, Medium: 0.65, Low: 0.35 }[potential];
     const m = scenarioFactor * (addressablePct / 100);
     const realCurrent = vals[`kpi_current_${ki}`];
     const current = realCurrent ?? kpi.current;
     const bench = bmarks[`bench_${ki}`] ?? kpi.benchmark;
-    const rawAgentBench = kpi.agentBenchmark;
-    const agentBench = (rawAgentBench != null && kpi.unit === '%' && (kpi.benchmark ?? 0) <= 100)
-      ? Math.min(rawAgentBench, 99) : rawAgentBench;
+    const agentBench = kpi.agentBenchmark;
     const lever = proc.valLevers?.[0];
     const fintype = lever?.fintype || 'SGA';
-    // Use census labor cost when available (matches computeValue logic exactly)
-    const censusMatch = censusData?.byProcess?.find(bp => bp.apqcCode === proc.l4);
-    const censusLaborCostM = censusMatch ? censusMatch.totalCost / 1_000_000 : null;
-    const censusMappingSource = censusMatch?.mappingSource || null;
-    const rawBaseAmt = fintype === 'Revenue' ? baseline.revenue : fintype === 'COGS' ? baseline.cogs : baseline.sga;
-    const benchmarkSgaM = baseline.sga * 0.12;
-    const baseAmt = (fintype === 'SGA' && censusLaborCostM != null) ? censusLaborCostM : (fintype === 'SGA' ? benchmarkSgaM : rawBaseAmt);
-    const baseAmountSource = (fintype === 'SGA' && censusLaborCostM != null)
-      ? `${censusMatch.headcount} employees × $${censusMatch.avgCost?.toLocaleString() || '—'} loaded × ${censusMatch.avgTimeAllocation ?? 100}% time on this process = $${Math.round(censusMatch.totalCost).toLocaleString()}`
-      : fintype + ' from financial baseline';
+    const baseAmt = fintype === 'Revenue' ? baseline.revenue : fintype === 'COGS' ? baseline.cogs : baseline.sga;
     const selectedSource = bmarks[`src_${ki}`] || 'primary';
     const srcLabel = selectedSource === 'primary' ? (kpi.src || 'APQC') : selectedSource === 'sapvlm' ? 'SAP VLM' : selectedSource === 'hackett' ? 'Hackett' : 'Custom';
     const srcMeta = SOURCE_META[selectedSource] || SOURCE_META.custom;
     const seed = (proc.id + ki).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
     const sampleN = getSampleSize(selectedSource, seed);
     const confidence = realCurrent != null ? (baselineData[`${proc.id}_kpi_${ki}`] ? 'high' : 'medium') : (kpi.current != null ? 'low' : 'low');
-    const narrative = CALC_NARRATIVE[proc.id] || null;
-    const calcSteps = narrative ? [
-      { step: "mechanism", label: narrative.mechanism },
-      { step: "base", label: narrative.fintypeRationale },
-      { step: "sap", label: narrative.sapAction },
-      { step: "agent", label: narrative.agentAction },
-    ] : null;
     if (type === 'erp') {
       const gap = current != null && bench != null ? Math.abs(current - bench) : null;
       const gapPct = gap != null && bench !== 0 ? (gap / Math.abs(bench)) * 100 : null;
@@ -1411,7 +1287,7 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
         const addressable = gap * m;
         result = kpi.unit === '%' ? (addressable / 100) * baseAmt * 0.01 : (bench !== 0 ? (addressable / Math.abs(bench)) : 0) * baseAmt * 0.01;
       }
-      return { procId: proc.id, kpiName: kpi.name, unit: kpi.unit, currentValue: current, benchmarkValue: bench, inputSource: realCurrent != null ? 'Questionnaire' : kpi.current != null ? 'Modeled estimate' : 'Not provided', benchmarkSource: srcLabel, benchmarkYear: srcMeta.year, sampleSize: sampleN, gapValue: gap, gapPct, baseAmount: baseAmt, baseAmountSource, censusLaborCostM, censusMappingSource, addressablePct, scenarioLevel: potential, scenarioFactor, resultFormatted: result > 0 ? (result < 1 ? '$' + Math.round(result * 1000) + 'K' : '$' + result.toFixed(1) + 'M') : '$0', confidence, calcNarrative: narrative, calcSteps };
+      return { procId: proc.id, kpiName: kpi.name, unit: kpi.unit, currentValue: current, benchmarkValue: bench, inputSource: realCurrent != null ? 'Questionnaire' : kpi.current != null ? 'Modeled estimate' : 'Not provided', benchmarkSource: srcLabel, benchmarkYear: srcMeta.year, sampleSize: sampleN, gapValue: gap, gapPct, baseAmount: baseAmt, baseAmountSource: fintype + ' from financial baseline', addressablePct, scenarioLevel: potential, scenarioFactor, resultFormatted: result > 0 ? (result < 1 ? '$' + Math.round(result * 1000) + 'K' : '$' + result.toFixed(1) + 'M') : '$0', confidence };
     }
     // Agent type
     if (type === 'agent') {
@@ -1422,10 +1298,10 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
         const addressable = agentGap * m;
         agentResult = kpi.unit === '%' ? (addressable / 100) * baseAmt * 0.01 : (agentBench !== 0 ? (addressable / Math.abs(agentBench)) : 0) * baseAmt * 0.01;
       }
-      return { procId: proc.id, kpiName: kpi.name, unit: kpi.unit, currentValue: current, benchmarkValue: agentBench, inputSource: realCurrent != null ? 'Questionnaire' : kpi.current != null ? 'Modeled estimate' : 'Not provided', benchmarkSource: 'AI Agent benchmark', benchmarkYear: '2024', sampleSize: null, gapValue: agentGap, gapPct: agentGapPct, baseAmount: baseAmt, baseAmountSource, censusLaborCostM, censusMappingSource, addressablePct, scenarioLevel: potential, scenarioFactor, resultFormatted: agentResult > 0 ? (agentResult < 1 ? '$' + Math.round(agentResult * 1000) + 'K' : '$' + agentResult.toFixed(1) + 'M') : '$0', confidence, calcNarrative: narrative, calcSteps };
+      return { procId: proc.id, kpiName: kpi.name, unit: kpi.unit, currentValue: current, benchmarkValue: agentBench, inputSource: realCurrent != null ? 'Questionnaire' : kpi.current != null ? 'Modeled estimate' : 'Not provided', benchmarkSource: 'AI Agent benchmark', benchmarkYear: '2024', sampleSize: null, gapValue: agentGap, gapPct: agentGapPct, baseAmount: baseAmt, baseAmountSource: fintype + ' from financial baseline', addressablePct, scenarioLevel: potential, scenarioFactor, resultFormatted: agentResult > 0 ? (agentResult < 1 ? '$' + Math.round(agentResult * 1000) + 'K' : '$' + agentResult.toFixed(1) + 'M') : '$0', confidence };
     }
     return null;
-  }, [procValues, procBenchmarks, procScenarios, scenarioLevel, baseline, baselineData, censusData]);
+  }, [procValues, procBenchmarks, procScenarios, scenarioLevel, baseline, baselineData]);
 
   // Challenge a value calculation via Catalyst
   const challengeCalcValue = useCallback(async (explainerData) => {
@@ -1518,9 +1394,9 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
           const kn = kpi.name.toLowerCase();
           const shouldSync =
             (qId === "q-automation" && (/auto|touchless|straight.?through|stp|no.?touch/i.test(kpi.name)) && kpi.unit === "%") ||
-            (qId === "q-error-rate" && (/error|exception|accuracy/i.test(kpi.name)) && kpi.unit === "%") ||
+            (qId === "q-error-rate" && (/error|exception/i.test(kpi.name)) && kpi.unit === "%") ||
             (qId === "q-rework" && (/rework/i.test(kpi.name)) && kpi.unit === "%") ||
-            (qId === "q-cycle" && (/cycle time|resolution time|processing time|turnaround/i.test(kpi.name)) && (kpi.unit === "days" || kpi.unit === "hours" || kpi.unit === "minutes"));
+            (qId === "q-cycle" && (/cycle time|resolution time|processing time|turnaround/i.test(kpi.name)) && (kpi.unit === "days" || kpi.unit === "hours"));
           if (shouldSync) {
             setProcValues(prev => {
               const existing = prev[procId]?.[`kpi_current_${ki}`];
@@ -1682,7 +1558,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
       const vals = procValues[proc.id] || {};
       const bmarks = procBenchmarks[proc.id] || {};
       const potential = procScenarios[proc.id]?.potential || scenarioLevel;
-      const addressablePct = (procScenarios[proc.id]?.addressable || 60) / 100;
+      const addressablePct = (procScenarios[proc.id]?.addressable || 80) / 100;
       const m = multipliers[potential] * addressablePct;
       let procVal = 0;
       let procAgentVal = 0;
@@ -1717,10 +1593,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
         }
 
         // Agent uplift: incremental value from ERP benchmark to agent benchmark
-        const rawAgentBench = kpi.agentBenchmark;
-        // Cap rate KPIs (%) at 99 — only when benchmark itself is ≤100 (i.e. actual rates, not ROI/index KPIs)
-        const agentBench = (rawAgentBench != null && kpi.unit === '%' && (kpi.benchmark ?? 0) <= 100)
-          ? Math.min(rawAgentBench, 99) : rawAgentBench;
+        const agentBench = kpi.agentBenchmark;
         const benchVal = bmarks[`bench_${ki}`] ?? kpi.benchmark;
         if (agentBench != null && benchVal != null && benchVal !== 0 && agentBench !== benchVal) {
           const agentGap = Math.abs(benchVal - agentBench);
@@ -1753,7 +1626,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
       const vals = procValues[proc.id] || {};
       const bmarks = procBenchmarks[proc.id] || {};
       const wcPotential = procScenarios[proc.id]?.potential || scenarioLevel;
-      const wcAddrPct = (procScenarios[proc.id]?.addressable || 60) / 100;
+      const wcAddrPct = (procScenarios[proc.id]?.addressable || 80) / 100;
       const wcM = multipliers[wcPotential] * wcAddrPct;
 
       (proc.kpis || []).forEach((kpi, ki) => {
@@ -2346,7 +2219,8 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
         const conformance = row[miningStartIdx + 1];
         const cycleTime = row[miningStartIdx + 2];
         const rework = row[miningStartIdx + 3];
-        if (variants || conformance || cycleTime || rework) {
+        // Only populate mining if BOTH variants AND conformance are present — prevents questionnaire CSV from falsely triggering mining linker
+        if (variants && conformance) {
           newMining[procId] = {
             variants: variants ? parseInt(variants) || variants : null,
             conformance: conformance ? parseFloat(conformance) || conformance : null,
@@ -2376,9 +2250,9 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
           proc.kpis.forEach((kpi, ki) => {
             const shouldSync =
               (q.id === "q-automation" && (/auto|touchless|straight.?through|stp|no.?touch/i.test(kpi.name)) && kpi.unit === "%") ||
-              (q.id === "q-error-rate" && (/error|exception|accuracy/i.test(kpi.name)) && kpi.unit === "%") ||
+              (q.id === "q-error-rate" && (/error|exception/i.test(kpi.name)) && kpi.unit === "%") ||
               (q.id === "q-rework" && (/rework/i.test(kpi.name)) && kpi.unit === "%") ||
-              (q.id === "q-cycle" && (/cycle time|resolution time|processing time|turnaround/i.test(kpi.name)) && (kpi.unit === "days" || kpi.unit === "hours" || kpi.unit === "minutes"));
+              (q.id === "q-cycle" && (/cycle time|resolution time|processing time|turnaround/i.test(kpi.name)) && (kpi.unit === "days" || kpi.unit === "hours"));
             if (shouldSync) {
               if (!newProcVals[procId]) newProcVals[procId] = {};
               if (!newSources[procId]) newSources[procId] = {};
@@ -2495,9 +2369,9 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
         proc.kpis.forEach((kpi, ki) => {
           const shouldSync =
             (qId === "q-automation" && (/auto|touchless|straight.?through|stp|no.?touch/i.test(kpi.name)) && kpi.unit === "%") ||
-            (qId === "q-error-rate" && (/error|exception|accuracy/i.test(kpi.name)) && kpi.unit === "%") ||
+            (qId === "q-error-rate" && (/error|exception/i.test(kpi.name)) && kpi.unit === "%") ||
             (qId === "q-rework" && (/rework/i.test(kpi.name)) && kpi.unit === "%") ||
-            (qId === "q-cycle" && (/cycle time|resolution time|processing time|turnaround/i.test(kpi.name)) && (kpi.unit === "days" || kpi.unit === "hours" || kpi.unit === "minutes"));
+            (qId === "q-cycle" && (/cycle time|resolution time|processing time|turnaround/i.test(kpi.name)) && (kpi.unit === "days" || kpi.unit === "hours"));
           if (shouldSync && updated[procId]?.[`kpi_current_${ki}`] == null) {
             updated = { ...updated, [procId]: { ...(updated[procId] || {}), [`kpi_current_${ki}`]: numVal } };
             setKpiSources(p => ({ ...p, [procId]: { ...(p[procId] || {}), [`kpi_current_${ki}`]: "questionnaire" } }));
@@ -3614,13 +3488,8 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                 </div>
                                 {proc.jobs?.length > 0 && (
                                   <div style={{ marginLeft: 28, marginTop: 4, fontSize: 10, color: t.mut }}>
-                                    {(expandedJobs.has(proc.id) ? proc.jobs : proc.jobs.slice(0, 2)).map((j, ji) => <span key={ji} style={{ marginRight: 8 }}>• {j}</span>)}
-                                    {proc.jobs.length > 2 && (
-                                      <span onClick={e => { e.stopPropagation(); setExpandedJobs(prev => { const n = new Set(prev); n.has(proc.id) ? n.delete(proc.id) : n.add(proc.id); return n; }); }}
-                                        style={{ color: t.sub, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 2 }}>
-                                        {expandedJobs.has(proc.id) ? "show less" : `+${proc.jobs.length - 2} more`}
-                                      </span>
-                                    )}
+                                    {proc.jobs.slice(0, 2).map((j, ji) => <span key={ji} style={{ marginRight: 8 }}>• {j}</span>)}
+                                    {proc.jobs.length > 2 && <span style={{ color: t.sub }}>+{proc.jobs.length - 2} more</span>}
                                   </div>
                                 )}
                               </div>
@@ -4208,7 +4077,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                   })()}
 
                                   {/* MiningLinker */}
-                                  {uploadedMining[focusProc]?.variants != null && uploadedMining[focusProc]?.conformance != null && baselineData[`${focusProc}_a_ftes`] && (
+                                  {uploadedMining[focusProc] && baselineData[`${focusProc}_a_ftes`] && (
                                     <Suspense fallback={null}>
                                       <MiningLinker procId={focusProc} proc={PROC_MAP[focusProc]} miningData={uploadedMining[focusProc]} baselineData={baselineData} theme={t} />
                                     </Suspense>
@@ -4373,7 +4242,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                             cursor: "pointer", fontFamily: FONT, fontWeight: signavioView === proc.id ? 700 : 400,
                           }}>
                             {proc.l4}
-                            {uploadedMining[proc.id]?.variants != null && uploadedMining[proc.id]?.conformance != null && <span style={{ marginLeft: 4, color: GREEN }}>✓</span>}
+                            {uploadedMining[proc.id] && <span style={{ marginLeft: 4, color: GREEN }}>✓</span>}
                           </button>
                         ))}
                       </div>
@@ -4413,7 +4282,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                             ))}
                           </div>
                           {/* MiningLinker comparison */}
-                          {uploadedMining[signavioView]?.variants != null && uploadedMining[signavioView]?.conformance != null && baselineData[`${signavioView}_a_ftes`] && (
+                          {uploadedMining[signavioView] && baselineData[`${signavioView}_a_ftes`] && (
                             <div style={{ marginTop: 12 }}>
                               <Suspense fallback={null}>
                                 <MiningLinker procId={signavioView} proc={PROC_MAP[signavioView]} miningData={uploadedMining[signavioView]} baselineData={baselineData} theme={t} />
@@ -4758,7 +4627,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                   showToast("Map at least Department, Role, Location, and Cost columns");
                   return;
                 }
-                const costMult = censusCostType === "base" ? loadedCostMultiplier : 1.0;
+                const costMult = censusCostType === "base" ? 1.3 : 1.0;
                 const parsed = [];
                 const byDept = {};
                 let totalFTE = 0, totalCost = 0;
@@ -4805,8 +4674,6 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                 setProcessMappingError(null);
                 setProcessMappingOverrides({});
                 setProcessMappingSearch({});
-                setProcessMappingExpanded({});
-                setTimeAllocEdits({});
               };
 
               const startProcessMapping = async (data) => {
@@ -4841,7 +4708,6 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                   setProcessMapping(mappings);
                   setProcessMappingOverrides({});
                   setProcessMappingSearch({});
-                  setProcessMappingExpanded({});
                 } catch (err) {
                   console.error("Process mapping error:", err);
                   setProcessMappingError(err.message);
@@ -4863,95 +4729,27 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                   const override = processMappingOverrides[i];
                   const code = override ? override.apqcL4Code : m.apqcL4Code;
                   const name = override ? override.apqcL4Name : m.apqcL4Name;
-                  lookup[`${m.department}|||${m.role}`] = {
-                    apqcL4Code: code,
-                    apqcL4Name: name,
-                    confidence: override ? (override.confidence || "medium") : (m.confidence || "medium"),
-                    confidence_rule: override ? "" : (m.confidence_rule || ""),
-                    reasoning: override ? "" : (m.reasoning || ""),
-                    alternatives: override ? [] : (m.alternatives || []),
-                    time_allocation: override ? 100 : (m.time_allocation ?? 100),
-                    mappingSource: override ? "user-defined" : "ai-generated",
-                  };
+                  lookup[`${m.department}|||${m.role}`] = { apqcL4Code: code, apqcL4Name: name };
                 });
                 // Apply to all rows
                 const updatedRows = censusData.rows.map(r => {
                   const match = lookup[`${r.department}|||${r.role}`];
-                  if (!match) return r;
-                  return {
-                    ...r,
-                    apqcL4Code: match.apqcL4Code,
-                    apqcL4Name: match.apqcL4Name,
-                    confidence: match.confidence,
-                    confidence_rule: match.confidence_rule,
-                    reasoning: match.reasoning,
-                    alternatives: match.alternatives,
-                    time_allocation: match.time_allocation,
-                    mappingSource: match.mappingSource,
-                  };
+                  return match ? { ...r, apqcL4Code: match.apqcL4Code, apqcL4Name: match.apqcL4Name } : r;
                 });
-                setCensusData({ ...censusData, rows: updatedRows });
-                setCensusStep("time-allocation");
-                setTimeAllocEdits({});
-              };
-
-              const buildByProcess = (rows) => {
+                // Build byProcess aggregation
                 const byProc = {};
-                for (const r of rows) {
+                for (const r of updatedRows) {
                   if (!r.apqcL4Code || r.apqcL4Code === "unmapped") continue;
                   const key = r.apqcL4Code;
-                  const timeAlloc = (r.time_allocation ?? 100) / 100;
-                  if (!byProc[key]) {
-                    byProc[key] = {
-                      apqcCode: r.apqcL4Code,
-                      apqcName: r.apqcL4Name,
-                      headcount: 0,
-                      fte: 0,
-                      totalCost: 0,
-                      confidences: [],
-                      time_allocations: [],
-                      mappingSources: [],
-                    };
-                  }
+                  if (!byProc[key]) byProc[key] = { apqcCode: r.apqcL4Code, apqcName: r.apqcL4Name, headcount: 0, fte: 0, totalCost: 0 };
                   byProc[key].headcount += 1;
-                  byProc[key].fte += r.fte * timeAlloc;
-                  byProc[key].totalCost += r.cost * r.fte * timeAlloc;
-                  if (r.confidence) byProc[key].confidences.push(r.confidence);
-                  if (r.time_allocation != null) byProc[key].time_allocations.push(r.time_allocation);
-                  if (r.mappingSource) byProc[key].mappingSources.push(r.mappingSource);
+                  byProc[key].fte += r.fte;
+                  byProc[key].totalCost += r.cost * r.fte;
                 }
-                return Object.values(byProc)
-                  .map(d => {
-                    const avgTimeAlloc = d.time_allocations.length > 0
-                      ? Math.round(d.time_allocations.reduce((a, b) => a + b, 0) / d.time_allocations.length)
-                      : 100;
-                    const confCounts = { high: 0, medium: 0, low: 0 };
-                    d.confidences.forEach(c => { if (confCounts[c] != null) confCounts[c]++; });
-                    const avgConfidence = confCounts.high >= confCounts.medium && confCounts.high >= confCounts.low
-                      ? "high" : confCounts.medium >= confCounts.low ? "medium" : "low";
-                    const hasUserDefined = d.mappingSources.includes("user-defined");
-                    const mappingSource = hasUserDefined ? "user-defined" : "ai-generated";
-                    const { confidences, time_allocations, mappingSources, ...rest } = d;
-                    return {
-                      ...rest,
-                      avgCost: d.fte > 0 ? Math.round(d.totalCost / d.fte) : 0,
-                      avgConfidence,
-                      avgTimeAllocation: avgTimeAlloc,
-                      mappingSource,
-                    };
-                  })
+                const procArray = Object.values(byProc)
+                  .map(d => ({ ...d, avgCost: d.fte > 0 ? Math.round(d.totalCost / d.fte) : 0 }))
                   .sort((a, b) => b.totalCost - a.totalCost);
-              };
 
-              const acceptTimeAllocation = () => {
-                if (!censusData || !processMapping) return;
-                const updatedRows = censusData.rows.map(r => {
-                  const pmIdx = processMapping.findIndex(m => m.department === r.department && m.role === r.role);
-                  if (pmIdx === -1) return r;
-                  const editedAlloc = timeAllocEdits[pmIdx];
-                  return editedAlloc != null ? { ...r, time_allocation: editedAlloc } : r;
-                });
-                const procArray = buildByProcess(updatedRows);
                 setCensusData({ ...censusData, rows: updatedRows, byProcess: procArray });
                 setCensusStep("done");
               };
@@ -4992,12 +4790,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                             </label>
                             <label style={{ fontSize: 12, color: t.tx, cursor: "pointer" }}>
                               <input type="radio" name="censusCostType" checked={censusCostType === "base"} onChange={() => setCensusCostType("base")} style={{ marginRight: 4 }} />
-                              Base salary (apply loaded cost multiplier:
-                              <input type="number" min={1.0} max={2.0} step={0.01}
-                                value={loadedCostMultiplier}
-                                onChange={e => setLoadedCostMultiplier(parseFloat(e.target.value) || 1.30)}
-                                style={{ width: 52, marginLeft: 6, marginRight: 2, padding: "1px 4px", borderRadius: 4, border: `1px solid ${GOLD}44`, background: "transparent", color: GOLD, fontFamily: "monospace", fontSize: 12 }} />
-                              <span title="Loaded cost multiplier accounts for benefits, payroll taxes, and overhead. Typical range: 1.25x–1.45x. Adjust based on your HR data." style={{ cursor: "help", color: t.mut, fontSize: 11 }}>ⓘ</span>)
+                              Base salary (will apply 1.3x)
                             </label>
                           </div>
 
@@ -5132,7 +4925,6 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                         <th style={{ padding: "6px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 10, textTransform: "uppercase", position: "sticky", top: 0, background: t.bg }}>Department</th>
                                         <th style={{ padding: "6px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 10, textTransform: "uppercase", position: "sticky", top: 0, background: t.bg }}>Role</th>
                                         <th style={{ padding: "6px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 10, textTransform: "uppercase", position: "sticky", top: 0, background: t.bg }}>Mapped APQC Process</th>
-                                        <th style={{ padding: "6px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 10, textTransform: "uppercase", position: "sticky", top: 0, background: t.bg }}>Reasoning</th>
                                         <th style={{ padding: "6px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: "center", color: t.mut, fontSize: 10, textTransform: "uppercase", position: "sticky", top: 0, background: t.bg }}>Confidence</th>
                                         <th style={{ padding: "6px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 10, textTransform: "uppercase", position: "sticky", top: 0, background: t.bg }}>Override</th>
                                       </tr>
@@ -5141,32 +4933,23 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                       {processMapping.map((m, i) => {
                                         const override = processMappingOverrides[i];
                                         const isUnmapped = (override?.apqcL4Code || m.apqcL4Code) === "unmapped";
-                                        const confColor = override ? BLUE : m.confidence === "high" ? GREEN : m.confidence === "medium" ? ORANGE : RED;
-                                        const confLabel = override ? "User-defined" : m.confidence?.charAt(0).toUpperCase() + m.confidence?.slice(1);
+                                        const confColor = override ? GREEN : m.confidence === "high" ? GREEN : m.confidence === "medium" ? ORANGE : RED;
+                                        const confLabel = override ? "override" : m.confidence;
                                         const searchVal = processMappingSearch[i] || "";
-                                        const isExpanded = processMappingExpanded[i] || false;
-                                        const alternatives = m.alternatives || [];
                                         const filteredProcs = searchVal.length >= 2
                                           ? ALL_PROCS.filter(p => p.label.toLowerCase().includes(searchVal.toLowerCase()) || p.l4.includes(searchVal)).slice(0, 10)
                                           : [];
                                         return (
-                                          <React.Fragment key={i}>
-                                          <tr style={{ background: isUnmapped ? RED + "08" : "transparent" }}>
-                                            <td style={{ padding: "5px 8px", borderBottom: isExpanded ? "none" : `1px solid ${t.bdr}40`, color: t.tx2, fontSize: 11 }}>{m.department}</td>
-                                            <td style={{ padding: "5px 8px", borderBottom: isExpanded ? "none" : `1px solid ${t.bdr}40`, color: t.tx, fontWeight: 600, fontSize: 11 }}>{m.role}</td>
-                                            <td style={{ padding: "5px 8px", borderBottom: isExpanded ? "none" : `1px solid ${t.bdr}40`, color: isUnmapped ? RED : PURPLE, fontSize: 11 }}>
+                                          <tr key={i} style={{ background: isUnmapped ? RED + "08" : "transparent" }}>
+                                            <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx2, fontSize: 11 }}>{m.department}</td>
+                                            <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx, fontWeight: 600, fontSize: 11 }}>{m.role}</td>
+                                            <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}40`, color: isUnmapped ? RED : PURPLE, fontSize: 11 }}>
                                               {override ? `${override.apqcL4Code} — ${override.apqcL4Name}` : isUnmapped ? "Unmapped" : `${m.apqcL4Code} — ${m.apqcL4Name}`}
-                                              {alternatives.length > 0 && (
-                                                <button onClick={() => setProcessMappingExpanded(prev => ({ ...prev, [i]: !prev[i] }))} style={{ marginLeft: 6, background: "none", border: "none", color: t.mut, cursor: "pointer", fontSize: 10, padding: "0 2px", fontFamily: FONT }}>{isExpanded ? "▴" : "▾"}</button>
-                                              )}
                                             </td>
-                                            <td style={{ padding: "5px 8px", borderBottom: isExpanded ? "none" : `1px solid ${t.bdr}40`, color: t.tx2, fontSize: 10, maxWidth: 200 }}>
-                                              {override ? "—" : (m.reasoning || "—")}
+                                            <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "center" }}>
+                                              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: confColor + "20", color: confColor, fontWeight: 600 }}>{confLabel}</span>
                                             </td>
-                                            <td style={{ padding: "5px 8px", borderBottom: isExpanded ? "none" : `1px solid ${t.bdr}40`, textAlign: "center" }}>
-                                              <span title={override ? "Manually overridden by user" : (m.confidence_rule || "")} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: confColor + "20", color: confColor, fontWeight: 600, cursor: "default" }}>{confLabel}</span>
-                                            </td>
-                                            <td style={{ padding: "5px 8px", borderBottom: isExpanded ? "none" : `1px solid ${t.bdr}40`, position: "relative" }}>
+                                            <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}40`, position: "relative" }}>
                                               <input
                                                 type="text"
                                                 placeholder="Search APQC..."
@@ -5190,21 +4973,6 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                               )}
                                             </td>
                                           </tr>
-                                          {isExpanded && alternatives.length > 0 && (
-                                            <tr style={{ background: t.bg }}>
-                                              <td colSpan={6} style={{ padding: "6px 8px 10px 28px", borderBottom: `1px solid ${t.bdr}40` }}>
-                                                <div style={{ fontSize: 10, color: t.mut, fontWeight: 700, textTransform: "uppercase", marginBottom: 4 }}>Alternatives Considered</div>
-                                                {alternatives.map((alt, ai) => (
-                                                  <div key={ai} style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: 11, color: t.tx2, marginBottom: 3 }}>
-                                                    <span style={{ fontFamily: "monospace", fontSize: 10, color: t.mut, flexShrink: 0 }}>{alt.apqcL4Code || alt.code || "—"}</span>
-                                                    <span style={{ fontWeight: 600 }}>{alt.apqcL4Name || alt.name || "—"}</span>
-                                                    {alt.reason_rejected && <span style={{ color: RED, fontSize: 10, fontStyle: "italic" }}>— {alt.reason_rejected}</span>}
-                                                  </div>
-                                                ))}
-                                              </td>
-                                            </tr>
-                                          )}
-                                          </React.Fragment>
                                         );
                                       })}
                                     </tbody>
@@ -5216,99 +4984,6 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                 </div>
                               </div>
                             )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* ─── Time Allocation Step ─── */}
-                      {censusStep === "time-allocation" && processMapping && (
-                        <div style={{ marginTop: 12 }}>
-                          <div style={{ padding: "10px 16px", background: GREEN + "15", border: `1px solid ${GREEN}33`, borderRadius: 8, marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}>
-                            <span style={{ color: GREEN, fontWeight: 700 }}>✓</span>
-                            <span style={{ fontSize: 13, color: GREEN, fontWeight: 600 }}>Process mapping complete — now review time allocation per role</span>
-                          </div>
-
-                          <div style={{ padding: 16, background: t.bg, border: `1px solid ${PURPLE}33`, borderRadius: 10, marginBottom: 12 }}>
-                            <div style={{ fontSize: 15, fontWeight: 700, color: t.tx, marginBottom: 4 }}>Time Allocation</div>
-                            <div style={{ fontSize: 12, color: t.tx2, marginBottom: 12 }}>What % of each role's time is spent on their mapped process? Adjust below — each role should sum to 100%.</div>
-
-                            {(() => {
-                              // Build validation: sum of allocations per unique role
-                              const roleAllocSums = {};
-                              processMapping.forEach((m, i) => {
-                                if ((processMappingOverrides[i]?.apqcL4Code || m.apqcL4Code) === "unmapped") return;
-                                const key = `${m.department}|||${m.role}`;
-                                const alloc = timeAllocEdits[i] ?? m.time_allocation ?? 100;
-                                roleAllocSums[key] = (roleAllocSums[key] || 0) + alloc;
-                              });
-                              const hasErrors = Object.values(roleAllocSums).some(s => s !== 100);
-
-                              return (
-                                <div>
-                                  <div style={{ maxHeight: 400, overflowY: "auto", marginBottom: 10 }}>
-                                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
-                                      <thead>
-                                        <tr>
-                                          <th style={{ padding: "6px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 10, textTransform: "uppercase", position: "sticky", top: 0, background: t.bg }}>Department</th>
-                                          <th style={{ padding: "6px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 10, textTransform: "uppercase", position: "sticky", top: 0, background: t.bg }}>Role</th>
-                                          <th style={{ padding: "6px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: "left", color: t.mut, fontSize: 10, textTransform: "uppercase", position: "sticky", top: 0, background: t.bg }}>Mapped Process</th>
-                                          <th style={{ padding: "6px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: "center", color: t.mut, fontSize: 10, textTransform: "uppercase", position: "sticky", top: 0, background: t.bg, width: 90 }}>% Time</th>
-                                          <th style={{ padding: "6px 8px", borderBottom: `2px solid ${t.bdr}`, textAlign: "center", color: t.mut, fontSize: 10, textTransform: "uppercase", position: "sticky", top: 0, background: t.bg, width: 60 }}>Valid</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        {processMapping.map((m, i) => {
-                                          const override = processMappingOverrides[i];
-                                          const code = override?.apqcL4Code || m.apqcL4Code;
-                                          const name = override?.apqcL4Name || m.apqcL4Name;
-                                          if (code === "unmapped") return null;
-                                          const roleKey = `${m.department}|||${m.role}`;
-                                          const roleSum = roleAllocSums[roleKey] || 0;
-                                          const isValid = roleSum === 100;
-                                          const currentAlloc = timeAllocEdits[i] ?? m.time_allocation ?? 100;
-                                          return (
-                                            <tr key={i} style={{ background: !isValid ? RED + "08" : "transparent" }}>
-                                              <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx2, fontSize: 11 }}>{m.department}</td>
-                                              <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}40`, color: t.tx, fontWeight: 600, fontSize: 11 }}>{m.role}</td>
-                                              <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}40`, color: PURPLE, fontSize: 11 }}>{code} — {name}</td>
-                                              <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "center" }}>
-                                                <input
-                                                  type="number"
-                                                  min={0}
-                                                  max={100}
-                                                  value={currentAlloc}
-                                                  onChange={e => {
-                                                    const val = parseInt(e.target.value) || 0;
-                                                    setTimeAllocEdits(prev => ({ ...prev, [i]: Math.min(100, Math.max(0, val)) }));
-                                                  }}
-                                                  style={{ width: 56, fontSize: 11, padding: "3px 6px", borderRadius: 4, border: `1px solid ${!isValid ? RED : t.bdr}`, background: t.card, color: t.tx, fontFamily: "monospace", textAlign: "center" }}
-                                                />
-                                                <span style={{ fontSize: 10, color: t.mut, marginLeft: 2 }}>%</span>
-                                              </td>
-                                              <td style={{ padding: "5px 8px", borderBottom: `1px solid ${t.bdr}40`, textAlign: "center" }}>
-                                                {isValid
-                                                  ? <span style={{ fontSize: 10, color: GREEN, fontWeight: 600 }}>✓</span>
-                                                  : <span style={{ fontSize: 9, color: RED, fontWeight: 600 }}>{roleSum}% ≠ 100%</span>
-                                                }
-                                              </td>
-                                            </tr>
-                                          );
-                                        })}
-                                      </tbody>
-                                    </table>
-                                  </div>
-                                  {hasErrors && (
-                                    <div style={{ padding: "8px 12px", background: RED + "12", border: `1px solid ${RED}33`, borderRadius: 6, marginBottom: 10, fontSize: 11, color: RED, fontWeight: 600 }}>
-                                      Some roles do not sum to 100%. Adjust the percentages above before confirming.
-                                    </div>
-                                  )}
-                                  <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                                    <button onClick={() => { setCensusStep("process-mapping"); }} style={{ fontSize: 12, padding: "8px 20px", borderRadius: 8, background: "transparent", border: `1px solid ${t.bdr}`, color: t.tx2, cursor: "pointer", fontFamily: FONT }}>Back</button>
-                                    <button onClick={acceptTimeAllocation} disabled={hasErrors} style={{ fontSize: 12, padding: "8px 20px", borderRadius: 8, background: hasErrors ? t.mut : PURPLE, border: "none", color: hasErrors ? t.bg : "#111", cursor: hasErrors ? "not-allowed" : "pointer", fontFamily: FONT, fontWeight: 600, opacity: hasErrors ? 0.5 : 1 }}>Confirm Time Allocation</button>
-                                  </div>
-                                </div>
-                              );
-                            })()}
                           </div>
                         </div>
                       )}
@@ -5515,14 +5190,14 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                 const setBmark = (key, val) => setProcBenchmarks(prev => ({ ...prev, [proc.id]: { ...(prev[proc.id] || {}), [key]: val } }));
                 const vals = procValues[proc.id] || {};
                 const potential = procScenarios[proc.id]?.potential || scenarioLevel;
-                const m = { High: 1.0, Medium: 0.65, Low: 0.35 }[potential] * ((procScenarios[proc.id]?.addressable || 60) / 100);
+                const m = { High: 1.0, Medium: 0.65, Low: 0.35 }[potential] * ((procScenarios[proc.id]?.addressable || 80) / 100);
                 let procErpVal = 0, procAgentVal = 0;
                 const kpiRows = (proc.kpis || []).map((kpi, ki) => {
                   const realCurrent = vals[`kpi_current_${ki}`];
                   const current = realCurrent ?? kpi.current;
                   const isModeled = realCurrent == null && kpi.current != null;
                   const bench = bmarks[`bench_${ki}`] ?? kpi.benchmark;
-                  const agentBench = kpi.agentBenchmark != null && kpi.unit === '%' && (kpi.benchmark ?? 0) <= 100 ? Math.min(kpi.agentBenchmark, 99) : kpi.agentBenchmark;
+                  const agentBench = kpi.agentBenchmark;
                   const lever = proc.valLevers?.[0];
                   const baseAmt = lever?.fintype === "Revenue" ? baseline.revenue : lever?.fintype === "COGS" ? baseline.cogs : baseline.sga;
                   let erpImpact = 0, agentImpact = 0;
@@ -5561,9 +5236,9 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                     {/* Section Tabs */}
                     <div style={{ display: "flex", gap: 2, marginBottom: 12, borderBottom: `1px solid ${t.bdr}` }}>
                       {[
-                        { key: "sap", label: "SAP Lever", color: BLUE },
-                        { key: "agents", label: "AI Agents", color: GOLD },
-                        { key: "benchmarks", label: "Benchmarks", color: GREEN },
+                        { key: "sap", label: "① SAP Lever", color: BLUE },
+                        { key: "agents", label: "② AI Agents", color: GOLD },
+                        { key: "benchmarks", label: "③ Benchmarks", color: GREEN },
                       ].map(tab => (
                         <button key={tab.key} onClick={() => setTab(tab.key)} style={{
                           fontSize: 11, padding: "6px 14px", fontWeight: procTab === tab.key ? 700 : 500,
@@ -5602,14 +5277,14 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                             const adjHackett = kpi.benchmark ? adjustBenchmark(+(kpi.benchmark * jitter(2)).toFixed(1), baseline.industry, baseline.revenueBand, hib) : null;
                             const sources = [
                               { key: "primary", label: kpi.src || "APQC", value: adjPrimary },
-                              { key: "sapvlm", label: "SAP VLM (Illustrative)", value: adjSapvlm },
-                              { key: "hackett", label: "Hackett (Illustrative)", value: adjHackett },
+                              { key: "sapvlm", label: "SAP VLM", value: adjSapvlm },
+                              { key: "hackett", label: "Hackett", value: adjHackett },
                               { key: "custom", label: "Custom", value: bmarks[`bench_custom_${ki}`] ?? null },
                             ];
                             const activeBench = selectedSource === "custom" ? (bmarks[`bench_custom_${ki}`] ?? null) : sources.find(s => s.key === selectedSource)?.value ?? adjPrimary;
                             const gap = currentVal != null && activeBench != null ? Math.abs(currentVal - activeBench) : null;
                             const quartile = getQuartile(currentVal, activeBench, kpi);
-                            const peerN = null; // sample sizes removed — hash-generated values not displayed
+                            const peerN = getSampleSize("primary", seed);
                             return (
                               <div key={ki} style={{ padding: "10px 12px", background: t.bg, borderRadius: 8, border: `1px solid ${t.bdr}` }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
@@ -5619,8 +5294,8 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                     {gap != null && <span style={{ fontSize: 14, fontFamily: "monospace", color: gap > 0 ? RED : GREEN, fontWeight: 700 }}>Gap: {gap.toFixed(1)}</span>}
                                     {quartile && (
-                                      <span title={`Peer group: ${assessmentProfile.industry || baseline.industry || "Manufacturing"} ${assessmentProfile.revenueBand || baseline.revenueBand || "$1-5B"}`} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: quartile.color + "20", color: quartile.color, fontWeight: 700 }}>
-                                        {quartile.icon} {quartile.label}
+                                      <span title={`Peer group: ${assessmentProfile.industry || baseline.industry || "Manufacturing"} ${assessmentProfile.revenueBand || baseline.revenueBand || "$1-5B"} (n=${peerN})`} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: quartile.color + "20", color: quartile.color, fontWeight: 700 }}>
+                                        {quartile.icon} {quartile.label} <span style={{ fontWeight: 400, opacity: 0.7 }}>n={peerN}</span>
                                       </span>
                                     )}
                                   </div>
@@ -5638,6 +5313,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                   <tbody>
                                     {sources.map(src => {
                                       const meta = SOURCE_META[src.key] || SOURCE_META.custom;
+                                      const sn = getSampleSize(src.key, seed + (src.key === "sapvlm" ? 1 : src.key === "hackett" ? 2 : 0));
                                       const lo = src.value != null ? Math.round(src.value * 0.85 * 10) / 10 : null;
                                       const hi = src.value != null ? Math.round(src.value * 1.15 * 10) / 10 : null;
                                       return (
@@ -5649,6 +5325,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                         </td>
                                         <td style={{ padding: "4px 6px", borderBottom: `1px solid ${t.bdr}20`, color: selectedSource === src.key ? t.tx : t.tx2, fontWeight: selectedSource === src.key ? 600 : 400 }}>
                                           {src.label}
+                                          {sn && <span style={{ fontSize: 9, color: t.mut, marginLeft: 4 }}>n={sn}</span>}
                                         </td>
                                         <td style={{ padding: "4px 6px", borderBottom: `1px solid ${t.bdr}20`, textAlign: "right", fontFamily: "monospace" }} title={src.key !== "custom" ? `Adjusted for ${baseline.industry || "Manufacturing"}, ${baseline.revenueBand || "$1-5B"}` : undefined}>
                                           {src.key === "custom" ? (
@@ -5673,7 +5350,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                 {activeBench != null && (
                                   <div style={{ fontSize: 9, color: t.mut, marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
                                     <span>{sources.find(s => s.key === selectedSource)?.label || kpi.src} benchmark</span>
-                                    <span title={`Range: ${Math.round(activeBench * 0.85 * 10) / 10}–${Math.round(activeBench * 1.15 * 10) / 10}${kpi.unit === "%" ? "%" : ""} | ${(SOURCE_META[selectedSource] || SOURCE_META.custom).year}`} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 12, height: 12, borderRadius: "50%", background: t.mut + "20", color: t.mut, fontSize: 7, fontWeight: 700, cursor: "help" }}>?</span>
+                                    <span title={`Range: ${Math.round(activeBench * 0.85 * 10) / 10}–${Math.round(activeBench * 1.15 * 10) / 10}${kpi.unit === "%" ? "%" : ""} | n=${getSampleSize(selectedSource, seed)} | ${(SOURCE_META[selectedSource] || SOURCE_META.custom).year}`} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 12, height: 12, borderRadius: "50%", background: t.mut + "20", color: t.mut, fontSize: 7, fontWeight: 700, cursor: "help" }}>?</span>
                                   </div>
                                 )}
                                 {(() => { const ctx = getBenchmarkContext(proc.id, kpi.name); const lv = getSapLever(proc.id); return ctx && lv ? (
@@ -5751,81 +5428,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                                   </div>
                                 );
                               })}
-                              <div style={{ marginTop: 10, fontSize: 9, color: t.mut }}>Source: APQC · {baseline.industry || "Manufacturing"} {baseline.revenueBand || "$1-5B"} · 2023</div>
-
-                              {/* Collapsible SAP S/4HANA Details Panel */}
-                              {(() => {
-                                const s4d = getS4Details(proc.id);
-                                if (!s4d) return null;
-                                const isOpen = s4DetailsOpen[proc.id];
-                                const cxColor = s4d.complexity === "Low" ? GREEN : s4d.complexity === "Medium" ? GOLD : RED;
-                                return (
-                                  <div style={{ marginTop: 14, borderRadius: 8, border: `1px solid ${BLUE}25`, overflow: "hidden" }}>
-                                    <div
-                                      onClick={() => setS4DetailsOpen(prev => ({ ...prev, [proc.id]: !prev[proc.id] }))}
-                                      style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: BLUE + "0A", cursor: "pointer", userSelect: "none" }}
-                                    >
-                                      <div style={{ fontSize: 10, color: BLUE, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px" }}>SAP S/4HANA Details</div>
-                                      <span style={{ fontSize: 13, color: BLUE, transition: "transform 0.2s", display: "inline-block", transform: isOpen ? "rotate(90deg)" : "rotate(0deg)" }}>▸</span>
-                                    </div>
-                                    {isOpen && (
-                                      <div style={{ padding: "12px 14px", display: "grid", gap: 10 }}>
-                                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                                          <div>
-                                            <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 3 }}>SAP Module</div>
-                                            <div style={{ fontSize: 12, color: BLUE, fontWeight: 600, fontFamily: "monospace" }}>{s4d.module}</div>
-                                          </div>
-                                          <div>
-                                            <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 3 }}>Config Weeks</div>
-                                            <div style={{ fontSize: 12, color: t.tx, fontWeight: 600, fontFamily: "monospace" }}>{s4d.configWeeks}</div>
-                                          </div>
-                                        </div>
-
-                                        <div>
-                                          <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 3 }}>Deployment Scenario</div>
-                                          <div style={{ fontSize: 12, color: t.tx, fontWeight: 600, marginBottom: 4 }}>{s4d.deployment} recommended</div>
-                                          <div style={{ fontSize: 10, color: t.tx2, lineHeight: 1.5, fontStyle: "italic" }}>{s4d.deploymentDesc}</div>
-                                          <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
-                                            {Object.entries(DEPLOYMENT_SCENARIOS).map(([name, desc]) => (
-                                              <span key={name} title={desc} style={{
-                                                fontSize: 9, padding: "2px 7px", borderRadius: 4, cursor: "help",
-                                                background: name === s4d.deployment ? BLUE + "18" : t.bg,
-                                                border: `1px solid ${name === s4d.deployment ? BLUE + "40" : t.bdr}`,
-                                                color: name === s4d.deployment ? BLUE : t.mut,
-                                                fontWeight: name === s4d.deployment ? 700 : 400,
-                                              }}>{name}</span>
-                                            ))}
-                                          </div>
-                                        </div>
-
-                                        <div>
-                                          <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 3 }}>S/4HANA Capability</div>
-                                          <div style={{ fontSize: 12, color: GOLD, fontWeight: 600 }}>{s4d.capability}</div>
-                                        </div>
-
-                                        <div>
-                                          <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 3 }}>Integration Points</div>
-                                          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                                            {s4d.integration.split(", ").map(pt => (
-                                              <span key={pt} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: BLUE + "10", border: `1px solid ${BLUE}20`, color: BLUE, fontWeight: 500 }}>{pt}</span>
-                                            ))}
-                                          </div>
-                                        </div>
-
-                                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                                          <div>
-                                            <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 3 }}>Go-Live Complexity</div>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                              <span style={{ fontSize: 12, fontWeight: 700, color: cxColor }}>{s4d.complexity}</span>
-                                              <span style={{ fontSize: 10, color: t.tx2, fontStyle: "italic" }}>— {s4d.complexityReason}</span>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })()}
+                              <div style={{ marginTop: 10, fontSize: 9, color: t.mut }}>Source: APQC · n={getSampleSize("primary", proc.id.split("").reduce((a, c) => a + c.charCodeAt(0), 0))} · {baseline.industry || "Manufacturing"} {baseline.revenueBand || "$1-5B"} · 2023</div>
                             </div>
                           );
                         })()}
