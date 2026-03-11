@@ -2930,7 +2930,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
         <div style={{ fontSize: 52, fontFamily: SERIF, color: t.tx, fontWeight: 400, letterSpacing: "-1px", marginBottom: 4 }}>PrismL4</div>
         <div style={{ fontSize: 18, color: GOLD, fontWeight: 500, marginBottom: 8 }}>Bottom-Up Value Identification Engine</div>
         <div style={{ fontSize: 14, color: t.tx2, lineHeight: 1.6, marginBottom: 32, maxWidth: 480, margin: "0 auto 32px" }}>
-          Choose how you want to enter the assessment. Both paths lead to the same 7-step workflow.
+          Quantify the tangible P&L and balance sheet impact of SAP S/4HANA modules and bespoke AI orchestration via Joule Studio (GA Q1 2026). Upload baseline data, benchmark against APQC, SAP VLM, and Hackett, and generate a board-ready business case in under 20 minutes.
         </div>
         <div style={{ fontSize: 11, color: t.mut, marginBottom: 16 }}>{ALL_PROCS.length} L4 processes across Order to Cash, Record to Report, Procure to Pay</div>
 
