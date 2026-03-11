@@ -2724,7 +2724,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ fontSize: 12, color: t.mut, letterSpacing: "3px", textTransform: "uppercase", marginBottom: 16 }}>humaninthelead.ai</div>
           <div style={{ fontSize: 42, fontFamily: SERIF, color: t.tx, fontWeight: 400, letterSpacing: "-1px", marginBottom: 4 }}>Tech2Value</div>
-          <div style={{ fontSize: 14, color: t.tx2, lineHeight: 1.6 }}>Identify and quantify KPIs and value levers across SAP S/4HANA processes — including incremental uplift from AI agents built in SAP Joule Studio, available Q1 2026.</div>
+          <div style={{ fontSize: 14, color: t.tx2, lineHeight: 1.7, maxWidth: 520, margin: "0 auto" }}>Quantify the tangible P&L and balance sheet impact of SAP S/4HANA modules and bespoke AI orchestration via Joule Studio. Upload baseline data, benchmark against APQC, SAP VLM, and Hackett, and generate a board-ready business case in under 20 minutes.</div>
         </div>
         <div style={{ ...cardStyle, padding: 28 }}>
           <div style={{ display: "grid", gap: 16 }}>
@@ -2867,7 +2867,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
         <div style={{ fontSize: 52, fontFamily: SERIF, color: t.tx, fontWeight: 400, letterSpacing: "-1px", marginBottom: 4 }}>PrismL4</div>
         <div style={{ fontSize: 18, color: GOLD, fontWeight: 500, marginBottom: 8 }}>Tech2Value — SAP S/4HANA & Joule Studio</div>
         <div style={{ fontSize: 14, color: t.tx2, lineHeight: 1.6, marginBottom: 24, maxWidth: 440, margin: "0 auto 24px" }}>
-          Identify and quantify value across SAP S/4HANA processes — mapping KPIs and levers at L4 level, with incremental uplift estimates for AI agents built in SAP Joule Studio.
+          Quantify the tangible P&L and balance sheet impact of SAP S/4HANA modules and bespoke AI orchestration via Joule Studio (GA Q1 2026). Upload baseline data, benchmark against APQC, SAP VLM, and Hackett, and generate a board-ready business case in under 20 minutes.
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 28, maxWidth: 440, margin: "0 auto 28px" }}>
