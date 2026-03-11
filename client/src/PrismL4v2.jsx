@@ -267,7 +267,8 @@ const APQC = [
                 { name: "Order accuracy rate", unit: "%", current: null, benchmark: 99.2, agentBenchmark: 114, src: "APQC", method: "Error-free orders / total orders × 100", occurrence: "recurring", capability: "Intelligent Order Management" },
               ], sap: [{ module: "SD-SLS", desc: "Sales order creation & validation", scenario: "Intelligent order capture from multiple channels (EDI, portal, email) with automated validation against pricing, availability, and credit rules." }],
                 valLevers: [{ lever: "Increase touchless order rate", vtype: "Tangible", vclass: "Labor Efficiency", fintype: "SGA", stmt: "Income Statement" },
-                  { lever: "Reduce order errors", vtype: "Tangible", vclass: "Standardization", fintype: "COGS", stmt: "Income Statement" }],
+                  { lever: "Reduce order errors", vtype: "Tangible", vclass: "Standardization", fintype: "COGS", stmt: "Income Statement" },
+                  { lever: "Reduce revenue leakage from order errors", vtype: "Tangible", vclass: "Revenue Leakage", fintype: "Revenue", stmt: "Income Statement" }],
                 },
               { id: "o2c-013", l4: "8.3.1.2", label: "Check product availability & allocate inventory", jobs: ["Run available-to-promise check","Allocate inventory to order","Manage backorder queue","Communicate availability to customer"], kpis: [
                 { name: "Available-to-promise accuracy", unit: "%", current: null, benchmark: 95, agentBenchmark: 121, src: "APQC", method: "Correct ATP responses / total ATP checks × 100", occurrence: "recurring", capability: "Intelligent Order Management" },
@@ -1270,7 +1271,7 @@ export default function PrismL4v2({ user, onLogout, assessmentId, initialData, i
     const current = realCurrent ?? kpi.current;
     const bench = bmarks[`bench_${ki}`] ?? kpi.benchmark;
     const agentBench = kpi.agentBenchmark;
-    const lever = proc.valLevers?.find(l => l.fintype === "Revenue") || proc.valLevers?.[0];
+    const userVclass = vals[`vclass_0`]; const lever = (userVclass === "Revenue Leakage" ? proc.valLevers?.find(l => l.fintype === "Revenue") : null) || proc.valLevers?.[0];
     const fintype = lever?.fintype || 'SGA';
     const baseAmt = fintype === 'Revenue' ? baseline.revenue : fintype === 'COGS' ? baseline.cogs : baseline.sga;
     const selectedSource = bmarks[`src_${ki}`] || 'primary';
@@ -1571,7 +1572,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
       (proc.kpis || []).forEach((kpi, ki) => {
         const current = vals[`kpi_current_${ki}`] ?? kpi.current;
         const bench = bmarks[`bench_${ki}`] ?? kpi.benchmark;
-        const lever = proc.valLevers?.find(l => l.fintype === "Revenue") || proc.valLevers?.[0];
+        const userVclass = vals[`vclass_0`]; const lever = (userVclass === "Revenue Leakage" ? proc.valLevers?.find(l => l.fintype === "Revenue") : null) || proc.valLevers?.[0];
         const sgaBase = censusLaborCostM != null ? censusLaborCostM : benchmarkSgaM;
         const baseAmt = lever?.fintype === "Revenue" ? effectiveFinancials.revenue :
           lever?.fintype === "COGS" ? effectiveFinancials.cogs : sgaBase;
@@ -1632,7 +1633,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
       (proc.kpis || []).forEach((kpi, ki) => {
         const current = vals[`kpi_current_${ki}`] ?? kpi.current;
         const bench = bmarks[`bench_${ki}`] ?? kpi.benchmark;
-        const lever = proc.valLevers?.find(l => l.fintype === "Revenue") || proc.valLevers?.[0];
+        const userVclass = vals[`vclass_0`]; const lever = (userVclass === "Revenue Leakage" ? proc.valLevers?.find(l => l.fintype === "Revenue") : null) || proc.valLevers?.[0];
 
         if (current != null && bench != null && lever?.stmt === "Balance Sheet" && lever?.vclass === "Working Capital") {
           const gap = Math.abs(current - bench) * wcM;
@@ -2200,7 +2201,8 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
       const miningStartIdx = qStartIdx + ALL_SMART_QS.length;
       const newAnswers = { ...questAnswers };
       const newBaseline = { ...baselineData };
-      const newMining = { ...uploadedMining };
+      // Start with empty mining — questionnaire upload must never inherit stale mining state
+      const newMining = {};
       for (let i = 1; i < lines.length; i++) {
         const row = lines[i];
         const procId = row[0];
@@ -2214,18 +2216,17 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
             if (bk) newBaseline[`${procId}_${bk}`] = val;
           }
         });
-        // Import mining data
+        // Import mining data ONLY if CSV has mining columns AND both variants AND conformance are present
         const variants = row[miningStartIdx];
         const conformance = row[miningStartIdx + 1];
         const cycleTime = row[miningStartIdx + 2];
         const rework = row[miningStartIdx + 3];
-        // Only populate mining if BOTH variants AND conformance are present — prevents questionnaire CSV from falsely triggering mining linker
-        if (variants && conformance) {
+        if (variants && conformance && !isNaN(parseInt(variants)) && !isNaN(parseFloat(conformance))) {
           newMining[procId] = {
-            variants: variants ? parseInt(variants) || variants : null,
-            conformance: conformance ? parseFloat(conformance) || conformance : null,
-            cycleTime: cycleTime ? parseFloat(cycleTime) || cycleTime : null,
-            rework: rework ? parseFloat(rework) || rework : null,
+            variants: parseInt(variants),
+            conformance: parseFloat(conformance),
+            cycleTime: cycleTime ? parseFloat(cycleTime) || null : null,
+            rework: rework ? parseFloat(rework) || null : null,
           };
         }
       }
@@ -2283,22 +2284,14 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
         setProcValues(prev => {
           let updated = { ...prev };
           Object.entries(newProcVals).forEach(([procId, vals]) => {
-            Object.entries(vals).forEach(([key, val]) => {
-              if (updated[procId]?.[key] == null) {
-                updated = { ...updated, [procId]: { ...(updated[procId] || {}), [key]: val } };
-              }
-            });
+            updated = { ...updated, [procId]: { ...(updated[procId] || {}), ...vals } };
           });
           return updated;
         });
         setKpiSources(prev => {
           let updated = { ...prev };
           Object.entries(newSources).forEach(([procId, srcs]) => {
-            Object.entries(srcs).forEach(([key, src]) => {
-              if (!updated[procId]?.[key] || updated[procId][key] === "default") {
-                updated = { ...updated, [procId]: { ...(updated[procId] || {}), [key]: src } };
-              }
-            });
+            updated = { ...updated, [procId]: { ...(updated[procId] || {}), ...srcs } };
           });
           return updated;
         });
@@ -5198,7 +5191,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                   const isModeled = realCurrent == null && kpi.current != null;
                   const bench = bmarks[`bench_${ki}`] ?? kpi.benchmark;
                   const agentBench = kpi.agentBenchmark;
-                  const lever = proc.valLevers?.find(l => l.fintype === "Revenue") || proc.valLevers?.[0];
+                  const userVclass = vals[`vclass_0`]; const lever = (userVclass === "Revenue Leakage" ? proc.valLevers?.find(l => l.fintype === "Revenue") : null) || proc.valLevers?.[0];
                   const baseAmt = lever?.fintype === "Revenue" ? baseline.revenue : lever?.fintype === "COGS" ? baseline.cogs : baseline.sga;
                   let erpImpact = 0, agentImpact = 0;
                   if (current != null && bench != null && bench !== 0) {
