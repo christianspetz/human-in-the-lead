@@ -16,6 +16,7 @@ import ZeroHumanCompany from './components/ZeroHumanCompany';
 import Prism from './Prism';
 import PrismAuth from './PrismAuth';
 import PrismL4v2Gate from './PrismL4v2Gate';
+import PrismL4v2GrowthGate from './PrismL4v2GrowthGate';
 import PanasonicGate from './components/PanasonicGate';
 import AccentureCPGGate from './components/AccentureCPGGate';
 
@@ -37,6 +38,7 @@ const SCREENS = {
   PRISM: 'prism',
   PRISML4: 'prisml4',
   PRISML4V2: 'prisml4v2',
+  PRISML4V2_GROWTH: 'prisml4v2_growth',
   PANASONIC_GO: 'panasonic_go',
   CPG: 'cpg',
 };
@@ -52,6 +54,7 @@ const PATH_TO_SCREEN = {
   '/prism': SCREENS.PRISM,
   '/prisml4': SCREENS.PRISML4,
   '/prisml4v2': SCREENS.PRISML4V2,
+  '/prisml4v2-growth': SCREENS.PRISML4V2_GROWTH,
   '/panasonic-go': SCREENS.PANASONIC_GO,
   '/acc': SCREENS.CPG,
 };
@@ -63,6 +66,7 @@ const SCREEN_TO_PATH = {
   [SCREENS.PRISM]: '/prism',
   [SCREENS.PRISML4]: '/prisml4',
   [SCREENS.PRISML4V2]: '/prisml4v2',
+  [SCREENS.PRISML4V2_GROWTH]: '/prisml4v2-growth',
   [SCREENS.PANASONIC_GO]: '/panasonic-go',
   [SCREENS.CPG]: '/acc',
   [SCREENS.LANDING]: '/',
@@ -250,11 +254,13 @@ export default function App() {
 
       {screen === SCREENS.PRISML4V2 && <PrismL4v2Gate />}
 
+      {screen === SCREENS.PRISML4V2_GROWTH && <PrismL4v2GrowthGate />}
+
       {screen === SCREENS.PANASONIC_GO && <PanasonicGate />}
 
       {screen === SCREENS.CPG && <AccentureCPGGate />}
 
-      {screen !== SCREENS.ARCLINE && screen !== SCREENS.APOLLO && screen !== SCREENS.ZERO_HUMAN && screen !== SCREENS.PRISM && screen !== SCREENS.PRISML4 && screen !== SCREENS.PRISML4V2 && screen !== SCREENS.PANASONIC_GO && screen !== SCREENS.CPG && <footer className="app-footer">
+      {screen !== SCREENS.ARCLINE && screen !== SCREENS.APOLLO && screen !== SCREENS.ZERO_HUMAN && screen !== SCREENS.PRISM && screen !== SCREENS.PRISML4 && screen !== SCREENS.PRISML4V2 && screen !== SCREENS.PRISML4V2_GROWTH && screen !== SCREENS.PANASONIC_GO && screen !== SCREENS.CPG && <footer className="app-footer">
         <p style={{ fontSize: '0.7rem', color: 'var(--slate)', marginBottom: '0.75rem', maxWidth: '500px', margin: '0 auto 0.75rem', lineHeight: '1.5' }}>
           This is a personal project built on my own time. All views are my own and do not represent the views or positions of my employer. Based on publicly available frameworks and best practices.
         </p>
