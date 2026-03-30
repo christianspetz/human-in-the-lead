@@ -1095,65 +1095,17 @@ const CostReductionNote = ({ primaryValue, theme }) => {
 };
 
 /* Growth Impact Calculator — context-aware per revenue driver */
-const GrowthImpactCalculator = ({ proc, growthLevers, financials, theme }) => {
+const GrowthImpactCalculator = ({ proc, growthLevers, financials, erpValue, agentValue, kpiRows, scenarioLevel: scenLvl, addressablePct, theme }) => {
   const t = theme;
   const [showCalc, setShowCalc] = React.useState(true);
   const [showMethod, setShowMethod] = React.useState(true);
   const revDriver = getRevenueDriver(proc);
   const isPricing = revDriver.driver === "Price Realization";
-
-  // Pull revenue from P&L / baseline — never a hardcoded guess
-  const revenueFromPnl = financials?.revenue || 0;
+  const totalValue = (erpValue || 0) + (agentValue || 0);
+  const narrative = CALC_NARRATIVE[proc.id];
+  const sapLever = getSapLever(proc.id);
   const revenueSource = financials?.source || "Not provided";
-
-  // Find the best KPI for this driver type
-  const rateKpi = isPricing
-    ? (proc.kpis || []).find(k => /pric.*accuracy|realization/i.test(k.name))
-    : (proc.kpis || []).find(k => /fill rate/i.test(k.name));
-  const defaultTarget = rateKpi?.agentBenchmark != null
-    ? (rateKpi.unit === "%" && rateKpi.agentBenchmark > 100 ? Math.min(rateKpi.agentBenchmark, 99.9) : rateKpi.agentBenchmark)
-    : (isPricing ? 99.8 : 98.5);
-  const defaultCurrent = rateKpi?.benchmark ?? (isPricing ? 98.5 : 95);
-
-  const [annualRevenue, setAnnualRevenue] = React.useState(String(revenueFromPnl || ""));
-  const [currentRate, setCurrentRate] = React.useState(String(defaultCurrent));
-  const [targetRate, setTargetRate] = React.useState(String(defaultTarget));
-
-  const result = React.useMemo(() => {
-    const rev = parseFloat(annualRevenue) || 0;
-    const current = parseFloat(currentRate) || 0;
-    const target = parseFloat(targetRate) || 0;
-    if (rev <= 0) return null;
-    if (isPricing) {
-      // Price Realization: error rate shrinks → leakage recovered
-      const currentErrorPct = 100 - current;
-      const targetErrorPct = 100 - target;
-      const errorReduction = currentErrorPct - targetErrorPct;
-      if (errorReduction <= 0) return null;
-      const recovered = rev * (errorReduction / 100);
-      return {
-        recovered, gap: errorReduction,
-        formula: `$${rev}M × (${currentErrorPct.toFixed(1)}% error → ${targetErrorPct.toFixed(1)}% error) = $${recovered.toFixed(1)}M recovered`,
-        currentLabel: `${current}% accuracy (${currentErrorPct.toFixed(1)}% error rate)`,
-        targetLabel: `${target}% accuracy (${targetErrorPct.toFixed(1)}% error rate)`,
-        gapLabel: `${errorReduction.toFixed(1)} ppt error reduction`,
-      };
-    }
-    // Volume Recovery: fill rate gap → revenue captured
-    const gap = target - current;
-    if (gap <= 0) return null;
-    const recovered = rev * (gap / 100);
-    return {
-      recovered, gap,
-      formula: `$${rev}M × ${gap.toFixed(1)}% fill rate improvement ÷ 100 = $${recovered.toFixed(1)}M`,
-      currentLabel: `${current}% fill rate`,
-      targetLabel: `${target}% fill rate`,
-      gapLabel: `${gap.toFixed(1)} ppt improvement`,
-    };
-  }, [annualRevenue, currentRate, targetRate, isPricing]);
-
-  const rateLabel = isPricing ? "Pricing Accuracy" : "Fill Rate";
-  const inputStyle = { width: "100%", background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 4, padding: "6px 8px", color: t.tx, fontFamily: "monospace", fontSize: 13, boxSizing: "border-box" };
+  const fmtVal = (v) => v == null || v === 0 ? "$0" : v < 1 ? `$${Math.round(v * 1000)}K` : `$${v.toFixed(1)}M`;
 
   if (!showCalc) {
     return (
@@ -1163,7 +1115,7 @@ const GrowthImpactCalculator = ({ proc, growthLevers, financials, theme }) => {
         color: GOLD, cursor: "pointer", fontFamily: FONT, fontWeight: 600,
         marginBottom: 10, display: "flex", alignItems: "center", gap: 6,
       }}>
-        <span style={{ fontSize: 12 }}>↑</span> Growth Impact Calculator
+        <span style={{ fontSize: 12 }}>↑</span> Growth Impact — {fmtVal(totalValue)} total uplift
       </button>
     );
   }
@@ -1177,11 +1129,11 @@ const GrowthImpactCalculator = ({ proc, growthLevers, financials, theme }) => {
       marginBottom: 12,
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, letterSpacing: "0.01em" }}>Growth Impact Calculator</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, letterSpacing: "0.01em" }}>Growth Impact</div>
         <button onClick={() => setShowCalc(false)} style={{
           fontSize: 10, background: "transparent", border: "none",
           color: t.mut, cursor: "pointer", fontFamily: FONT,
-        }}>Close ×</button>
+        }}>Collapse ×</button>
       </div>
 
       {/* Revenue Driver — always visible */}
@@ -1195,121 +1147,115 @@ const GrowthImpactCalculator = ({ proc, growthLevers, financials, theme }) => {
         <div style={{ fontSize: 11, color: t.tx2, lineHeight: 1.6 }}>{revDriver.desc}</div>
       </div>
 
-      {/* Context-aware inputs */}
+      {/* Impact values — same numbers as P&L */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
-        <div>
-          <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase", marginBottom: 4, letterSpacing: 0.3 }}>Annual Revenue ($M)</div>
-          <input type="number" value={annualRevenue} onChange={e => setAnnualRevenue(e.target.value)}
-            placeholder="Enter revenue" style={inputStyle} />
-          <div style={{ fontSize: 8, color: revenueFromPnl ? GREEN : RED, marginTop: 3, fontWeight: 600, opacity: 0.8 }}>
-            Source: {revenueFromPnl ? revenueSource : "No P&L loaded — enter manually"}
-          </div>
+        <div style={{ background: t.card, borderRadius: 8, padding: "10px 12px", border: `1px solid ${BLUE}25` }}>
+          <div style={{ fontSize: 9, color: BLUE, textTransform: "uppercase", marginBottom: 4, fontWeight: 600, letterSpacing: 0.3 }}>ERP Uplift</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: BLUE, fontFamily: SERIF }}>{fmtVal(erpValue)}</div>
+          <div style={{ fontSize: 8, color: t.mut, marginTop: 2 }}>S/4HANA baseline</div>
         </div>
-        <div>
-          <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase", marginBottom: 4, letterSpacing: 0.3 }}>Current {rateLabel} (%)</div>
-          <input type="number" step="0.1" value={currentRate} onChange={e => setCurrentRate(e.target.value)} style={inputStyle} />
-          <div style={{ fontSize: 8, color: t.mut, marginTop: 3, fontWeight: 600, opacity: 0.8 }}>Source: {rateKpi ? `${rateKpi.src || "APQC"} benchmark` : "Default estimate"}</div>
+        <div style={{ background: t.card, borderRadius: 8, padding: "10px 12px", border: `1px solid ${GOLD}25` }}>
+          <div style={{ fontSize: 9, color: GOLD, textTransform: "uppercase", marginBottom: 4, fontWeight: 600, letterSpacing: 0.3 }}>+ AI Agent</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: GOLD, fontFamily: SERIF }}>{fmtVal(agentValue)}</div>
+          <div style={{ fontSize: 8, color: t.mut, marginTop: 2 }}>Joule + agentic layer</div>
         </div>
-        <div>
-          <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase", marginBottom: 4, letterSpacing: 0.3 }}>Target {rateLabel} (%)</div>
-          <input type="number" step="0.1" value={targetRate} onChange={e => setTargetRate(e.target.value)}
-            style={{ ...inputStyle, border: `1px solid ${GOLD}44`, color: GOLD, fontWeight: 600 }} />
-          <div style={{ fontSize: 8, color: GOLD, marginTop: 3, fontWeight: 600, opacity: 0.8 }}>Source: APQC top quartile benchmark</div>
+        <div style={{ background: GOLD + "12", borderRadius: 8, padding: "10px 12px", border: `1px solid ${GOLD}44` }}>
+          <div style={{ fontSize: 9, color: GOLD, textTransform: "uppercase", marginBottom: 4, fontWeight: 700, letterSpacing: 0.3 }}>Total Revenue Impact</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: GOLD, fontFamily: SERIF }}>{fmtVal(totalValue)}</div>
+          <div style={{ fontSize: 8, color: GOLD, marginTop: 2, opacity: 0.8 }}>Carries to P&L →</div>
         </div>
       </div>
 
-      {/* Result */}
-      {result && (
-        <div style={{ background: t.card, borderRadius: 8, padding: "12px 14px", border: `1px solid ${GOLD}33` }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
-            <span style={{ fontSize: 10, color: t.mut, textTransform: "uppercase", letterSpacing: 0.3 }}>Revenue Recovered</span>
-            <span style={{ fontSize: 22, fontWeight: 700, color: GOLD, fontFamily: SERIF }}>${result.recovered.toFixed(1)}M</span>
-            <span style={{ fontSize: 10, color: t.mut }}>/ year</span>
-          </div>
-          <div style={{ fontSize: 10, color: t.tx2, fontFamily: "monospace", marginBottom: 10, padding: "6px 8px", background: t.bg, borderRadius: 4 }}>
-            {result.formula}
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            <div style={{ fontSize: 10, color: t.tx2 }}>
-              <span style={{ color: t.mut, textTransform: "uppercase", fontSize: 9 }}>Time to Value</span>
-              <div style={{ fontWeight: 600, marginTop: 2 }}>6–12 months post go-live</div>
-            </div>
-            <div style={{ fontSize: 10, color: t.tx2 }}>
-              <span style={{ color: t.mut, textTransform: "uppercase", fontSize: 9 }}>P&L Line</span>
-              <div style={{ fontWeight: 600, marginTop: 2 }}>Revenue — Income Statement</div>
-            </div>
-          </div>
+      {/* Inputs & assumptions */}
+      <div style={{ padding: "10px 12px", background: t.card, borderRadius: 8, border: `1px solid ${t.bdr}`, marginBottom: 10 }}>
+        <div style={{ fontSize: 9, color: t.mut, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Inputs</div>
+        <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: "4px 10px", fontSize: 10 }}>
+          <span style={{ color: t.mut, fontWeight: 600 }}>Revenue base:</span>
+          <span style={{ color: t.tx2 }}>${(financials?.revenue || 0).toLocaleString()}M</span>
+          <span style={{ fontSize: 8, color: financials?.revenue ? GREEN : RED, fontWeight: 600 }}>{revenueSource}</span>
+          <span style={{ color: t.mut, fontWeight: 600 }}>Scenario:</span>
+          <span style={{ color: t.tx2 }}>{scenLvl} ({scenLvl === "High" ? "100%" : scenLvl === "Medium" ? "65%" : "35%"} factor)</span>
+          <span style={{ fontSize: 8, color: t.mut, fontWeight: 600 }}>User setting</span>
+          <span style={{ color: t.mut, fontWeight: 600 }}>Addressable:</span>
+          <span style={{ color: t.tx2 }}>{addressablePct}%</span>
+          <span style={{ fontSize: 8, color: t.mut, fontWeight: 600 }}>User setting</span>
         </div>
-      )}
+      </div>
 
-      {/* Expandable methodology */}
-      {result && (
-        <div style={{ marginTop: 10 }}>
-          <button onClick={() => setShowMethod(v => !v)} style={{
-            fontSize: 9, background: "transparent", border: "none", color: t.mut,
-            cursor: "pointer", fontFamily: FONT, padding: 0, textDecoration: "underline",
-            textUnderlineOffset: 2,
-          }}>{showMethod ? "▾ Hide methodology" : "▸ How this is calculated"}</button>
-          {showMethod && (() => {
-            const narrative = CALC_NARRATIVE[proc.id];
-            const sapLever = getSapLever(proc.id);
-            return (
-            <div style={{ marginTop: 8, padding: "12px 14px", background: t.card, borderRadius: 8, border: `1px solid ${t.bdr}`, fontSize: 10, color: t.tx2, lineHeight: 1.7 }}>
-              {/* Value Levers */}
-              <div style={{ fontSize: 9, color: GOLD, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Value Levers</div>
-              {growthLevers.map((lv, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                  <span style={{ width: 3, height: 3, borderRadius: "50%", background: GOLD, flexShrink: 0 }} />
-                  <span>{lv.lever}</span>
-                  <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, background: GOLD + "15", color: GOLD, fontWeight: 600 }}>{lv.vclass}</span>
-                </div>
-              ))}
+      {/* KPI-level breakdown */}
+      <div style={{ padding: "10px 12px", background: t.card, borderRadius: 8, border: `1px solid ${t.bdr}`, marginBottom: 10 }}>
+        <div style={{ fontSize: 9, color: t.mut, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>KPI Breakdown</div>
+        {(kpiRows || []).map((row, i) => (
+          <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: i < kpiRows.length - 1 ? `1px solid ${t.bdr}40` : "none" }}>
+            <div style={{ fontSize: 10, color: t.tx2, flex: 1 }}>
+              {row.kpi.name}
+              <span style={{ color: t.mut, marginLeft: 4, fontSize: 9 }}>
+                {row.current != null ? `${row.current}` : "—"} → {row.bench ?? "—"} {row.kpi.unit}
+              </span>
+            </div>
+            <div style={{ display: "flex", gap: 12, fontSize: 10, fontFamily: "monospace" }}>
+              <span style={{ color: BLUE, fontWeight: 600 }}>{row.erpImpact > 0 ? fmtVal(row.erpImpact) : "—"}</span>
+              <span style={{ color: GOLD, fontWeight: 600 }}>{row.agentImpact > 0 ? fmtVal(row.agentImpact) : "—"}</span>
+            </div>
+          </div>
+        ))}
+      </div>
 
-              {/* SAP + Agent explanation */}
-              {(sapLever || narrative) && (
-                <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${t.bdr}` }}>
-                  {sapLever && (
-                    <div style={{ marginBottom: 8 }}>
-                      <div style={{ fontSize: 9, color: BLUE, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>SAP Lever: {sapLever.lever.name}</div>
-                      <div style={{ color: t.tx2 }}>{sapLever.lever.capability}</div>
-                    </div>
-                  )}
-                  {narrative?.agentAction && (
-                    <div style={{ marginBottom: 8 }}>
-                      <div style={{ fontSize: 9, color: GOLD, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>AI Agent Adds</div>
-                      <div style={{ color: t.tx2 }}>{narrative.agentAction}</div>
-                    </div>
-                  )}
-                  {narrative?.mechanism && (
-                    <div>
-                      <div style={{ fontSize: 9, color: t.mut, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>Why This Matters</div>
-                      <div style={{ color: t.tx2 }}>{narrative.mechanism}</div>
-                    </div>
-                  )}
+      {/* Methodology */}
+      <button onClick={() => setShowMethod(v => !v)} style={{
+        fontSize: 9, background: "transparent", border: "none", color: t.mut,
+        cursor: "pointer", fontFamily: FONT, padding: 0, textDecoration: "underline",
+        textUnderlineOffset: 2, marginBottom: showMethod ? 0 : 0,
+      }}>{showMethod ? "▾ Hide methodology" : "▸ How this is calculated"}</button>
+      {showMethod && (
+        <div style={{ marginTop: 8, padding: "12px 14px", background: t.card, borderRadius: 8, border: `1px solid ${t.bdr}`, fontSize: 10, color: t.tx2, lineHeight: 1.7 }}>
+          {/* Value Levers */}
+          <div style={{ fontSize: 9, color: GOLD, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Value Levers</div>
+          {growthLevers.map((lv, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+              <span style={{ width: 3, height: 3, borderRadius: "50%", background: GOLD, flexShrink: 0 }} />
+              <span>{lv.lever}</span>
+              <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, background: GOLD + "15", color: GOLD, fontWeight: 600 }}>{lv.vclass}</span>
+            </div>
+          ))}
+
+          {/* SAP + Agent */}
+          {(sapLever || narrative) && (
+            <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${t.bdr}` }}>
+              {sapLever && (
+                <div style={{ marginBottom: 8 }}>
+                  <div style={{ fontSize: 9, color: BLUE, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>SAP Lever: {sapLever.lever.name}</div>
+                  <div>{sapLever.lever.capability}</div>
                 </div>
               )}
-
-              {/* Calculation breakdown */}
-              <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${t.bdr}` }}>
-                <div style={{ fontSize: 9, color: t.mut, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Calculation</div>
-                <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "4px 10px" }}>
-                  <span style={{ color: t.mut, fontWeight: 600 }}>Current:</span>
-                  <span>{result.currentLabel}</span>
-                  <span style={{ color: t.mut, fontWeight: 600 }}>Target:</span>
-                  <span>{result.targetLabel} — APQC top quartile</span>
-                  <span style={{ color: t.mut, fontWeight: 600 }}>Gap:</span>
-                  <span>{result.gapLabel}</span>
-                  <span style={{ color: t.mut, fontWeight: 600 }}>Revenue impact:</span>
-                  <span>${annualRevenue}M × gap = <span style={{ color: GOLD, fontWeight: 700 }}>${result.recovered.toFixed(1)}M</span></span>
+              {narrative?.agentAction && (
+                <div style={{ marginBottom: 8 }}>
+                  <div style={{ fontSize: 9, color: GOLD, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>AI Agent Adds</div>
+                  <div>{narrative.agentAction}</div>
                 </div>
-              </div>
-
-              <div style={{ marginTop: 10, paddingTop: 8, borderTop: `1px solid ${t.bdr}`, fontStyle: "italic", color: t.mut }}>
-                Floor estimate — actual recovery depends on implementation maturity and root cause mix. Validate with client order-level data.
-              </div>
+              )}
+              {narrative?.mechanism && (
+                <div>
+                  <div style={{ fontSize: 9, color: t.mut, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>Why This Matters</div>
+                  <div>{narrative.mechanism}</div>
+                </div>
+              )}
             </div>
-            );
-          })()}
+          )}
+
+          {/* Formula explanation */}
+          <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${t.bdr}` }}>
+            <div style={{ fontSize: 9, color: t.mut, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Calculation Method</div>
+            <div style={{ color: t.tx2, lineHeight: 1.7 }}>
+              For each KPI: |current − benchmark| × scenario factor ({scenLvl}) × addressable % ({addressablePct}%) × financial base ÷ 10,000.
+              Agent uplift uses the incremental gap between ERP benchmark and AI agent benchmark.
+              These are the same values that flow into the P&L summary.
+            </div>
+          </div>
+
+          <div style={{ marginTop: 10, paddingTop: 8, borderTop: `1px solid ${t.bdr}`, fontStyle: "italic", color: t.mut }}>
+            Floor estimate — actual recovery depends on implementation maturity and root cause mix. Validate with client order-level data.
+          </div>
         </div>
       )}
     </div>
@@ -5916,7 +5862,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                       if (verdict === "A") return (
                         <>
                           <RevenuePlayBanner proc={proc} growthLevers={growthLevers} theme={t} />
-                          <GrowthImpactCalculator proc={proc} growthLevers={growthLevers} financials={effectiveFinancials} theme={t} />
+                          <GrowthImpactCalculator proc={proc} growthLevers={growthLevers} financials={effectiveFinancials} erpValue={procErpVal} agentValue={procAgentVal} kpiRows={kpiRows} scenarioLevel={potential} addressablePct={procScenarios[proc.id]?.addressable || 60} theme={t} />
                         </>
                       );
                       if (verdict === "B") return <TimeBackBanner theme={t} />;
