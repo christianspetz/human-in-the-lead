@@ -1166,19 +1166,41 @@ const GrowthImpactCalculator = ({ proc, growthLevers, financials, erpValue, agen
         </div>
       </div>
 
-      {/* Inputs & assumptions */}
+      {/* Inputs & assumptions — with explanations */}
       <div style={{ padding: "10px 12px", background: t.card, borderRadius: 8, border: `1px solid ${t.bdr}`, marginBottom: 10 }}>
-        <div style={{ fontSize: 9, color: t.mut, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Inputs</div>
-        <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: "4px 10px", fontSize: 10 }}>
-          <span style={{ color: t.mut, fontWeight: 600 }}>Revenue base:</span>
-          <span style={{ color: t.tx2 }}>${(financials?.revenue || 0).toLocaleString()}M</span>
-          <span style={{ fontSize: 8, color: financials?.revenue ? GREEN : RED, fontWeight: 600 }}>{revenueSource}</span>
-          <span style={{ color: t.mut, fontWeight: 600 }}>Scenario:</span>
-          <span style={{ color: t.tx2 }}>{scenLvl} ({scenLvl === "High" ? "100%" : scenLvl === "Medium" ? "65%" : "35%"} factor)</span>
-          <span style={{ fontSize: 8, color: t.mut, fontWeight: 600 }}>User setting</span>
-          <span style={{ color: t.mut, fontWeight: 600 }}>Addressable:</span>
-          <span style={{ color: t.tx2 }}>{addressablePct}%</span>
-          <span style={{ fontSize: 8, color: t.mut, fontWeight: 600 }}>User setting</span>
+        <div style={{ fontSize: 9, color: t.mut, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Calculation Inputs</div>
+        <div style={{ display: "grid", gap: 8, fontSize: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div><span style={{ color: t.mut, fontWeight: 600 }}>Revenue base:</span> <span style={{ color: t.tx2 }}>${(financials?.revenue || 0).toLocaleString()}M</span></div>
+            <span style={{ fontSize: 8, color: financials?.revenue ? GREEN : RED, fontWeight: 600 }}>{revenueSource}</span>
+          </div>
+          <div style={{ fontSize: 9, color: t.mut, marginTop: -4 }}>Total company revenue from your P&L — the financial base for Revenue-type levers</div>
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div><span style={{ color: t.mut, fontWeight: 600 }}>Scenario factor:</span> <span style={{ color: t.tx2 }}>{scenLvl} = {scenLvl === "High" ? "100%" : scenLvl === "Medium" ? "65%" : "35%"}</span></div>
+            <span style={{ fontSize: 8, color: t.mut, fontWeight: 600 }}>Set in Step 4</span>
+          </div>
+          <div style={{ fontSize: 9, color: t.mut, marginTop: -4 }}>How much of the benchmark gap is realistically closeable. High = full gap, Medium = 65%, Low = 35%</div>
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div><span style={{ color: t.mut, fontWeight: 600 }}>Addressable %:</span> <span style={{ color: t.tx2 }}>{addressablePct}%</span></div>
+            <span style={{ fontSize: 8, color: t.mut, fontWeight: 600 }}>Set in Step 4</span>
+          </div>
+          <div style={{ fontSize: 9, color: t.mut, marginTop: -4 }}>% of process volume in scope for this transformation — not all transactions are addressable</div>
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div><span style={{ color: t.mut, fontWeight: 600 }}>Combined factor:</span> <span style={{ color: t.tx2, fontFamily: "monospace" }}>{scenLvl === "High" ? "1.00" : scenLvl === "Medium" ? "0.65" : "0.35"} × {addressablePct}% = {((scenLvl === "High" ? 1.0 : scenLvl === "Medium" ? 0.65 : 0.35) * addressablePct / 100).toFixed(2)}</span></div>
+            <span style={{ fontSize: 8, color: t.mut, fontWeight: 600 }}>Derived</span>
+          </div>
+          <div style={{ fontSize: 9, color: t.mut, marginTop: -4 }}>Scenario × Addressable — applied to the KPI gap before computing financial impact</div>
+
+          <div style={{ borderTop: `1px solid ${t.bdr}`, paddingTop: 8, marginTop: 4 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div><span style={{ color: t.mut, fontWeight: 600 }}>Materiality weight:</span> <span style={{ color: t.tx2, fontFamily: "monospace" }}>× 0.01</span></div>
+              <span style={{ fontSize: 8, color: GOLD, fontWeight: 600 }}>Assumption</span>
+            </div>
+            <div style={{ fontSize: 9, color: t.mut, marginTop: 2 }}>A 1 percentage-point KPI improvement doesn't affect 1% of total revenue — it affects a subset of transactions. This factor scales the gap-to-revenue relationship. Default 0.01 = conservative. Adjust per process if you have client data on the affected transaction volume.</div>
+          </div>
         </div>
       </div>
 
