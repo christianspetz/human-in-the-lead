@@ -263,11 +263,17 @@ app.post('/api/map-roles', async (req, res) => {
 
 // Serve React build in production
 const clientBuildPath = path.join(__dirname, '..', 'client', 'dist');
+const clientPublicPath = path.join(__dirname, '..', 'client', 'public');
 app.use(express.static(clientBuildPath));
+app.use(express.static(clientPublicPath));
 
 // Static standalone pages
 app.get('/eudia', (req, res) => {
   res.sendFile(path.join(clientBuildPath, 'eudia.html'));
+});
+
+app.get('/payer', (req, res) => {
+  res.sendFile(path.join(clientBuildPath, 'ignite-payer.html'));
 });
 
 app.get('*', (req, res) => {
