@@ -809,6 +809,12 @@ const SAP_LEVER_MAP = {
   "p2p-006": { lever: { name: "Dynamic Discounting", capability: "Automated early payment offers based on cash position — captures supplier discounts systematically", module: "FSCM", deploymentType: "Optimization" }, kpis: { "Supply chain financing adoption": "Top quartile for companies with dynamic discounting and supplier finance platforms active." } },
   "p2p-007": { lever: { name: "Supplier Intelligence", capability: "Automated performance data collection, weighted scorecard generation, and external risk signal monitoring", module: "SLC", deploymentType: "Optimization" }, kpis: { "Supplier scorecard coverage": "Top quartile for companies with automated supplier performance monitoring.", "Strategic supplier spend coverage": "Top quartile for companies with full Ariba integration and category management active." } },
   "p2p-008": { lever: { name: "Contract Lifecycle Management", capability: "NLP-assisted contract drafting, automated compliance monitoring, and maverick spend auditing", module: "Ariba", deploymentType: "Optimization" }, kpis: { "Contract utilization rate": "Top quartile for companies with full CLM and spend analytics integration." } },
+  // ─── 8.1 Sales Order Management (Deep O2C) ───
+  "o2c-028": { lever: { name: "Intelligent Order Capture", capability: "Multi-channel order ingestion (EDI, portal, email, phone) with AI-powered validation against pricing, credit, and contract rules — eliminates manual re-keying", module: "SD-SLS", deploymentType: "S/4HANA Migration" }, kpis: { "Order entry cycle time": "Top quartile for companies with multi-channel auto-capture enabled. Manual median: 15 minutes.", "Touchless order rate": "Top quartile for companies with automated order validation and zero-touch processing.", "Order error rate": "Top quartile for companies with rule-based order validation at point of entry." } },
+  "o2c-029": { lever: { name: "Master Data Intelligence", capability: "AI-powered customer onboarding with automated validation, duplicate detection, and enrichment from external data sources", module: "SD-SLS", deploymentType: "S/4HANA Migration" }, kpis: { "Customer master data accuracy": "Top quartile for companies with automated MDG validation and external enrichment.", "New customer setup cycle time": "Top quartile for companies with AI-assisted onboarding. Manual median: 48 hours.", "Duplicate account rate": "Top quartile for companies with ML-powered duplicate detection across hierarchies." } },
+  "o2c-030": { lever: { name: "Advanced Available-to-Promise (aATP)", capability: "Real-time global inventory check with intelligent allocation based on customer priority, margin contribution, and supply constraints — replaces batch ATP with continuous availability", module: "SD-SLS", deploymentType: "S/4HANA Migration" }, kpis: { "ATP accuracy": "Top quartile for companies with aATP and global inventory visibility active.", "Order promise reliability": "Top quartile for companies with ML-based delivery date prediction.", "Order fill rate": "Top quartile for companies with intelligent allocation and real-time ATP. Each percentage point of fill rate improvement directly recovers revenue." } },
+  "o2c-031": { lever: { name: "Dynamic Pricing Intelligence", capability: "AI-powered pricing engine applies condition records, contract pricing, and margin guardrails at point of entry — detects anomalies versus customer history before confirmation", module: "SD-BF", deploymentType: "S/4HANA Migration" }, kpis: { "Pricing accuracy rate": "Top quartile for companies with centralized pricing hub and automated condition management.", "Order confirmation cycle time": "Top quartile for companies with automated order entry and instant confirmation.", "Manual pricing overrides": "Top quartile for companies with AI-validated pricing and automated guardrails." } },
+  "o2c-032": { lever: { name: "Intelligent Backorder Management", capability: "AI-prioritized backorder resolution with automated release when supply arrives — monitors backlog against incoming supply and prioritizes by customer tier and margin", module: "SD-SLS", deploymentType: "S/4HANA Migration" }, kpis: { "Backorder resolution cycle time": "Top quartile for companies with automated backorder management. Manual median: 10 days.", "Backorder rate": "Top quartile for companies with predictive demand sensing and proactive allocation.", "Order change processing time": "Top quartile for companies with self-service order modification and impact assessment." } },
 };
 const getSapLever = (procId) => SAP_LEVER_MAP[procId] || null;
 const getBenchmarkContext = (procId, kpiName) => { const e = SAP_LEVER_MAP[procId]; return e ? (e.kpis[kpiName] || null) : null; };
@@ -971,23 +977,51 @@ const fm = v => { if (v == null || typeof v !== "number" || !isFinite(v)) return
 const fd = v => { if (v == null || typeof v !== "number" || !isFinite(v)) return "—"; if (Math.abs(v) < 0.5) return "—"; const s = v >= 0 ? "+" : ""; return Math.abs(v) >= 1000 ? `${s}$${(v / 1000).toFixed(1)}B` : `${s}$${v.toFixed(0)}M`; };
 
 /* ═══════════════════════════════════════════════════════
-   GROWTH SIGNAL DETECTION
+   GROWTH SIGNAL DETECTION — three-verdict system
+   A: Revenue Play (gold)   — direct revenue formula exists
+   B: Time-Back (amber)     — labor efficiency, indirect uplift
+   C: Cost Reduction (gray) — compliance/cost, no revenue angle
    ═══════════════════════════════════════════════════════ */
-const detectGrowthPlay = (proc) => {
-  if (!proc?.valLevers) return { isGrowthPlay: false, growthLevers: [] };
-  const growthKeywords = /revenue|growth|fill rate|pricing|customer|upsell|cross.sell|retention|churn|lifetime.value|CLV|NRR|expansion/i;
-  const growthLevers = proc.valLevers.filter(lv =>
-    lv.fintype === "Revenue" ||
-    lv.vclass === "Revenue Leakage" ||
-    lv.vclass === "Revenue Growth" ||
-    growthKeywords.test(lv.lever)
+const detectGrowthVerdict = (proc) => {
+  if (!proc?.valLevers) return { verdict: "C", growthLevers: [], efficiencyLevers: [], primaryValue: "cost reduction" };
+
+  // Verdict A levers: fintype Revenue AND vclass contains Revenue Leakage/Growth
+  const revenueLevers = proc.valLevers.filter(lv =>
+    lv.fintype === "Revenue" && lv.vclass && /revenue leakage|revenue growth/i.test(lv.vclass)
   );
-  return { isGrowthPlay: growthLevers.length > 0, growthLevers };
+
+  // Verdict B levers: high labor efficiency but no direct revenue
+  const efficiencyLevers = proc.valLevers.filter(lv =>
+    lv.vclass === "Labor Efficiency" || lv.vclass === "Standardization"
+  );
+
+  // Determine primary value label for Verdict C
+  const primaryValue = proc.valLevers.some(lv => /risk|compliance/i.test(lv.vclass || "")) ? "risk reduction"
+    : proc.valLevers.some(lv => /labor/i.test(lv.vclass || "")) ? "labor savings"
+    : proc.valLevers.some(lv => /cycle|time/i.test(lv.lever || "")) ? "cycle time reduction"
+    : "cost reduction";
+
+  if (revenueLevers.length > 0) return { verdict: "A", growthLevers: revenueLevers, efficiencyLevers, primaryValue };
+  if (efficiencyLevers.length > 0) return { verdict: "B", growthLevers: [], efficiencyLevers, primaryValue };
+  return { verdict: "C", growthLevers: [], efficiencyLevers: [], primaryValue };
 };
 
-/* Growth Play Banner */
-const GrowthPlayBanner = ({ proc, growthLevers, theme }) => {
+/* Revenue Driver Classification */
+const getRevenueDriver = (proc) => {
+  const kpiNames = (proc.kpis || []).map(k => k.name.toLowerCase()).join(" ");
+  const leverNames = (proc.valLevers || []).map(l => l.lever.toLowerCase()).join(" ");
+  const all = kpiNames + " " + leverNames;
+  if (/pric(e|ing)|realization|margin|leakage|rebate|discount|override/.test(all))
+    return { driver: "Price Realization", icon: "◆", desc: "Recovers revenue lost through pricing errors, unauthorized discounts, and contract non-compliance. No volume increase required — this plugs leakage on existing sales.", color: GOLD };
+  if (/fill rate|backorder|cancellation|return rate|stock.?out|availability/.test(all))
+    return { driver: "Volume Recovery", icon: "◇", desc: "Recovers revenue lost when available demand goes unfulfilled — backorders, stock-outs, and order cancellations. Demand already exists; fulfillment captures it.", color: GREEN };
+  return { driver: "Revenue Uplift", icon: "○", desc: "Direct revenue impact through process improvement.", color: GOLD };
+};
+
+/* Verdict A Banner — Revenue Play (gold) with driver context */
+const RevenuePlayBanner = ({ proc, growthLevers, theme }) => {
   const t = theme;
+  const revDriver = getRevenueDriver(proc);
   return (
     <div style={{
       background: `linear-gradient(135deg, ${GOLD}22, ${GOLD}0A)`,
@@ -995,55 +1029,131 @@ const GrowthPlayBanner = ({ proc, growthLevers, theme }) => {
       borderRadius: 10,
       padding: "12px 16px",
       marginBottom: 10,
-      display: "flex",
-      alignItems: "center",
-      gap: 12,
       boxShadow: `0 0 20px ${GOLD}15, 0 0 40px ${GOLD}08`,
     }}>
-      <span style={{ fontSize: 20, filter: "drop-shadow(0 0 4px rgba(212,168,83,0.4))" }}>↑</span>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: GOLD, marginBottom: 3, letterSpacing: "0.01em" }}>
-          Sales Growth & Innovation Play
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+        <span style={{ fontSize: 20, filter: "drop-shadow(0 0 4px rgba(212,168,83,0.4))" }}>↑</span>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: GOLD, letterSpacing: "0.01em" }}>
+            Sales Growth & Innovation Play
+          </div>
         </div>
-        <div style={{ fontSize: 10, color: t.tx2, lineHeight: 1.4 }}>
-          This process has direct revenue uplift potential beyond cost reduction
-        </div>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
         <span style={{
           fontSize: 9, padding: "3px 10px", borderRadius: 4,
           background: GOLD + "25", color: GOLD, fontWeight: 700,
           textTransform: "uppercase", letterSpacing: 0.5,
-        }}>Revenue Play</span>
-        <span style={{ fontSize: 9, color: t.mut }}>{growthLevers.length} growth lever{growthLevers.length !== 1 ? "s" : ""}</span>
+        }}>{revDriver.driver}</span>
+      </div>
+      <div style={{ fontSize: 10, color: t.tx2, lineHeight: 1.6, marginLeft: 32 }}>
+        {revDriver.desc}
       </div>
     </div>
   );
 };
 
-/* Growth Impact Calculator */
-const GrowthImpactCalculator = ({ proc, growthLevers, baseline, theme }) => {
+/* Verdict B Banner — Time-Back Opportunity (amber) */
+const AMBER = "#C49A3C";
+const TimeBackBanner = ({ theme }) => {
   const t = theme;
-  const [showCalc, setShowCalc] = React.useState(false);
+  return (
+    <div style={{
+      background: `linear-gradient(135deg, ${AMBER}15, ${AMBER}06)`,
+      border: `1px solid ${AMBER}40`,
+      borderRadius: 10,
+      padding: "12px 16px",
+      marginBottom: 10,
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
+    }}>
+      <span style={{ fontSize: 18, opacity: 0.8 }}>⏱</span>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: AMBER, marginBottom: 3 }}>
+          Time-Back Opportunity
+        </div>
+        <div style={{ fontSize: 10, color: t.tx2, lineHeight: 1.5 }}>
+          Automating this process frees capacity. If redeployed to revenue-generating activity, indirect uplift is possible — validate with client data.
+        </div>
+      </div>
+      <span style={{
+        fontSize: 9, padding: "3px 10px", borderRadius: 4,
+        background: AMBER + "20", color: AMBER, fontWeight: 700,
+        textTransform: "uppercase", letterSpacing: 0.5,
+      }}>Indirect</span>
+    </div>
+  );
+};
 
-  // Find the best agentBenchmark for fill rate from this process's KPIs
-  const fillRateKpi = (proc.kpis || []).find(k => /fill rate/i.test(k.name));
-  const defaultTargetFill = fillRateKpi?.agentBenchmark ?? 98.5;
-  const defaultCurrentFill = fillRateKpi?.benchmark ?? 95;
+/* Verdict C Note — Cost Reduction (gray) */
+const CostReductionNote = ({ primaryValue, theme }) => {
+  const t = theme;
+  return (
+    <div style={{ fontSize: 10, color: t.mut, padding: "6px 10px", marginBottom: 8, fontStyle: "italic", lineHeight: 1.5 }}>
+      This is a cost reduction process. Revenue impact is indirect. Primary value: {primaryValue}.
+    </div>
+  );
+};
 
-  const [annualRevenue, setAnnualRevenue] = React.useState("500");
-  const [currentFillRate, setCurrentFillRate] = React.useState(String(defaultCurrentFill));
-  const [targetFillRate, setTargetFillRate] = React.useState(String(defaultTargetFill));
+/* Growth Impact Calculator — context-aware per revenue driver */
+const GrowthImpactCalculator = ({ proc, growthLevers, financials, theme }) => {
+  const t = theme;
+  const [showCalc, setShowCalc] = React.useState(true);
+  const [showMethod, setShowMethod] = React.useState(true);
+  const revDriver = getRevenueDriver(proc);
+  const isPricing = revDriver.driver === "Price Realization";
+
+  // Pull revenue from P&L / baseline — never a hardcoded guess
+  const revenueFromPnl = financials?.revenue || 0;
+  const revenueSource = financials?.source || "Not provided";
+
+  // Find the best KPI for this driver type
+  const rateKpi = isPricing
+    ? (proc.kpis || []).find(k => /pric.*accuracy|realization/i.test(k.name))
+    : (proc.kpis || []).find(k => /fill rate/i.test(k.name));
+  const defaultTarget = rateKpi?.agentBenchmark != null
+    ? (rateKpi.unit === "%" && rateKpi.agentBenchmark > 100 ? Math.min(rateKpi.agentBenchmark, 99.9) : rateKpi.agentBenchmark)
+    : (isPricing ? 99.8 : 98.5);
+  const defaultCurrent = rateKpi?.benchmark ?? (isPricing ? 98.5 : 95);
+
+  const [annualRevenue, setAnnualRevenue] = React.useState(String(revenueFromPnl || ""));
+  const [currentRate, setCurrentRate] = React.useState(String(defaultCurrent));
+  const [targetRate, setTargetRate] = React.useState(String(defaultTarget));
 
   const result = React.useMemo(() => {
     const rev = parseFloat(annualRevenue) || 0;
-    const current = parseFloat(currentFillRate) || 0;
-    const target = parseFloat(targetFillRate) || 0;
+    const current = parseFloat(currentRate) || 0;
+    const target = parseFloat(targetRate) || 0;
+    if (rev <= 0) return null;
+    if (isPricing) {
+      // Price Realization: error rate shrinks → leakage recovered
+      const currentErrorPct = 100 - current;
+      const targetErrorPct = 100 - target;
+      const errorReduction = currentErrorPct - targetErrorPct;
+      if (errorReduction <= 0) return null;
+      const recovered = rev * (errorReduction / 100);
+      return {
+        recovered, gap: errorReduction,
+        formula: `$${rev}M × (${currentErrorPct.toFixed(1)}% error → ${targetErrorPct.toFixed(1)}% error) = $${recovered.toFixed(1)}M recovered`,
+        currentLabel: `${current}% accuracy (${currentErrorPct.toFixed(1)}% error rate)`,
+        targetLabel: `${target}% accuracy (${targetErrorPct.toFixed(1)}% error rate)`,
+        gapLabel: `${errorReduction.toFixed(1)} ppt error reduction`,
+      };
+    }
+    // Volume Recovery: fill rate gap → revenue captured
     const gap = target - current;
-    if (gap <= 0 || rev <= 0) return null;
+    if (gap <= 0) return null;
     const recovered = rev * (gap / 100);
-    return { recovered, gap, formula: `$${rev}M × ${gap.toFixed(1)}% ÷ 100 = $${recovered.toFixed(1)}M` };
-  }, [annualRevenue, currentFillRate, targetFillRate]);
+    return {
+      recovered, gap,
+      formula: `$${rev}M × ${gap.toFixed(1)}% fill rate improvement ÷ 100 = $${recovered.toFixed(1)}M`,
+      currentLabel: `${current}% fill rate`,
+      targetLabel: `${target}% fill rate`,
+      gapLabel: `${gap.toFixed(1)} ppt improvement`,
+    };
+  }, [annualRevenue, currentRate, targetRate, isPricing]);
+
+  const rateLabel = isPricing ? "Pricing Accuracy" : "Fill Rate";
+  const inputStyle = { width: "100%", background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 4, padding: "6px 8px", color: t.tx, fontFamily: "monospace", fontSize: 13, boxSizing: "border-box" };
 
   if (!showCalc) {
     return (
@@ -1074,35 +1184,47 @@ const GrowthImpactCalculator = ({ proc, growthLevers, baseline, theme }) => {
         }}>Close ×</button>
       </div>
 
+      {/* Revenue Driver — always visible */}
+      <div style={{ padding: "10px 14px", background: t.card, borderRadius: 8, border: `1px solid ${revDriver.color}25`, marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+          <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 3, background: revDriver.color + "20", color: revDriver.color, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>{revDriver.driver}</span>
+          <span style={{ fontSize: 9, color: t.mut }}>
+            {isPricing ? "Not a volume play — not a price increase" : "Not a pricing play — demand already exists"}
+          </span>
+        </div>
+        <div style={{ fontSize: 11, color: t.tx2, lineHeight: 1.6 }}>{revDriver.desc}</div>
+      </div>
+
+      {/* Context-aware inputs */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
         <div>
-          <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase", marginBottom: 4, letterSpacing: 0.3 }}>Current Annual Revenue ($M)</div>
-          <input type="number" value={annualRevenue}
-            onChange={e => setAnnualRevenue(e.target.value)}
-            style={{ width: "100%", background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 4, padding: "6px 8px", color: t.tx, fontFamily: "monospace", fontSize: 13, boxSizing: "border-box" }} />
-        </div>
-        <div>
-          <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase", marginBottom: 4, letterSpacing: 0.3 }}>Current Fill Rate (%)</div>
-          <input type="number" step="0.1" value={currentFillRate}
-            onChange={e => setCurrentFillRate(e.target.value)}
-            style={{ width: "100%", background: t.card, border: `1px solid ${t.bdr}`, borderRadius: 4, padding: "6px 8px", color: t.tx, fontFamily: "monospace", fontSize: 13, boxSizing: "border-box" }} />
-        </div>
-        <div>
-          <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase", marginBottom: 4, letterSpacing: 0.3 }}>
-            Target Fill Rate (%)
-            {fillRateKpi?.agentBenchmark && <span style={{ color: GOLD, marginLeft: 4, fontWeight: 600 }}>from benchmark</span>}
+          <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase", marginBottom: 4, letterSpacing: 0.3 }}>Annual Revenue ($M)</div>
+          <input type="number" value={annualRevenue} onChange={e => setAnnualRevenue(e.target.value)}
+            placeholder="Enter revenue" style={inputStyle} />
+          <div style={{ fontSize: 8, color: revenueFromPnl ? GREEN : RED, marginTop: 3, fontWeight: 600, opacity: 0.8 }}>
+            Source: {revenueFromPnl ? revenueSource : "No P&L loaded — enter manually"}
           </div>
-          <input type="number" step="0.1" value={targetFillRate}
-            onChange={e => setTargetFillRate(e.target.value)}
-            style={{ width: "100%", background: t.card, border: `1px solid ${GOLD}44`, borderRadius: 4, padding: "6px 8px", color: GOLD, fontFamily: "monospace", fontSize: 13, fontWeight: 600, boxSizing: "border-box" }} />
+        </div>
+        <div>
+          <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase", marginBottom: 4, letterSpacing: 0.3 }}>Current {rateLabel} (%)</div>
+          <input type="number" step="0.1" value={currentRate} onChange={e => setCurrentRate(e.target.value)} style={inputStyle} />
+          <div style={{ fontSize: 8, color: t.mut, marginTop: 3, fontWeight: 600, opacity: 0.8 }}>Source: {rateKpi ? `${rateKpi.src || "APQC"} benchmark` : "Default estimate"}</div>
+        </div>
+        <div>
+          <div style={{ fontSize: 9, color: t.mut, textTransform: "uppercase", marginBottom: 4, letterSpacing: 0.3 }}>Target {rateLabel} (%)</div>
+          <input type="number" step="0.1" value={targetRate} onChange={e => setTargetRate(e.target.value)}
+            style={{ ...inputStyle, border: `1px solid ${GOLD}44`, color: GOLD, fontWeight: 600 }} />
+          <div style={{ fontSize: 8, color: GOLD, marginTop: 3, fontWeight: 600, opacity: 0.8 }}>Source: APQC top quartile benchmark</div>
         </div>
       </div>
 
+      {/* Result */}
       {result && (
         <div style={{ background: t.card, borderRadius: 8, padding: "12px 14px", border: `1px solid ${GOLD}33` }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
             <span style={{ fontSize: 10, color: t.mut, textTransform: "uppercase", letterSpacing: 0.3 }}>Revenue Recovered</span>
             <span style={{ fontSize: 22, fontWeight: 700, color: GOLD, fontFamily: SERIF }}>${result.recovered.toFixed(1)}M</span>
+            <span style={{ fontSize: 10, color: t.mut }}>/ year</span>
           </div>
           <div style={{ fontSize: 10, color: t.tx2, fontFamily: "monospace", marginBottom: 10, padding: "6px 8px", background: t.bg, borderRadius: 4 }}>
             {result.formula}
@@ -1120,9 +1242,76 @@ const GrowthImpactCalculator = ({ proc, growthLevers, baseline, theme }) => {
         </div>
       )}
 
-      <div style={{ fontSize: 9, color: t.mut, marginTop: 10, lineHeight: 1.5 }}>
-        Directional estimate based on fill-rate improvement potential. Actual recovery depends on root cause mix, implementation maturity, and market conditions. Always validate with client-specific order data.
-      </div>
+      {/* Expandable methodology */}
+      {result && (
+        <div style={{ marginTop: 10 }}>
+          <button onClick={() => setShowMethod(v => !v)} style={{
+            fontSize: 9, background: "transparent", border: "none", color: t.mut,
+            cursor: "pointer", fontFamily: FONT, padding: 0, textDecoration: "underline",
+            textUnderlineOffset: 2,
+          }}>{showMethod ? "▾ Hide methodology" : "▸ How this is calculated"}</button>
+          {showMethod && (() => {
+            const narrative = CALC_NARRATIVE[proc.id];
+            const sapLever = getSapLever(proc.id);
+            return (
+            <div style={{ marginTop: 8, padding: "12px 14px", background: t.card, borderRadius: 8, border: `1px solid ${t.bdr}`, fontSize: 10, color: t.tx2, lineHeight: 1.7 }}>
+              {/* Value Levers */}
+              <div style={{ fontSize: 9, color: GOLD, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Value Levers</div>
+              {growthLevers.map((lv, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                  <span style={{ width: 3, height: 3, borderRadius: "50%", background: GOLD, flexShrink: 0 }} />
+                  <span>{lv.lever}</span>
+                  <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, background: GOLD + "15", color: GOLD, fontWeight: 600 }}>{lv.vclass}</span>
+                </div>
+              ))}
+
+              {/* SAP + Agent explanation */}
+              {(sapLever || narrative) && (
+                <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${t.bdr}` }}>
+                  {sapLever && (
+                    <div style={{ marginBottom: 8 }}>
+                      <div style={{ fontSize: 9, color: BLUE, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>SAP Lever: {sapLever.lever.name}</div>
+                      <div style={{ color: t.tx2 }}>{sapLever.lever.capability}</div>
+                    </div>
+                  )}
+                  {narrative?.agentAction && (
+                    <div style={{ marginBottom: 8 }}>
+                      <div style={{ fontSize: 9, color: GOLD, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>AI Agent Adds</div>
+                      <div style={{ color: t.tx2 }}>{narrative.agentAction}</div>
+                    </div>
+                  )}
+                  {narrative?.mechanism && (
+                    <div>
+                      <div style={{ fontSize: 9, color: t.mut, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>Why This Matters</div>
+                      <div style={{ color: t.tx2 }}>{narrative.mechanism}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Calculation breakdown */}
+              <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${t.bdr}` }}>
+                <div style={{ fontSize: 9, color: t.mut, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Calculation</div>
+                <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "4px 10px" }}>
+                  <span style={{ color: t.mut, fontWeight: 600 }}>Current:</span>
+                  <span>{result.currentLabel}</span>
+                  <span style={{ color: t.mut, fontWeight: 600 }}>Target:</span>
+                  <span>{result.targetLabel} — APQC top quartile</span>
+                  <span style={{ color: t.mut, fontWeight: 600 }}>Gap:</span>
+                  <span>{result.gapLabel}</span>
+                  <span style={{ color: t.mut, fontWeight: 600 }}>Revenue impact:</span>
+                  <span>${annualRevenue}M × gap = <span style={{ color: GOLD, fontWeight: 700 }}>${result.recovered.toFixed(1)}M</span></span>
+                </div>
+              </div>
+
+              <div style={{ marginTop: 10, paddingTop: 8, borderTop: `1px solid ${t.bdr}`, fontStyle: "italic", color: t.mut }}>
+                Floor estimate — actual recovery depends on implementation maturity and root cause mix. Validate with client order-level data.
+              </div>
+            </div>
+            );
+          })()}
+        </div>
+      )}
     </div>
   );
 };
@@ -5584,7 +5773,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
 
                     {/* Value Levers */}
                     {(proc.valLevers || []).map((lv, li) => {
-                      const isGrowthLever = lv.fintype === "Revenue" || lv.vclass === "Revenue Leakage" || lv.vclass === "Revenue Growth" || /revenue|growth|fill rate|pricing|customer/i.test(lv.lever);
+                      const isGrowthLever = (lv.fintype === "Revenue" && lv.vclass && /revenue leakage|revenue growth/i.test(lv.vclass));
                       return (
                       <div key={li} style={{ padding: "8px 10px", background: isGrowthLever ? GOLD + "06" : t.bg, borderRadius: 8, marginBottom: 6, border: `1px solid ${isGrowthLever ? GOLD + "44" : t.bdr}`, borderLeft: isGrowthLever ? `3px solid ${GOLD}` : undefined }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: t.tx, fontWeight: 500, marginBottom: 6 }}>
@@ -5721,15 +5910,17 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                       {(proc.blueprintTiers || []).map(tid => { const bt = BLUEPRINT_TIER_MAP[tid]; return bt ? <span key={tid} style={{ fontSize: 9, padding: "1px 6px", borderRadius: 8, background: bt.color + "20", color: bt.color, border: `1px solid ${bt.color}33` }}>{bt.icon} {bt.name}</span> : null; })}
                     </div>
 
-                    {/* Growth Play Banner & Calculator */}
+                    {/* Growth Verdict — A / B / C */}
                     {(() => {
-                      const { isGrowthPlay, growthLevers } = detectGrowthPlay(proc);
-                      return isGrowthPlay ? (
+                      const { verdict, growthLevers, primaryValue } = detectGrowthVerdict(proc);
+                      if (verdict === "A") return (
                         <>
-                          <GrowthPlayBanner proc={proc} growthLevers={growthLevers} theme={t} />
-                          <GrowthImpactCalculator proc={proc} growthLevers={growthLevers} baseline={baseline} theme={t} />
+                          <RevenuePlayBanner proc={proc} growthLevers={growthLevers} theme={t} />
+                          <GrowthImpactCalculator proc={proc} growthLevers={growthLevers} financials={effectiveFinancials} theme={t} />
                         </>
-                      ) : null;
+                      );
+                      if (verdict === "B") return <TimeBackBanner theme={t} />;
+                      return <CostReductionNote primaryValue={primaryValue} theme={t} />;
                     })()}
 
                     {/* Section Tabs */}
