@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ignite for Payer Health · humaninthelead.ai</title>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Epilogue:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07111e;--panel:#0d1c2e;--card:#112035;--cardh:#172b45;
+  --bdr:#1b3050;--bdrl:#274e7a;
+  --teal:#12c4a0;--tealDim:rgba(18,196,160,.1);--tealGlw:rgba(18,196,160,.4);
+  --amber:#e8b84b;--ambDim:rgba(232,184,75,.1);--ambGlw:rgba(232,184,75,.35);
+  --red:#e05c5c;--redDim:rgba(224,92,92,.1);
+  --blue:#4a9eff;--blueDim:rgba(74,158,255,.1);
+  --t1:#e2eaf4;--t2:#7ba0c0;--t3:#456680;
+  --ds:'Spectral',Georgia,serif;--db:'Epilogue',system-ui,sans-serif;--dm:'DM Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--db);background:var(--bg);color:var(--t1);min-height:100vh;overflow-x:hidden}
+
+/* ── GATE ── */
+#gate{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center}
+.gw{text-align:center;max-width:360px;padding:0 24px}
+.g-eye{font-family:var(--dm);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--t3);margin-bottom:24px}
+.g-title{font-family:var(--ds);font-size:38px;font-weight:600;line-height:1.1;margin-bottom:6px}
+.g-title em{color:var(--amber);font-style:normal}
+.g-sub{font-family:var(--dm);font-size:11px;color:var(--t3);margin-bottom:32px;letter-spacing:.06em}
+.g-in{width:100%;background:transparent;border:1px solid var(--bdr);border-radius:6px;color:var(--t1);font-family:var(--dm);font-size:13px;padding:13px 16px;outline:none;text-align:center;letter-spacing:.12em;transition:border-color .2s;margin-bottom:10px}
+.g-in:focus{border-color:var(--amber)}
+.g-btn{width:100%;padding:12px;background:var(--ambDim);border:1px solid var(--amber);border-radius:6px;color:var(--amber);font-family:var(--dm);font-size:11px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s}
+.g-btn:hover{background:var(--amber);color:#07111e}
+.g-err{font-family:var(--dm);font-size:11px;color:var(--red);height:18px;margin-bottom:8px;transition:all .2s}
+.g-foot{font-family:var(--dm);font-size:9px;color:var(--t3);margin-top:24px;letter-spacing:.06em}
+#shell{display:none}
+
+/* ── WIP BANNER ── */
+.wip-banner{
+  background:repeating-linear-gradient(
+    -45deg,
+    rgba(232,184,75,.12),
+    rgba(232,184,75,.12) 12px,
+    rgba(232,184,75,.04) 12px,
+    rgba(232,184,75,.04) 24px
+  );
+  border-bottom:2px solid var(--amber);
+  padding:18px 32px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  flex-wrap:wrap;
+}
+.wip-left{display:flex;align-items:center;gap:16px}
+.wip-pill{background:var(--amber);color:#07111e;font-family:var(--dm);font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:5px 12px;border-radius:3px;flex-shrink:0;animation:wipPulse 2.4s ease-in-out infinite}
+@keyframes wipPulse{0%,100%{opacity:1}50%{opacity:.65}}
+.wip-title{font-family:var(--ds);font-size:22px;font-weight:600;color:var(--t1);letter-spacing:.01em}
+.wip-title em{color:var(--amber);font-style:normal}
+.wip-msg{font-size:12px;color:var(--t3);line-height:1.5;max-width:440px}
+
+.hdr{background:var(--panel);border-bottom:1px solid var(--bdr);height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:300}
+.hdr-l{display:flex;align-items:center;gap:16px}
+.hdr-brand{font-family:var(--ds);font-size:15px;font-weight:600;letter-spacing:.02em}
+.hdr-brand em{color:var(--teal);font-style:normal}
+.mode-badge{font-family:var(--dm);font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:3px;border:1px solid var(--bdr);color:var(--t3);transition:all .3s}
+.mode-badge.deep{border-color:var(--teal);color:var(--teal);background:var(--tealDim)}
+.hdr-r{font-family:var(--dm);font-size:9px;color:var(--t3);letter-spacing:.06em}
+
+/* ── NAV ── */
+.nav{background:var(--panel);border-bottom:1px solid var(--bdr);display:flex;padding:0 24px;overflow-x:auto;scrollbar-width:none;position:sticky;top:0;z-index:200}
+.nav::-webkit-scrollbar{display:none}
+.nv{padding:0 14px;height:44px;display:flex;align-items:center;gap:6px;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s;user-select:none}
+.nv:hover{color:var(--t2)}
+.nv.on{color:var(--teal);border-bottom-color:var(--teal)}
+.nv-i{font-family:var(--dm);font-size:9px;opacity:.45}
+
+/* ── MAIN ── */
+.main{max-width:1200px;margin:0 auto;padding:40px 32px}
+.sec{display:none}
+.sec.on{display:block;animation:fadeUp .3s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── TYPOGRAPHY ── */
+.lbl{font-family:var(--dm);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--teal);margin-bottom:8px}
+.h1{font-family:var(--ds);font-size:32px;font-weight:600;line-height:1.18;margin-bottom:8px}
+.sub{font-size:13px;color:var(--t2);line-height:1.7;max-width:600px;margin-bottom:36px}
+.div{height:1px;background:var(--bdr);margin:32px 0}
+
+/* ── GRID ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:900px){.g2,.g3,.g4{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.g2,.g3,.g4{grid-template-columns:1fr}}
+
+/* ── CARDS ── */
+.card{background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:22px}
+.ct{font-family:var(--ds);font-size:14px;font-weight:600;margin-bottom:8px}
+.cb{font-size:13px;color:var(--t2);line-height:1.65}
+
+/* ── STAT CARDS ── */
+.sc{background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:20px 16px;position:relative;overflow:hidden}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.sc.t::before{background:var(--teal)}.sc.a::before{background:var(--amber)}.sc.r::before{background:var(--red)}
+.sv{font-family:var(--dm);font-size:26px;font-weight:500;line-height:1;margin-bottom:4px}
+.sv.ct{color:var(--teal)}.sv.ca{color:var(--amber)}.sv.cr{color:var(--red)}
+.sl{font-size:11px;color:var(--t3);line-height:1.4}
+.sx{font-family:var(--dm);font-size:9px;color:var(--t3);margin-top:6px;opacity:.65}
+
+/* ── NARR ── */
+.narr{border-left:3px solid var(--teal);padding:12px 16px;background:var(--card);border-radius:0 6px 6px 0;margin-bottom:20px}
+.narr p{font-family:var(--ds);font-size:13px;font-style:italic;color:var(--t2);line-height:1.7}
+
+/* ══════════════════════════════════════
+   P&L BUILDER
+══════════════════════════════════════ */
+.pnl-layout{display:grid;grid-template-columns:340px 1fr;gap:24px}
+@media(max-width:900px){.pnl-layout{grid-template-columns:1fr}}
+
+/* Input panel */
+.inp-panel{background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:22px}
+.inp-sec{margin-bottom:24px}
+.inp-sec-title{font-family:var(--dm);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--teal);margin-bottom:14px;padding-bottom:6px;border-bottom:1px solid var(--bdr)}
+.ig{margin-bottom:14px}
+.il{font-size:11px;font-weight:600;color:var(--t2);margin-bottom:5px;display:flex;justify-content:space-between;align-items:center}
+.il .vv{font-family:var(--dm);font-size:11px;color:var(--teal)}
+.ni{width:100%;background:var(--bg);border:1px solid var(--bdr);border-radius:5px;color:var(--t1);font-family:var(--dm);font-size:12px;padding:8px 11px;outline:none;transition:border-color .2s}
+.ni:focus{border-color:var(--teal)}
+.ni.client{border-color:rgba(74,158,255,.4);background:rgba(74,158,255,.04)}
+.ni.client:focus{border-color:var(--blue)}
+.sel{width:100%;background:var(--bg);border:1px solid var(--bdr);border-radius:5px;color:var(--t1);font-family:var(--db);font-size:12px;padding:8px 11px;outline:none;cursor:pointer}
+.sel:focus{border-color:var(--teal)}
+.sel option{background:var(--panel)}
+.slider{width:100%;-webkit-appearance:none;height:3px;border-radius:2px;background:var(--bdr);outline:none;cursor:pointer}
+.slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--teal);cursor:pointer;box-shadow:0 0 6px var(--tealGlw)}
+
+/* Upload zone */
+.upload-zone{border:1.5px dashed var(--bdr);border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:12px}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--teal);background:var(--tealDim)}
+.upload-zone input{display:none}
+.uz-icon{font-size:22px;margin-bottom:6px}
+.uz-txt{font-size:12px;color:var(--t3);line-height:1.5}
+.uz-lnk{color:var(--teal);cursor:pointer}
+.dl-tpl{display:inline-flex;align-items:center;gap:5px;font-family:var(--dm);font-size:10px;color:var(--t3);cursor:pointer;border:1px solid var(--bdr);border-radius:4px;padding:4px 10px;transition:all .15s}
+.dl-tpl:hover{color:var(--teal);border-color:var(--teal)}
+
+/* P&L panel */
+.pnl-panel{background:var(--card);border:1px solid var(--bdr);border-radius:8px;overflow:hidden}
+.pnl-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--bdr)}
+.pnl-title{font-family:var(--dm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--t2)}
+.pnl-toggle{display:flex;gap:6px}
+.ptog{font-family:var(--dm);font-size:9px;padding:3px 10px;border-radius:3px;cursor:pointer;border:1px solid var(--bdr);color:var(--t3);transition:all .15s;user-select:none}
+.ptog.on{background:var(--tealDim);border-color:var(--teal);color:var(--teal)}
+.pnl-body{padding:8px 0}
+
+/* P&L rows */
+.pr{display:flex;align-items:center;padding:7px 20px;transition:background .15s;border-radius:4px;margin:1px 8px}
+.pr:hover{background:var(--cardh)}
+.pr.cat{background:rgba(0,0,0,.2);margin:3px 8px;border-radius:5px}
+.pr.sub{padding-left:36px}
+.pr.leaf{padding-left:52px}
+.pr.total{border-top:1px solid var(--bdr);margin-top:6px;padding-top:12px;background:rgba(0,0,0,.25)}
+.pr.negative .pv{color:var(--red)}
+.pr.positive .pv{color:var(--teal)}
+.pr.highlight-primary{background:var(--tealDim);border:1px solid rgba(18,196,160,.25);box-shadow:0 0 12px var(--tealGlw) inset}
+.pr.highlight-secondary{background:var(--ambDim);border:1px solid rgba(232,184,75,.2)}
+.pn{flex:1;font-size:12px;color:var(--t2)}
+.pr.cat .pn{font-weight:600;font-size:12px;color:var(--t1)}
+.pr.total .pn{font-weight:700;font-size:13px;color:var(--t1)}
+.pv{font-family:var(--dm);font-size:12px;color:var(--t2);min-width:80px;text-align:right}
+.pr.total .pv{font-size:13px;font-weight:700}
+.pb-bench{font-family:var(--dm);font-size:10px;color:var(--t3);min-width:72px;text-align:right}
+.pb-gap{font-family:var(--dm);font-size:10px;min-width:68px;text-align:right}
+.pb-gap.pos{color:var(--teal)}.pb-gap.neg{color:var(--red)}
+.pr-src{width:14px;height:14px;border-radius:50%;background:var(--bdr);display:flex;align-items:center;justify-content:center;font-size:8px;cursor:help;flex-shrink:0;margin-left:8px;color:var(--t3);font-family:var(--dm);transition:all .15s}
+.pr-src:hover{background:var(--teal);color:#07111e}
+.pnl-col-hdr{display:flex;align-items:center;padding:0 20px 6px;margin:0 8px;border-bottom:1px solid var(--bdr);margin-bottom:4px}
+.pnl-col-hdr span{font-family:var(--dm);font-size:9px;color:var(--t3);letter-spacing:.06em;text-transform:uppercase}
+
+/* Mode indicator */
+.mode-ind{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:6px;font-size:11px;margin-bottom:16px}
+.mode-ind.light{background:var(--ambDim);border:1px solid rgba(232,184,75,.2);color:var(--amber)}
+.mode-ind.deep{background:var(--tealDim);border:1px solid rgba(18,196,160,.2);color:var(--teal)}
+.mode-ind .mi{font-family:var(--dm);font-size:10px}
+
+/* data completeness bar */
+.dcomp{margin-bottom:16px}
+.dcomp-l{display:flex;justify-content:space-between;font-family:var(--dm);font-size:10px;color:var(--t3);margin-bottom:5px}
+.dcomp-b{height:4px;background:var(--bdr);border-radius:2px;overflow:hidden}
+.dcomp-f{height:100%;border-radius:2px;background:var(--teal);transition:width .4s ease}
+
+/* ══════════════════════════════════════
+   DRIVER TREE
+══════════════════════════════════════ */
+.tree-layout{display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start}
+@media(max-width:1000px){.tree-layout{grid-template-columns:1fr}}
+
+.tree-wrap{background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:20px;overflow-x:auto}
+.tree-root-node{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--panel);border:1px solid var(--bdrl);border-radius:7px;margin-bottom:18px}
+.trn-label{font-family:var(--ds);font-size:15px;font-weight:600}
+.trn-val{font-family:var(--dm);font-size:13px;color:var(--teal);margin-left:auto}
+
+.tree-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:800px){.tree-cols{grid-template-columns:1fr 1fr}}
+
+.tree-cat{background:var(--panel);border:1px solid var(--bdr);border-radius:7px;overflow:hidden}
+.tree-cat-hdr{padding:10px 14px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between}
+.tch-label{font-family:var(--dm);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+.tch-pmpm{font-family:var(--dm);font-size:11px;color:var(--teal)}
+.tree-cat.inpatient .tch-label{color:#e05c5c}
+.tree-cat.outpatient .tch-label{color:#4a9eff}
+.tree-cat.professional .tch-label{color:#a78bfa}
+.tree-cat.pharmacy .tch-label{color:#e8b84b}
+.tree-cat.behavioral .tch-label{color:#f472b6}
+.tree-cat.admin .tch-label{color:#12c4a0}
+
+.tree-driver{padding:9px 14px;border-bottom:1px solid var(--bdr);transition:all .25s;cursor:default}
+.tree-driver:last-child{border-bottom:none}
+.td-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.td-name{font-size:11px;color:var(--t2);font-weight:500}
+.td-unit{font-family:var(--dm);font-size:9px;color:var(--t3)}
+.td-vals{display:flex;gap:8px;align-items:center}
+.td-bench{font-family:var(--dm);font-size:10px;color:var(--t3)}
+.td-client{font-family:var(--dm);font-size:11px;color:var(--blue)}
+.td-gap{font-family:var(--dm);font-size:10px}
+.td-gap.better{color:var(--teal)}.td-gap.worse{color:var(--red)}.td-gap.neutral{color:var(--t3)}
+.td-bar{height:2px;background:var(--bdr);border-radius:1px;margin-top:5px;overflow:hidden}
+.td-bar-f{height:100%;border-radius:1px;background:var(--t3);transition:width .4s,background .25s}
+
+/* Driver highlight states */
+.tree-driver.primary{background:var(--tealDim);border-bottom-color:rgba(18,196,160,.15)}
+.tree-driver.primary .td-name{color:var(--teal)}
+.tree-driver.primary .td-bar-f{background:var(--teal)}
+.tree-driver.secondary{background:var(--ambDim);border-bottom-color:rgba(232,184,75,.1)}
+.tree-driver.secondary .td-name{color:var(--amber)}
+.tree-driver.secondary .td-bar-f{background:var(--amber)}
+.tree-cat.cat-primary-active{border-color:rgba(18,196,160,.35);box-shadow:0 0 16px var(--tealGlw)}
+.tree-cat.cat-secondary-active{border-color:rgba(232,184,75,.25);box-shadow:0 0 10px var(--ambGlw)}
+
+/* ══════════════════════════════════════
+   INITIATIVE SELECTOR
+══════════════════════════════════════ */
+.init-layout{display:grid;grid-template-columns:280px 1fr;gap:22px;align-items:start}
+@media(max-width:900px){.init-layout{grid-template-columns:1fr}}
+
+.init-list{background:var(--card);border:1px solid var(--bdr);border-radius:8px;overflow:hidden}
+.init-item{padding:14px 16px;border-bottom:1px solid var(--bdr);cursor:pointer;transition:all .2s;display:flex;align-items:flex-start;gap:11px}
+.init-item:last-child{border-bottom:none}
+.init-item:hover{background:var(--cardh)}
+.init-item.active{background:var(--tealDim);border-color:transparent}
+.init-item.active .ii-num{color:var(--teal);border-color:var(--teal)}
+.init-item.active .ii-name{color:var(--teal)}
+.ii-num{font-family:var(--dm);font-size:9px;color:var(--t3);border:1px solid var(--bdr);border-radius:3px;padding:2px 6px;flex-shrink:0;margin-top:1px;transition:all .2s}
+.ii-name{font-size:12px;font-weight:600;margin-bottom:3px;transition:color .2s}
+.ii-range{font-family:var(--dm);font-size:10px;color:var(--teal)}
+.ii-tl{font-family:var(--dm);font-size:9px;color:var(--t3)}
+
+/* Impact detail panel */
+.impact-panel{background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:22px}
+.ip-none{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:320px;color:var(--t3);text-align:center}
+.ip-none .icon{font-size:32px;margin-bottom:12px;opacity:.4}
+.ip-none p{font-size:12px;line-height:1.6;max-width:240px}
+.impact-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:16px}
+.ih-title{font-family:var(--ds);font-size:18px;font-weight:600;margin-bottom:6px}
+.ih-range{font-family:var(--dm);font-size:12px;color:var(--teal)}
+.ih-tl{font-family:var(--dm);font-size:10px;color:var(--t3);margin-top:3px}
+.ih-calc{text-align:right}
+.ihc-val{font-family:var(--dm);font-size:22px;color:var(--teal)}
+.ihc-lbl{font-size:10px;color:var(--t3);margin-top:2px}
+
+.impact-section{margin-bottom:20px}
+.is-title{font-family:var(--dm);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--bdr)}
+
+.driver-impact-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:6px;margin-bottom:6px}
+.dir-primary{background:var(--tealDim);border:1px solid rgba(18,196,160,.2)}
+.dir-secondary{background:var(--ambDim);border:1px solid rgba(232,184,75,.15)}
+.dir-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dir-primary .dir-dot{background:var(--teal)}
+.dir-secondary .dir-dot{background:var(--amber)}
+.dir-name{flex:1;font-size:11px;color:var(--t2)}
+.dir-impact{font-family:var(--dm);font-size:10px}
+.dir-primary .dir-impact{color:var(--teal)}.dir-secondary .dir-impact{color:var(--amber)}
+.dir-formula{font-family:var(--dm);font-size:9px;color:var(--t3);margin-left:17px;margin-bottom:3px}
+
+/* P&L impact summary */
+.pnl-impact-row{display:flex;align-items:center;padding:8px 12px;border-radius:5px;margin-bottom:5px;border:1px solid transparent}
+.pnl-impact-row.primary{background:var(--tealDim);border-color:rgba(18,196,160,.2)}
+.pnl-impact-row.secondary{background:var(--ambDim);border-color:rgba(232,184,75,.1)}
+.pir-line{flex:1;font-size:11px;color:var(--t2)}
+.pir-val{font-family:var(--dm);font-size:11px;color:var(--teal)}
+
+/* Evidence box */
+.ev-box{background:var(--bg);border:1px solid var(--bdr);border-radius:6px;padding:12px 14px;margin-top:14px}
+.ev-row{display:flex;gap:8px;align-items:flex-start;margin-bottom:7px}
+.ev-row:last-child{margin-bottom:0}
+.ev-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.ev-txt{font-size:11px;color:var(--t3);line-height:1.55}
+
+/* ══════════════════════════════════════
+   OPPORTUNITY
+══════════════════════════════════════ */
+.opp-layout{display:grid;grid-template-columns:1fr 320px;gap:22px;align-items:start}
+@media(max-width:900px){.opp-layout{grid-template-columns:1fr}}
+.tw{overflow-x:auto}
+.ot{width:100%;border-collapse:collapse;font-size:12px}
+.ot th{font-family:var(--dm);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);padding:9px 12px;border-bottom:1px solid var(--bdr);text-align:left}
+.ot td{padding:11px 12px;border-bottom:1px solid var(--bdr);color:var(--t2)}
+.ot tr:last-child td{border-bottom:none}
+.otn{color:var(--t1);font-weight:600}
+.bear{color:var(--t3)}.base{color:var(--amber);font-weight:600}.bull{color:var(--teal);font-weight:600}
+.totr td{background:rgba(0,0,0,.25);font-weight:700;border-top:2px solid var(--bdrl)!important;color:var(--t1)}
+
+/* Scenario buttons */
+.sbtns{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.sbtn{padding:6px 16px;border-radius:4px;font-family:var(--dm);font-size:9px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;border:1px solid var(--bdr);background:transparent;color:var(--t3);transition:all .15s}
+.sbtn:hover{color:var(--t2);border-color:var(--bdrl)}
+.sbtn.abear{background:var(--redDim);border-color:var(--red);color:var(--red)}
+.sbtn.abase{background:var(--ambDim);border-color:var(--amber);color:var(--amber)}
+.sbtn.abull{background:var(--tealDim);border-color:var(--teal);color:var(--teal)}
+
+/* Validation flags */
+.vflag{display:flex;gap:10px;align-items:flex-start;padding:9px 12px;border-radius:5px;margin-bottom:7px;font-size:11px;line-height:1.55}
+.vflag.warn{background:var(--ambDim);border:1px solid rgba(232,184,75,.2);color:var(--t2)}
+.vflag.err{background:var(--redDim);border:1px solid rgba(224,92,92,.2);color:var(--t2)}
+.vflag.ok{background:var(--tealDim);border:1px solid rgba(18,196,160,.2);color:var(--teal)}
+.vflag-ico{flex-shrink:0;font-size:11px;margin-top:1px}
+
+/* ══════════════════════════════════════
+   METHODOLOGY
+══════════════════════════════════════ */
+.meth-grid{display:grid;grid-template-columns:220px 1fr;gap:20px}
+@media(max-width:800px){.meth-grid{grid-template-columns:1fr}}
+.meth-nav{background:var(--card);border:1px solid var(--bdr);border-radius:8px;overflow:hidden;position:sticky;top:112px;max-height:calc(100vh - 140px);overflow-y:auto}
+.meth-nav-item{padding:9px 14px;font-size:11px;color:var(--t3);cursor:pointer;border-bottom:1px solid var(--bdr);transition:all .15s}
+.meth-nav-item:last-child{border-bottom:none}
+.meth-nav-item:hover{color:var(--t2);background:var(--cardh)}
+.meth-nav-item.on{color:var(--teal);background:var(--tealDim)}
+.meth-content{background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:24px}
+
+.bench-card{background:var(--bg);border:1px solid var(--bdr);border-radius:7px;margin-bottom:12px;overflow:hidden}
+.bc-hdr{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--bdr);cursor:pointer;transition:background .15s}
+.bc-hdr:hover{background:var(--cardh)}
+.bc-name{font-size:12px;font-weight:600;flex:1}
+.bc-tier{display:flex;align-items:center;gap:4px;font-family:var(--dm);font-size:9px;padding:2px 7px;border-radius:3px}
+.bc-body{padding:16px;display:none}
+.bench-card.open .bc-body{display:block}
+.bc-vals{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.bcv{background:var(--card);border-radius:5px;padding:10px;text-align:center}
+.bcv-n{font-family:var(--dm);font-size:14px;color:var(--teal);margin-bottom:3px}
+.bcv-l{font-size:10px;color:var(--t3)}
+.bc-formula{font-family:var(--dm);font-size:11px;color:var(--t2);background:rgba(0,0,0,.3);padding:8px 12px;border-radius:4px;margin-bottom:10px;line-height:1.6}
+.bc-field{margin-bottom:8px}
+.bc-field-l{font-family:var(--dm);font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.bc-field-v{font-size:11px;color:var(--t2);line-height:1.55}
+
+/* ══════════════════════════════════════
+   STRESS TEST
+══════════════════════════════════════ */
+.si{border:1px solid var(--bdr);border-radius:7px;overflow:hidden;margin-bottom:10px}
+.sh{display:flex;align-items:center;gap:12px;padding:15px 18px;cursor:pointer;background:var(--card);transition:background .15s}
+.sh:hover{background:var(--cardh)}
+.sico{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.sico.rsk{background:var(--redDim);color:var(--red)}.sico.cau{background:var(--ambDim);color:var(--amber)}
+.stit{font-family:var(--ds);font-size:13px;font-weight:600;flex:1}
+.schv{font-size:10px;color:var(--t3);transition:transform .2s}
+.si.op .schv{transform:rotate(180deg)}
+.sb-body{display:none;padding:14px 18px 16px;border-top:1px solid var(--bdr);background:var(--bg)}
+.si.op .sb-body{display:block}
+.sb-body p{font-size:12px;color:var(--t2);line-height:1.65;margin-bottom:10px}
+.ssig{display:flex;gap:8px;align-items:flex-start;padding:8px 11px;background:var(--card);border-radius:4px;margin-bottom:6px;font-size:11px;color:var(--t3);line-height:1.5}
+.sdot{width:5px;height:5px;border-radius:50%;background:var(--amber);margin-top:4px;flex-shrink:0}
+.sdot.r{background:var(--red)}
+
+/* Tags */
+.tag{display:inline-flex;align-items:center;padding:2px 7px;border-radius:3px;font-family:var(--dm);font-size:9px;letter-spacing:.03em;margin-right:4px}
+.tag.t{background:var(--tealDim);color:var(--teal);border:1px solid rgba(18,196,160,.2)}
+.tag.a{background:var(--ambDim);color:var(--amber);border:1px solid rgba(232,184,75,.2)}
+.tag.g{background:rgba(255,255,255,.04);color:var(--t3);border:1px solid var(--bdr)}
+
+/* Misc */
+.fn{font-family:var(--dm);font-size:9px;color:var(--t3);margin-top:14px;line-height:1.7}
+.wtmk{font-family:var(--dm);font-size:9px;color:var(--t3);text-align:center;padding:18px;border-top:1px solid var(--bdr);margin-top:48px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:5px;font-family:var(--dm);font-size:10px;letter-spacing:.06em;cursor:pointer;border:1px solid var(--bdr);background:transparent;color:var(--t2);transition:all .15s;text-transform:uppercase}
+.btn:hover{border-color:var(--teal);color:var(--teal)}
+.btn.primary{background:var(--tealDim);border-color:var(--teal);color:var(--teal)}
+.hlb{border:1px solid var(--teal);border-radius:8px;padding:16px 20px;background:var(--tealDim);margin-bottom:24px}
+.hln{font-family:var(--dm);font-size:24px;color:var(--teal);margin-bottom:2px}
+.hll{font-size:12px;color:var(--t2)}
+</style>
+</head>
+<body>
+
+<!-- GATE -->
+<div id="gate">
+  <div class="gw">
+    <div class="g-eye">humaninthelead.ai · Work in Progress</div>
+    <div class="g-title"><em>Ignite</em> for<br>Payer Health</div>
+    <div class="g-sub">AI-Powered Value Identification</div>
+    <input id="gi" class="g-in" type="password" placeholder="ACCESS CODE" autofocus/>
+    <div id="ge" class="g-err"></div>
+    <button class="g-btn" onclick="gate()">Enter</button>
+    <div class="g-foot">humaninthelead.ai · 2026</div>
+  </div>
+</div>
+
+<!-- SHELL -->
+<div id="shell">
+
+<header class="hdr">
+  <div class="hdr-l">
+    <div class="hdr-brand"><em>Ignite</em> for Payer Health</div>
+    <div class="mode-badge" id="modeBadge">LIGHT MODE</div>
+  </div>
+  <div class="hdr-r">humaninthelead.ai &nbsp;·&nbsp; 2026</div>
+</header>
+
+<div class="wip-banner">
+  <div class="wip-left">
+    <div class="wip-pill">⚠ Work in Progress</div>
+    <div>
+      <div class="wip-title"><em>Ignite</em> for Payer Health</div>
+      <div style="font-family:var(--dm);font-size:10px;color:var(--t3);margin-top:3px;letter-spacing:.04em">humaninthelead.ai · AI-Powered Value Identification</div>
+    </div>
+  </div>
+  <div class="wip-msg">This tool is under active development. Benchmarks, calculations, and outputs are directional. Not for external distribution or client use without review.</div>
+</div>
+
+<nav class="nav">
+  <div class="nv on"  onclick="show(0)"><span class="nv-i">01</span> Context</div>
+  <div class="nv"     onclick="show(1)"><span class="nv-i">02</span> P&amp;L Builder</div>
+  <div class="nv"     onclick="show(2)"><span class="nv-i">03</span> Driver Tree</div>
+  <div class="nv"     onclick="show(3)"><span class="nv-i">04</span> Initiatives</div>
+  <div class="nv"     onclick="show(4)"><span class="nv-i">05</span> Opportunity</div>
+  <div class="nv"     onclick="show(5)"><span class="nv-i">06</span> Methodology</div>
+  <div class="nv"     onclick="show(6)"><span class="nv-i">07</span> Stress Test</div>
+</nav>
+
+<main class="main">
+
+<!-- ══ 01 CONTEXT ══════════════════════════════════════════════ -->
+<section class="sec on" id="s0">
+  <div class="lbl">The Burning Platform</div>
+  <h1 class="h1">Payer margins at a<br>two-decade low.</h1>
+  <p class="sub">Medical costs are rising faster than premiums. Utilization is above model. The window for reactive cost management is closing. Every month of inaction compounds — and for the first time in a decade, multiple major plans reported operating losses in 2025.</p>
+  <div class="g4" style="margin-bottom:36px">
+    <div class="sc r"><div class="sv cr">88–92%</div><div class="sl">Average MLR across major plans 2024–25</div><div class="sx">ACA floor 80–85% · Danger zone ≥90%</div></div>
+    <div class="sc a"><div class="sv ca">8.5%</div><div class="sl">Medical cost trend, group market 2026</div><div class="sx">PwC Behind the Numbers 2026</div></div>
+    <div class="sc r"><div class="sv cr">−11%</div><div class="sl">Payer EBITDA decline since 2019 peak</div><div class="sx">$29B industry EBITDA 2024 · McKinsey Dec 2025</div></div>
+    <div class="sc t"><div class="sv ct">$5.3T</div><div class="sl">Total US healthcare spend 2024</div><div class="sx">+7.2% YoY · 18.0% of GDP · Health Affairs 2026</div></div>
+  </div>
+  <div class="narr"><p>The tool works in two modes. <strong>Light Mode</strong> requires only your membership, PMPM, and MLR — giving you a portfolio-level opportunity estimate within minutes. <strong>Deep Mode</strong> activates automatically when you upload a driver file (CSV/Excel template) with utilization and cost data — unlocking the full P&L decomposition and driver-level gap analysis. Start in Section 02.</p></div>
+  <div class="g2">
+    <div class="card"><div class="ct">How this tool works</div><div class="cb">Select an initiative in Section 04. The driver tree (Section 03) lights up showing exactly which P&L lines and operational drivers that initiative moves — primary impacts in teal, secondary in amber. The opportunity model (Section 05) calculates the dollar value of closing each gap, rolling up to your P&L. Every benchmark is documented in Section 06.</div></div>
+    <div class="card"><div class="ct">What you need</div><div class="cb"><strong>Light Mode:</strong> Market type, total members, premium PMPM, current MLR. Takes 2 minutes.<br><br><strong>Deep Mode:</strong> Download the CSV template in Section 02, populate with your plan's utilization and cost data, upload. The model detects data completeness and switches modes automatically.</div></div>
+  </div>
+</section>
+
+<!-- ══ 02 P&L BUILDER ══════════════════════════════════════════ -->
+<section class="sec" id="s1">
+  <div class="lbl">Section 02</div>
+  <h1 class="h1">P&L Builder</h1>
+  <p class="sub">Enter your plan parameters. Download the CSV template to provide driver-level data — the model will automatically switch to Deep Mode and unlock the full decomposition.</p>
+
+  <div class="pnl-layout">
+    <!-- LEFT: inputs -->
+    <div>
+      <div class="inp-panel">
+        <div class="inp-sec">
+          <div class="inp-sec-title">Plan Profile</div>
+          <div class="ig">
+            <div class="il">Market Type</div>
+            <select class="sel" id="p-mkt" onchange="onInput()">
+              <option value="commercial">Commercial Group</option>
+              <option value="ma">Medicare Advantage</option>
+              <option value="medicaid">Medicaid MCO</option>
+              <option value="mixed">Mixed Book</option>
+            </select>
+          </div>
+          <div class="ig">
+            <div class="il">Total Members <span class="vv" id="p-mdisp">500K</span></div>
+            <input type="range" class="slider" id="p-m" min="50000" max="5000000" step="50000" value="500000" oninput="onInput()">
+          </div>
+          <div class="ig">
+            <div class="il">Premium PMPM ($) <span class="vv" id="p-pdisp">$600</span></div>
+            <input type="range" class="slider" id="p-p" min="200" max="2000" step="25" value="600" oninput="onInput()">
+          </div>
+          <div class="ig">
+            <div class="il">Current MLR (%) <span class="vv" id="p-mdisp2">88.0%</span></div>
+            <input type="range" class="slider" id="p-mlr" min="75" max="99" step="0.5" value="88" oninput="onInput()">
+          </div>
+          <div class="ig">
+            <div class="il">Admin % of Revenue <span class="vv" id="p-adisp">13.0%</span></div>
+            <input type="range" class="slider" id="p-adm" min="8" max="20" step="0.5" value="13" oninput="onInput()">
+          </div>
+        </div>
+
+        <div class="inp-sec">
+          <div class="inp-sec-title">Deep Mode — Driver Upload</div>
+          <div id="modeInd" class="mode-ind light"><span class="mi">⬤ LIGHT MODE</span><span style="margin-left:6px">Provide driver data below to unlock full decomposition</span></div>
+          <div class="dcomp">
+            <div class="dcomp-l"><span>Data completeness</span><span id="dcompPct">0 / 18 drivers</span></div>
+            <div class="dcomp-b"><div class="dcomp-f" id="dcompF" style="width:0%"></div></div>
+          </div>
+          <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInp').click()">
+            <input type="file" id="fileInp" accept=".csv,.xlsx,.xls" onchange="handleFile(this.files[0])">
+            <div class="uz-icon">📂</div>
+            <div class="uz-txt">Drop CSV / Excel here or <span class="uz-lnk">browse</span></div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <div class="dl-tpl" onclick="downloadTemplate()">↓ CSV Template</div>
+            <div class="dl-tpl" onclick="clearDrivers()">✕ Clear data</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: P&L -->
+    <div>
+      <div class="pnl-panel">
+        <div class="pnl-hdr">
+          <div class="pnl-title">Plan P&amp;L — Real Time</div>
+          <div class="pnl-toggle">
+            <div class="ptog on" id="tog-light" onclick="togPnl('light')">Light</div>
+            <div class="ptog" id="tog-deep" onclick="togPnl('deep')">Deep</div>
+          </div>
+        </div>
+        <div class="pnl-col-hdr">
+          <span style="flex:1">Line Item</span>
+          <span style="min-width:80px;text-align:right">Value</span>
+          <span style="min-width:72px;text-align:right">Benchmark</span>
+          <span style="min-width:68px;text-align:right">Gap</span>
+          <span style="width:22px"></span>
+        </div>
+        <div class="pnl-body" id="pnlBody"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 03 DRIVER TREE ══════════════════════════════════════════ -->
+<section class="sec" id="s2">
+  <div class="lbl">Section 03</div>
+  <h1 class="h1">Driver Tree</h1>
+  <p class="sub">The full decomposition of your cost of care. Nodes highlighted in teal are primary targets of the selected initiative; amber nodes are secondary. Select an initiative in Section 04 to activate the highlighting.</p>
+
+  <div id="activeInitBanner" style="display:none;padding:10px 16px;background:var(--tealDim);border:1px solid rgba(18,196,160,.25);border-radius:7px;margin-bottom:18px;font-size:12px;color:var(--teal);font-family:var(--dm)"></div>
+
+  <div class="tree-layout">
+    <div>
+      <div class="tree-wrap">
+        <div class="tree-root-node">
+          <div>
+            <div style="font-family:var(--dm);font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">Total Cost of Care</div>
+            <div class="trn-label">Medical + Admin PMPM</div>
+          </div>
+          <div class="trn-val" id="tree-root-val">—</div>
+        </div>
+        <div class="tree-cols" id="treeCols"></div>
+      </div>
+    </div>
+
+    <!-- Right: selected driver detail -->
+    <div>
+      <div class="card" id="driverDetail">
+        <div style="color:var(--t3);font-size:12px;text-align:center;padding:30px 0">
+          <div style="font-size:24px;margin-bottom:8px;opacity:.4">◈</div>
+          Click any driver card to see its formula, benchmark source, and P&L impact.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 04 INITIATIVES ══════════════════════════════════════════ -->
+<section class="sec" id="s3">
+  <div class="lbl">Section 04</div>
+  <h1 class="h1">Initiatives</h1>
+  <p class="sub">Select an initiative to see which P&L nodes it targets, what drivers it moves, and the calculated impact on your baseline. The driver tree in Section 03 will light up accordingly.</p>
+
+  <div class="init-layout">
+    <div class="init-list" id="initList"></div>
+    <div id="initDetail">
+      <div class="impact-panel">
+        <div class="ip-none">
+          <div class="icon">◈</div>
+          <p>Select an initiative from the list to see its P&L impact, driver connections, evidence base, and calculated savings.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 05 OPPORTUNITY ══════════════════════════════════════════ -->
+<section class="sec" id="s4">
+  <div class="lbl">Section 05</div>
+  <h1 class="h1">Opportunity Sizing</h1>
+  <p class="sub">Portfolio-level savings across selected initiatives. Ranges anchored to McKinsey, PwC, and Bain benchmarks. Validation flags auto-generate based on selection.</p>
+
+  <div class="opp-layout">
+    <div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+        <div style="font-family:var(--dm);font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.08em">Scenario</div>
+        <div class="sbtns" style="margin:0">
+          <button class="sbtn" id="sb-bear" onclick="setScn('bear')">Bear</button>
+          <button class="sbtn abase" id="sb-base" onclick="setScn('base')">Base</button>
+          <button class="sbtn" id="sb-bull" onclick="setScn('bull')">Bull</button>
+        </div>
+      </div>
+      <div class="tw"><table class="ot" id="oppTable"><thead><tr><th>Initiative</th><th>Applied to</th><th>Bear</th><th>Base</th><th>Bull</th><th>Timeline</th></tr></thead><tbody id="oppBody"></tbody></table></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:20px" id="oppCards"></div>
+      <div style="margin-top:16px" id="valFlags"></div>
+      <div class="fn">* Benchmarks: McKinsey "AI Opportunity for Payers" (2024) · PwC "Behind the Numbers 2026" · McKinsey "Untapped Potential of Payer Care Management" (2021) · Bain Healthcare IT Survey (2025) · HCPLAN Annual Survey (2024). † Portfolio overlap discount 8–13% applied. ‡ Savings are not additive across overlapping levers.</div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="lbl" style="margin-bottom:12px">Active Initiatives</div>
+        <div id="oppChecks"></div>
+      </div>
+      <div class="card">
+        <div class="lbl" style="margin-bottom:12px">P&L Impact Summary</div>
+        <div id="oppPnlImpact"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 06 METHODOLOGY ══════════════════════════════════════════ -->
+<section class="sec" id="s5">
+  <div class="lbl">Section 06</div>
+  <h1 class="h1">Methodology</h1>
+  <p class="sub">Every benchmark explained. Source, formula, confidence tier, and plausibility band for each number in the model. This is the CFO defense layer.</p>
+
+  <div class="g3" style="margin-bottom:28px">
+    <div class="sc t"><div class="sv ct" style="font-size:14px">T1 Operational SoR</div><div class="sl">CMS administrative data, IQVIA prescription data — highest credibility</div></div>
+    <div class="sc a"><div class="sv ca" style="font-size:14px">T2 Benchmark</div><div class="sl">Reputable industry benchmarks (HCCI, Milliman, FAIR Health) — calibration, not proof</div></div>
+    <div class="sc r"><div class="sv" style="font-size:14px;color:var(--t2)">T3 Research</div><div class="sl">Independent research / analyst reports — useful ranges, verify against your data</div></div>
+  </div>
+
+  <div class="meth-grid">
+    <div class="meth-nav" id="methNav"></div>
+    <div id="methContent"></div>
+  </div>
+</section>
+
+<!-- ══ 07 STRESS TEST ══════════════════════════════════════════ -->
+<section class="sec" id="s6">
+  <div class="lbl">Section 07</div>
+  <h1 class="h1">Stress Test</h1>
+  <p class="sub">The gap between savings on a slide and savings on a P&L is where most transformation programs die. Seven assumptions to challenge before you commit capital.</p>
+  <div class="hlb"><div class="hln">75%</div><div class="hll">Of Medicare Advantage care denials overturned — HHS OIG. More UM ≠ lower costs.</div></div>
+  <div id="stItems"></div>
+  <div class="div"></div>
+  <div class="lbl">The Signal vs. Narrative Test</div>
+  <p style="font-size:13px;color:var(--t2);line-height:1.65;max-width:640px;margin-bottom:22px">Before any transformation program: four questions that separate credible value from narrative.</p>
+  <div class="g2">
+    <div class="card"><div class="ct">1. Is there a verifiable baseline?</div><div class="cb">Can the vendor show current-state performance against a frozen baseline? "We'll establish that in Phase 1" means the savings have no anchor.</div></div>
+    <div class="card"><div class="ct">2. Is the savings mechanism specific?</div><div class="cb">Does it explain exactly which claim type, member segment, or workflow decision changes — and by how much? Vague "reducing unnecessary utilization" is not a mechanism.</div></div>
+    <div class="card"><div class="ct">3. Who bears implementation risk?</div><div class="cb">If the engagement is fee-for-service and savings projections are vendor-supplied, the vendor has no skin in the game. Value-based contracts are the credible structure.</div></div>
+    <div class="card"><div class="ct">4. What's the real counterfactual?</div><div class="cb">ROI vs. "doing nothing" is structurally favorable. The real test is: what else could this budget achieve? Every investment should be benchmarked against its best alternative.</div></div>
+  </div>
+</section>
+
+</main><div class="wtmk">Ignite for Payer Health · humaninthelead.ai · Work in Progress · Not for external distribution</div>
+<script>
+function gate(){
+  const v=document.getElementById('gi').value.trim();
+  const e=document.getElementById('ge');
+  if(v==='IgnitePayer2026'){
+    const g=document.getElementById('gate');
+    g.style.transition='opacity .5s';g.style.opacity='0';
+    setTimeout(()=>{g.style.display='none';document.getElementById('shell').style.display='block';},500);
+  } else {
+    e.textContent='Incorrect access code';
+    document.getElementById('gi').style.borderColor='var(--red)';
+    setTimeout(()=>{e.textContent='';document.getElementById('gi').style.borderColor='var(--bdr)';},2200);
+  }
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('gi').addEventListener('keydown',e=>{if(e.key==='Enter')gate();});
+});
+</script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// DATA MODEL
+// ═══════════════════════════════════════════════════════════════
+
+// Evidence tiers
+const TIER={1:'T1 Operational SoR',2:'T2 Benchmark',3:'T3 Research',4:'T4 Vendor Claim'};
+const TIER_COL={1:'#12c4a0',2:'#e8b84b',3:'#7ba0c0',4:'#e05c5c'};
+
+// Payer P&L benchmark targets (PMPM) by market
+const PNL_BENCH={
+  commercial:{ip:152, op:168, prof:82, rx:118, bh:18, medTotal:538, admin:84, rev:600, oi:null},
+  ma:{ip:310, op:220, prof:145, rx:195, bh:28, medTotal:898, admin:99, rev:1100, oi:null},
+  medicaid:{ip:195, op:148, prof:88, rx:85, bh:42, medTotal:558, admin:72, rev:650, oi:null},
+  mixed:{ip:200, op:185, prof:100, rx:135, bh:24, medTotal:644, admin:80, rev:720, oi:null}
+};
+
+// Operational drivers
+const DRIVERS={
+  ip_admits:{id:'ip_admits',label:'Admissions / 1,000',cat:'inpatient',unit:'per 1K',
+    bench:{commercial:72,ma:320,medicaid:165,mixed:130},
+    dir:'lower',formula:'Annual hospital admits ÷ (Members ÷ 1,000)',
+    pnl_formula:'(Admits/1K × AvgLOS × Cost/Day) ÷ 12',
+    src:'HCCI Employer Benchmark 2023 · Milliman MA Cost Study 2024',tier:2,
+    trend:'+4.2% YoY (2024)',plaus:{commercial:[50,110],ma:[260,400],medicaid:[130,220]}},
+  ip_los:{id:'ip_los',label:'Avg Length of Stay (days)',cat:'inpatient',unit:'days',
+    bench:{commercial:4.5,ma:5.5,medicaid:4.8,mixed:5.0},
+    dir:'lower',formula:'Total inpatient days ÷ Total admissions',
+    pnl_formula:'Component of Inpatient PMPM',
+    src:'AHRQ HCUP Statistical Brief 2023 · Milliman 2024',tier:1,
+    plaus:{commercial:[3.5,6.5],ma:[4.5,7.5],medicaid:[4.0,7.0]}},
+  ip_cost:{id:'ip_cost',label:'Cost per Inpatient Day ($)',cat:'inpatient',unit:'$',
+    bench:{commercial:2650,ma:1950,medicaid:1580,mixed:2100},
+    dir:'lower',formula:'Total inpatient allowed cost ÷ Total inpatient days',
+    pnl_formula:'Component of Inpatient PMPM',
+    src:'Milliman Medical Index 2024 · CMS Cost Report data',tier:2,
+    plaus:{commercial:[1800,3800],ma:[1400,2800],medicaid:[1100,2200]}},
+  er_visits:{id:'er_visits',label:'ER Visits / 1,000',cat:'outpatient',unit:'per 1K',
+    bench:{commercial:225,ma:350,medicaid:560,mixed:300},
+    dir:'lower',formula:'Annual ER visits ÷ (Members ÷ 1,000)',
+    pnl_formula:'(ER/1K × Cost/Visit) ÷ 12',
+    src:'HCCI Employer Benchmark 2023 · Milliman MA Index 2024',tier:2,
+    trend:'+6.8% YoY (2024)',plaus:{commercial:[150,350],ma:[250,500],medicaid:[400,800]}},
+  er_cost:{id:'er_cost',label:'Cost per ER Visit ($)',cat:'outpatient',unit:'$',
+    bench:{commercial:1850,ma:1420,medicaid:980,mixed:1500},
+    dir:'lower',formula:'Total ER allowed cost ÷ Total ER visits',
+    pnl_formula:'Component of Outpatient PMPM',
+    src:'FAIR Health National Benchmarks 2024',tier:2,
+    plaus:{commercial:[1200,2800],ma:[900,2100],medicaid:[600,1500]}},
+  op_visits:{id:'op_visits',label:'Outpatient Visits / 1,000',cat:'outpatient',unit:'per 1K',
+    bench:{commercial:2100,ma:3200,medicaid:2600,mixed:2500},
+    dir:'neutral',formula:'Annual non-ER outpatient visits ÷ (Members ÷ 1,000)',
+    pnl_formula:'(OPV/1K × Cost/Visit) ÷ 12',
+    src:'HCCI 2023 · Milliman 2024',tier:2,
+    plaus:{commercial:[1400,3000],ma:[2200,4500],medicaid:[1800,3800]}},
+  op_cost:{id:'op_cost',label:'Cost per Outpatient Visit ($)',cat:'outpatient',unit:'$',
+    bench:{commercial:385,ma:310,medicaid:245,mixed:340},
+    dir:'lower',formula:'Total outpatient allowed cost ÷ Total outpatient visits',
+    pnl_formula:'Component of Outpatient PMPM',
+    src:'FAIR Health 2024 · HCCI 2023',tier:2,
+    plaus:{commercial:[250,600],ma:[200,500],medicaid:[150,400]}},
+  pcp_visits:{id:'pcp_visits',label:'PCP Visits / 1,000',cat:'professional',unit:'per 1K',
+    bench:{commercial:1750,ma:3100,medicaid:2200,mixed:2100},
+    dir:'higher',formula:'Annual PCP visits ÷ (Members ÷ 1,000)',
+    pnl_formula:'((PCP/1K + Spec/1K) × Cost/Visit) ÷ 12',
+    src:'NCQA HEDIS Benchmarks 2024 · HCCI 2023',tier:2,
+    plaus:{commercial:[1200,2500],ma:[2200,4500],medicaid:[1500,3200]}},
+  spec_visits:{id:'spec_visits',label:'Specialist Visits / 1,000',cat:'professional',unit:'per 1K',
+    bench:{commercial:980,ma:2400,medicaid:1100,mixed:1300},
+    dir:'lower',formula:'Annual specialist visits ÷ (Members ÷ 1,000)',
+    pnl_formula:'Component of Professional PMPM',
+    src:'HCCI Employer Benchmark 2023',tier:2,
+    plaus:{commercial:[600,1600],ma:[1800,3500],medicaid:[700,1800]}},
+  prof_cost:{id:'prof_cost',label:'Cost per Professional Visit ($)',cat:'professional',unit:'$',
+    bench:{commercial:185,ma:155,medicaid:110,mixed:160},
+    dir:'lower',formula:'Total professional allowed cost ÷ Total professional visits',
+    pnl_formula:'Component of Professional PMPM',
+    src:'FAIR Health 2024',tier:2,
+    plaus:{commercial:[120,280],ma:[100,240],medicaid:[70,180]}},
+  rx_scripts:{id:'rx_scripts',label:'Scripts per Member / Year',cat:'pharmacy',unit:'scripts',
+    bench:{commercial:10.5,ma:31,medicaid:16.5,mixed:16},
+    dir:'neutral',formula:'Total prescription fills ÷ Total members',
+    pnl_formula:'Scripts × Net Cost ÷ 12',
+    src:'IQVIA National Prescription Audit 2024 · CMS Part D data',tier:1,
+    plaus:{commercial:[7,18],ma:[22,45],medicaid:[11,28]}},
+  rx_generic:{id:'rx_generic',label:'Generic Fill Rate (%)',cat:'pharmacy',unit:'%',
+    bench:{commercial:87,ma:90,medicaid:92,mixed:89},
+    dir:'higher',formula:'Generic fills ÷ Total fills × 100',
+    pnl_formula:'Higher generic rate → lower net cost per script',
+    src:'IQVIA 2024 · Milliman Rx benchmarks',tier:2,
+    plaus:{commercial:[78,95],ma:[82,96],medicaid:[85,97]}},
+  rx_specialty:{id:'rx_specialty',label:'Specialty Rx % of Spend',cat:'pharmacy',unit:'%',
+    bench:{commercial:52,ma:42,medicaid:38,mixed:46},
+    dir:'lower',formula:'Specialty drug spend ÷ Total pharmacy spend × 100',
+    pnl_formula:'Drives net cost per script upward',
+    src:'PwC Behind the Numbers 2026 · IQVIA 2024',tier:2,
+    trend:'+2.5 pts YoY (PwC 2026)',plaus:{commercial:[38,65],ma:[30,55],medicaid:[25,50]}},
+  rx_netcost:{id:'rx_netcost',label:'Net Cost per Script ($)',cat:'pharmacy',unit:'$',
+    bench:{commercial:74,ma:68,medicaid:58,mixed:68},
+    dir:'lower',formula:'Net pharmacy spend (after rebates) ÷ Total fills',
+    pnl_formula:'Scripts × Net Cost ÷ 12 = Pharmacy PMPM',
+    src:'Milliman Rx Benchmarks 2024 · CMS NHE 2024',tier:2,
+    plaus:{commercial:[50,130],ma:[45,110],medicaid:[38,95]}},
+  bh_admits:{id:'bh_admits',label:'BH Admits / 1,000',cat:'behavioral',unit:'per 1K',
+    bench:{commercial:7.5,ma:10.5,medicaid:18,mixed:10},
+    dir:'lower',formula:'Annual BH inpatient admits ÷ (Members ÷ 1,000)',
+    pnl_formula:'(BH Admits/1K × Cost/Admit) ÷ 12',
+    src:'PwC Behind the Numbers 2026 · HCCI 2023',tier:2,
+    trend:'+22% inpatient YoY (PwC 2026)',plaus:{commercial:[4,15],ma:[6,20],medicaid:[10,35]}},
+  bh_visits:{id:'bh_visits',label:'BH Outpatient Visits / 1,000',cat:'behavioral',unit:'per 1K',
+    bench:{commercial:280,ma:380,medicaid:520,mixed:340},
+    dir:'neutral',formula:'Annual BH outpatient visits ÷ (Members ÷ 1,000)',
+    pnl_formula:'(BH OPV/1K × Cost/Visit) ÷ 12',
+    src:'PwC Behind the Numbers 2026',tier:2,
+    trend:'+40% outpatient YoY (PwC 2026)',plaus:{commercial:[150,450],ma:[220,600],medicaid:[300,900]}},
+  adm_claims:{id:'adm_claims',label:'Claims Cost per Claim ($)',cat:'admin',unit:'$',
+    bench:{commercial:4.85,ma:5.20,medicaid:4.40,mixed:4.80},
+    dir:'lower',formula:'Total claims processing cost ÷ Total claims processed',
+    pnl_formula:'Claims/member × Cost/claim ÷ 12',
+    src:'CAQH Index 2024 · McKinsey AI for Payers 2024',tier:2,
+    plaus:{commercial:[2.5,9],ma:[2.8,10],medicaid:[2.2,8]}},
+  adm_pa:{id:'adm_pa',label:'Prior Auth Cost per Review ($)',cat:'admin',unit:'$',
+    bench:{commercial:11.50,ma:13.80,medicaid:9.20,mixed:11.50},
+    dir:'lower',formula:'Total prior auth processing cost ÷ Total PA reviews',
+    pnl_formula:'PA reviews/member × Cost/review ÷ 12',
+    src:'CAQH Index 2024 · McKinsey 2024',tier:2,
+    plaus:{commercial:[5,22],ma:[6,26],medicaid:[4,18]}}
+};
+
+// Initiative definitions
+const INITIATIVES=[
+  {id:'pa',name:'Prior Authorization Automation',range:'0.8–2.5% of medical costs',tl:'6–12 mo',inv:'Moderate',
+   mech:'AI-driven UM automates 75–85% of prior auth requests without manual review, cutting turnaround from days to hours. Reduces inappropriate utilization by targeting evidence-based decision rules. Also reduces admin cost per PA review by 40–60%.',
+   src:'McKinsey AI for Payers 2024 · Bain Healthcare IT Survey 2025 · CAQH Index 2024',
+   evTier:2,
+   primary:['ip_admits','er_visits','adm_pa'],
+   secondary:['ip_los','bh_admits','op_visits'],
+   pnl_primary:['inpatient','outpatient','admin'],
+   pnl_secondary:['behavioral'],
+   impacts:{ip_admits:'↓ 8–15% (inappropriate admissions diverted)',er_visits:'↓ 5–10% (ER avoidance)',adm_pa:'↓ 40–60% cost/review (automation)',ip_los:'↓ marginal (concurrent review)',bh_admits:'↓ 5–12% (BH prior auth)',op_visits:'↓ minor (specialty referral management)'},
+   risks:['Attribution: must trace to specific claim types, not aggregate denial rate','Overturn rate >15% signals regulatory risk — measure approval rate alongside denial rate','HHS OIG: 75% of MA denials overturned — "more UM" can increase downstream cost'],
+   lvrData:{bt:'med',r:[.008,.015,.025]}},
+  {id:'cm',name:'Complex Care Management',range:'2–5% of total medical costs',tl:'12–24 mo',inv:'High',
+   mech:'AI risk stratification targets the 5–10% of members generating 50%+ of spend. Proactive coordination, condition management, and transitions of care reduce avoidable admits and readmissions. High-performing payers achieve 2–5% savings from programs with clear clinical design.',
+   src:"McKinsey 'Untapped Potential of Payer Care Management' 2021 · Interwell Health case study 2025",
+   evTier:3,
+   primary:['ip_admits','ip_los','bh_admits','er_visits'],
+   secondary:['pcp_visits','spec_visits','bh_visits'],
+   pnl_primary:['inpatient','behavioral'],
+   pnl_secondary:['outpatient','professional'],
+   impacts:{ip_admits:'↓ 12–25% for enrolled high-risk members',ip_los:'↓ 8–15% (transitions of care)',bh_admits:'↓ 15–30% for enrolled BH members',er_visits:'↓ 10–20% (proactive outreach)',pcp_visits:'↑ (care gap closure)',spec_visits:'↓ minor (care coordination)'},
+   risks:['Engagement rate: benchmarks assume 60–80% enrollment. Below 30% → adjust savings proportionally','Claims lag 30–90 days. Real-time clinical feeds improve model accuracy','Enrolled population ≠ total eligible — high-risk patients are often hardest to reach'],
+   lvrData:{bt:'med',r:[.020,.032,.050]}},
+  {id:'rx',name:'Specialty Pharmacy Management',range:'3–8% of pharmacy spend',tl:'6–18 mo',inv:'Moderate',
+   mech:'Accelerates biosimilar adoption (Humira: 3%→28% in 2024; Stelara: ~80% WAC discount in 2025). Optimizes formulary design, implements specialty PA, and structures value-based manufacturer contracts. PwC projects pharmacy trend 2.5 pts above medical trend.',
+   src:'PwC Behind the Numbers 2026 · CMS NHE 2024 · IQVIA 2024',
+   evTier:2,
+   primary:['rx_specialty','rx_netcost','rx_generic'],
+   secondary:['rx_scripts'],
+   pnl_primary:['pharmacy'],
+   pnl_secondary:[],
+   impacts:{rx_specialty:'↓ 5–15 pts specialty share (biosimilar switch)',rx_netcost:'↓ 8–20% net cost (rebate + biosimilar)',rx_generic:'↑ 2–5 pts generic rate'},
+   risks:['PBM rebate opacity: savings only flow to plan with full rebate pass-through. Verify contract.','Biosimilar savings require formulary enforcement — step-edit to reference product erases savings','Private-label biosimilar strategy requires PBM infrastructure and willingness to execute'],
+   lvrData:{bt:'rx',r:[.030,.055,.080]}},
+  {id:'pi',name:'Payment Integrity / FWA',range:'0.5–2% of medical costs',tl:'3–9 mo',inv:'Low–Moderate',
+   mech:'AI-powered fraud, waste, and abuse detection: improper billing, duplicate claims, upcoding, medically unnecessary procedures — identified prior to payment. Healthcare fraud estimated at 3–10% of total spend (FBI/CMS). Pre-payment recovery is 10× more efficient than post-payment.',
+   src:'FBI healthcare fraud estimates · CMS OIG · CAQH Index 2024',
+   evTier:2,
+   primary:['adm_claims','ip_admits'],
+   secondary:['er_visits','op_visits'],
+   pnl_primary:['admin','inpatient'],
+   pnl_secondary:['outpatient'],
+   impacts:{adm_claims:'↓ 15–30% (error/duplicate claims)',ip_admits:'↓ 3–8% (inappropriate admit billing)',er_visits:'↓ 2–5% (upcoded ER claims)'},
+   risks:['Requires frozen baseline of pre-intervention claims patterns for credible attribution','False positive rate drives provider friction — measure precision alongside recall','Pre-payment is preferred — post-payment recovery rates are typically 30–60%'],
+   lvrData:{bt:'med',r:[.005,.010,.020]}},
+  {id:'no',name:'Network Optimization',range:'0.5–2% of medical costs',tl:'12–24 mo',inv:'Moderate',
+   mech:'Identifies high-value, lower-cost providers. Implements steerage, tiered networks, and performance-based contracting. Fastest-rising payer IT category (Bain 2025). Critical for MA STAR performance. Reduces cost per episode without reducing utilization volume.',
+   src:'Bain Healthcare IT Survey 2025 · McKinsey AI for Payers 2024',
+   evTier:3,
+   primary:['ip_cost','er_cost','op_cost'],
+   secondary:['spec_visits','prof_cost'],
+   pnl_primary:['inpatient','outpatient'],
+   pnl_secondary:['professional'],
+   impacts:{ip_cost:'↓ 5–12% (preferred hospital steerage)',er_cost:'↓ 4–9% (urgent care diversion)',op_cost:'↓ 4–10% (lower-cost site-of-care)',spec_visits:'↓ minor (narrow specialist network)',prof_cost:'↓ 3–7% (performance-based contracts)'},
+   risks:['Steerage compliance: models assume member follows preferred network — actual compliance 40–60%','Site-of-care shift requires member engagement and referral workflow changes','MA STAR implications: network changes affect continuity measures'],
+   lvrData:{bt:'med',r:[.005,.012,.020]}},
+  {id:'aa',name:'Administrative Automation',range:'13–25% of admin costs',tl:'6–18 mo',inv:'Moderate',
+   mech:'Automates claims processing, enrollment, eligibility, member comms, and call center. McKinsey: $150–300M admin savings per $10B revenue. PwC: 40–50% admin cost reduction by 2035. GOVERNANCE: capacity freed ≠ cost saved. Freed FTEs must be removed or redeployed into revenue-generating work for P&L impact.',
+   src:'McKinsey AI for Payers 2024 · PwC Future of Payers Jan 2026 · CAQH Index 2024',
+   evTier:3,
+   primary:['adm_claims','adm_pa'],
+   secondary:[],
+   pnl_primary:['admin'],
+   pnl_secondary:[],
+   impacts:{adm_claims:'↓ 30–50% cost/claim (straight-through processing)',adm_pa:'↓ 40–60% cost/review (automation)'},
+   risks:['Capacity ≠ cost: model against avoided hiring, not current headcount reduction','Point-solution automation → point-solution results. E2E transformation required for upper range','Healthcare workforce shortage: redeployment often more realistic than headcount reduction'],
+   lvrData:{bt:'adm',r:[.130,.190,.250]}},
+  {id:'vb',name:'Value-Based Care',range:'1–4% of medical costs (3–5 yr)',tl:'24–60 mo',inv:'Transformational',
+   mech:'Shifts provider incentives: shared savings, capitation, downside risk. 45.2% of US healthcare payments in VBC (HCPLAN 2024). One kidney care VBC program: $36.2M savings for a national plan. Years 1–2 typically cost-neutral as programs ramp. Board alignment on 5-year horizon is prerequisite.',
+   src:'HCPLAN Annual Survey 2024 · McKinsey Dec 2025 · Interwell Health case study 2025',
+   evTier:3,
+   primary:['ip_admits','ip_los','er_visits','pcp_visits'],
+   secondary:['spec_visits','rx_netcost','bh_admits'],
+   pnl_primary:['inpatient','outpatient'],
+   pnl_secondary:['professional','pharmacy','behavioral'],
+   impacts:{ip_admits:'↓ 10–20% (aligned provider incentives)',ip_los:'↓ 8–15%',er_visits:'↓ 10–18% (PCP access improvement)',pcp_visits:'↑ 5–15% (prevention focus)',spec_visits:'↓ 5–10%',rx_netcost:'↓ minor (formulary alignment)'},
+   risks:['Timing: 3–5 years to P&L impact. Do NOT include in near-term savings case','Years 1–2: expect cost neutrality or increase as programs ramp and care gaps close','Provider alignment required — uncommitted providers will game shared savings metrics'],
+   lvrData:{bt:'med',r:[.010,.025,.040]}},
+];
+
+// Stress test items
+const STRESS=[
+  {type:'rsk',title:'More UM reduces costs without increasing friction',
+   body:'HHS OIG found 75% of MA care denials were ultimately overturned. MA plan denials rose 55.7% in 2023, triggering Congressional hearings. Aggressive UM generates provider abrasion and regulatory scrutiny that can increase downstream costs.',
+   sigs:[{r:true,txt:'If denial overturn rate >15%: "more UM" is creating risk, not reducing cost. Audit before expanding.'},
+         {r:false,txt:'Measure approval rate alongside denial rate. The goal is appropriate approvals fast — not maximum denials.'}]},
+  {type:'cau',title:'Risk stratification identifies high-need members early enough to intervene',
+   body:'Claims data lags 30–90 days. SDoH data is often incomplete. The highest-risk patients decline engagement at higher rates. Predicted savings assume an enrolled, reachable population — not the full high-risk pool.',
+   sigs:[{r:false,txt:'If care management enrollment rate <30% of eligible: fix outreach first, then optimize the model.'},
+         {r:false,txt:'Ask vendors what data sources feed their risk model beyond claims. Lab and real-time feeds matter.'}]},
+  {type:'rsk',title:'Specialty pharmacy savings flow to the plan, not the PBM',
+   body:'PBM rebate economics are opaque. Biosimilar savings depend on formulary enforcement. Step-edit to reference product erases savings. PBM transparency contracts are a prerequisite.',
+   sigs:[{r:true,txt:'Without full rebate pass-through and formulary enforcement authority: specialty Rx savings are overstated.'},
+         {r:false,txt:'Private-label biosimilar strategy requires PBM infrastructure. Confirm before modeling the savings.'}]},
+  {type:'cau',title:'Admin automation produces P&L savings, not just FTE redeployment',
+   body:'Most vendor ROI models count efficiency gains as cost savings. In structural healthcare workforce shortages, redeployment is often the outcome — which does not appear in the P&L. Automation ROI is most reliable when it prevents hiring growth.',
+   sigs:[{r:false,txt:'Model against avoided hiring growth, not current headcount — unless a workforce reduction plan exists.'},
+         {r:false,txt:'Point-solution automation produces point-solution results. E2E transformation is required for the upper range.'}]},
+  {type:'cau',title:'Value-based care delivers savings within your planning horizon',
+   body:'VBC ROI requires 3–5 years. Years 1–2 show flat or increased costs as programs ramp. Plans that abandon VBC after 2 years are the primary driver of reported VBC failures.',
+   sigs:[{r:true,txt:'If planning horizon <3 years: exclude VBC from near-term savings modeling.'},
+         {r:false,txt:'Start with a focused specialty population (kidney, oncology). Pilots with clear metrics derisk the investment.'}]},
+  {type:'rsk',title:'Multiple levers produce additive savings without double-counting',
+   body:'Care Management and Prior Authorization both target the same high-cost utilization pool. Network Optimization and VBC can both claim credit for the same site-of-care shift. Without explicit scope boundaries, portfolio savings are structurally inflated.',
+   sigs:[{r:true,txt:'For each pair of active levers: define which member cohorts, claim categories, and time windows each owns. No two levers claim savings against the same dollar of spend.'},
+         {r:false,txt:'The portfolio overlap discount (8–13%) is a rough approximation. Finance sign-off by initiative scope is the only real solution.'}]},
+  {type:'cau',title:'Vendor benchmarks reflect the same evidence quality as your internal data',
+   body:'A T4 vendor claim and a T1 audited result look identical on a slide. Most business cases mix evidence tiers without labeling them. The moment a vendor says "we\'ll establish the baseline in Phase 1," the savings have no anchor and all risk moves to you.',
+   sigs:[{r:false,txt:'For each lever: require (a) data source for baseline, (b) comparison methodology, (c) system of record for attesting realized savings.'},
+         {r:true,txt:'If vendor declines a performance-linked contract: treat their savings projections as T4. That is what they are.'}]},
+];
+
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+let state={
+  mkt:'commercial', members:500000, pmpm:600, mlr:88, adm:13,
+  pnlMode:'light', deepMode:false,
+  clientDrivers:{}, // driver id -> value
+  activeInit:null,
+  activeLevers:new Set(['pa','cm','pi','aa']),
+  scenario:'base'
+};
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+function fmtM(n){if(Math.abs(n)>=1000)return'$'+(n/1000).toFixed(1)+'B';return'$'+Math.round(Math.abs(n))+'M'+(n<0?' loss':'');}
+function fmtPMPM(n){return'$'+n.toFixed(0)+' PMPM';}
+function fmtPct(n){return n.toFixed(1)+'%';}
+function gapColor(n){return n>0?'pos':'neg';}
+
+function calcPnL(){
+  const rev=state.members*state.pmpm*12/1e6;
+  const med=rev*state.mlr/100;
+  const adm=rev*state.adm/100;
+  const oi=rev-med-adm;
+  const b=PNL_BENCH[state.mkt];
+  // deep mode — derive medical sub-lines from drivers if available
+  let deep={};
+  if(state.deepMode){
+    const cd=state.clientDrivers, mkt=state.mkt;
+    const getD=(id,fallback)=>{const v=parseFloat(cd[id]);return isNaN(v)?fallback:v;};
+    const b2=PNL_BENCH[mkt];
+    const d=DRIVERS;
+    const ipA=getD('ip_admits',d.ip_admits.bench[mkt]);
+    const ipL=getD('ip_los',d.ip_los.bench[mkt]);
+    const ipC=getD('ip_cost',d.ip_cost.bench[mkt]);
+    const erV=getD('er_visits',d.er_visits.bench[mkt]);
+    const erC=getD('er_cost',d.er_cost.bench[mkt]);
+    const opV=getD('op_visits',d.op_visits.bench[mkt]);
+    const opC=getD('op_cost',d.op_cost.bench[mkt]);
+    const pcpV=getD('pcp_visits',d.pcp_visits.bench[mkt]);
+    const spcV=getD('spec_visits',d.spec_visits.bench[mkt]);
+    const prC=getD('prof_cost',d.prof_cost.bench[mkt]);
+    const rxS=getD('rx_scripts',d.rx_scripts.bench[mkt]);
+    const rxN=getD('rx_netcost',d.rx_netcost.bench[mkt]);
+    const bhA=getD('bh_admits',d.bh_admits.bench[mkt]);
+    const bhV=getD('bh_visits',d.bh_visits.bench[mkt]);
+    const bh_admit_cost=8500;
+    const bh_visit_cost=180;
+    const acC=getD('adm_claims',d.adm_claims.bench[mkt]);
+    const acPa=getD('adm_pa',d.adm_pa.bench[mkt]);
+    deep.ip=(ipA/1000)*ipL*ipC/12;
+    deep.op=((erV/1000)*erC+(opV/1000)*opC)/12;
+    deep.prof=((pcpV+spcV)/1000)*prC/12;
+    deep.rx=rxS*rxN/12;
+    deep.bh=((bhA/1000)*bh_admit_cost+(bhV/1000)*bh_visit_cost)/12;
+    deep.medTotal=deep.ip+deep.op+deep.prof+deep.rx+deep.bh;
+    deep.admin_claims=acC*rxS/12;
+    deep.admin_pa=acPa*250/1000/12;
+    deep.admin_memb=getD('adm_memb',8.5);
+    deep.admin_it=getD('adm_it',12.8);
+    deep.admin=deep.admin_claims+deep.admin_pa+deep.admin_memb+deep.admin_it;
+  }
+  return{rev,med,adm,oi,b,deep, mlr:state.mlr, members:state.members, pmpm:state.pmpm};
+}
+
+function driverCompleteness(){
+  const total=Object.keys(DRIVERS).length;
+  const filled=Object.keys(state.clientDrivers).filter(k=>state.clientDrivers[k]!==undefined&&state.clientDrivers[k]!=='').length;
+  return{filled,total};
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════
+const navs=document.querySelectorAll('.nv');
+const secs=document.querySelectorAll('.sec');
+function show(i){
+  navs.forEach((n,j)=>n.classList.toggle('on',j===i));
+  secs.forEach((s,j)=>s.classList.toggle('on',j===i));
+  if(i===1)renderPnL();
+  if(i===2)renderTree();
+  if(i===3)renderInitList();
+  if(i===4)renderOpp();
+  if(i===5)renderMeth();
+  if(i===6)renderStress();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// P&L BUILDER
+// ═══════════════════════════════════════════════════════════════
+function onInput(){
+  state.members=+document.getElementById('p-m').value;
+  state.pmpm=+document.getElementById('p-p').value;
+  state.mlr=+document.getElementById('p-mlr').value;
+  state.adm=+document.getElementById('p-adm').value;
+  state.mkt=document.getElementById('p-mkt').value;
+  document.getElementById('p-mdisp').textContent=state.members>=1e6?(state.members/1e6).toFixed(1)+'M':(state.members/1e3).toFixed(0)+'K';
+  document.getElementById('p-pdisp').textContent='$'+state.pmpm;
+  document.getElementById('p-mdisp2').textContent=state.mlr.toFixed(1)+'%';
+  document.getElementById('p-adisp').textContent=state.adm.toFixed(1)+'%';
+  renderPnL();
+  updateModeUI();
+}
+
+function updateModeUI(){
+  const {filled,total}=driverCompleteness();
+  const pct=Math.round(filled/total*100);
+  state.deepMode=filled>=8;
+  document.getElementById('dcompPct').textContent=`${filled} / ${total} drivers`;
+  document.getElementById('dcompF').style.width=pct+'%';
+  const badge=document.getElementById('modeBadge');
+  const ind=document.getElementById('modeInd');
+  if(state.deepMode){
+    badge.textContent='DEEP MODE';badge.className='mode-badge deep';
+    ind.className='mode-ind deep';
+    ind.innerHTML='<span class="mi">⬤ DEEP MODE</span><span style="margin-left:6px">Full driver decomposition active — '+filled+' drivers loaded</span>';
+  } else {
+    badge.textContent='LIGHT MODE';badge.className='mode-badge';
+    ind.className='mode-ind light';
+    ind.innerHTML='<span class="mi">◌ LIGHT MODE</span><span style="margin-left:6px">Upload driver data ('+filled+'/'+total+' filled) to unlock decomposition</span>';
+  }
+}
+
+function togPnl(m){
+  state.pnlMode=m;
+  document.getElementById('tog-light').classList.toggle('on',m==='light');
+  document.getElementById('tog-deep').classList.toggle('on',m==='deep');
+  renderPnL();
+}
+
+function renderPnL(highlightInit){
+  const {rev,med,adm,oi,b,deep}=calcPnL();
+  const mkt=state.mkt;
+  const deepOk=state.deepMode&&state.pnlMode==='deep';
+  const initMap=highlightInit||state.activeInit;
+  const hi=initMap?new Set(INITIATIVES.find(x=>x.id===initMap)?.pnl_primary||[]):new Set();
+  const hi2=initMap?new Set(INITIATIVES.find(x=>x.id===initMap)?.pnl_secondary||[]):new Set();
+  function pnlClass(key){return hi.has(key)?'highlight-primary':hi2.has(key)?'highlight-secondary':'';}
+  function gapHtml(client,bench,invert=false){
+    if(!bench)return'<span class="pb-gap">—</span>';
+    const diff=client-bench;
+    const pct=((diff/bench)*100).toFixed(1);
+    const worse=invert?diff>0:diff>0;
+    return`<span class="pb-gap ${worse?'neg':'pos'}">${diff>0?'+':''}${pct}%</span>`;
+  }
+  const rows=[];
+  // Revenue
+  rows.push({type:'cat',name:'Premium Revenue',val:fmtM(rev),bench:b.rev?fmtPMPM(b.rev):null,gap:null,key:'revenue'});
+  // Medical
+  rows.push({type:'cat',name:'(-) Medical Costs',val:fmtM(med),bench:b.medTotal?fmtPMPM(b.medTotal):null,gap:null,key:'medical',neg:true});
+  if(deepOk){
+    const mkBench=(k)=>b[k]?fmtPMPM(b[k]):null;
+    const mkGap=(client,benchVal)=>{if(!benchVal)return null;const d=client-benchVal;const p=((d/benchVal)*100).toFixed(1);return`<span class="pb-gap ${d>0?'neg':'pos'}">${d>0?'+':''}${p}%</span>`;};
+    rows.push({type:'sub',name:'Inpatient',val:fmtPMPM(deep.ip),bench:mkBench('ip'),gapHtml:mkGap(deep.ip,b.ip),key:'inpatient'});
+    rows.push({type:'sub',name:'Outpatient / ER',val:fmtPMPM(deep.op),bench:mkBench('op'),gapHtml:mkGap(deep.op,b.op),key:'outpatient'});
+    rows.push({type:'sub',name:'Professional',val:fmtPMPM(deep.prof),bench:mkBench('prof'),gapHtml:mkGap(deep.prof,b.prof),key:'professional'});
+    rows.push({type:'sub',name:'Pharmacy',val:fmtPMPM(deep.rx),bench:mkBench('rx'),gapHtml:mkGap(deep.rx,b.rx),key:'pharmacy'});
+    rows.push({type:'sub',name:'Behavioral Health',val:fmtPMPM(deep.bh),bench:mkBench('bh'),gapHtml:mkGap(deep.bh,b.bh),key:'behavioral'});
+  }
+  // Admin
+  rows.push({type:'cat',name:'(-) Admin Costs',val:fmtM(adm),bench:b.admin?fmtPMPM(b.admin):null,gap:null,key:'admin',neg:true});
+  if(deepOk){
+    rows.push({type:'sub',name:'Claims Processing',val:'$'+deep.admin_claims.toFixed(1)+' PMPM',bench:null,gapHtml:null,key:'admin'});
+    rows.push({type:'sub',name:'Prior Authorization',val:'$'+deep.admin_pa.toFixed(1)+' PMPM',bench:null,gapHtml:null,key:'admin'});
+    rows.push({type:'sub',name:'Member Services',val:'$'+deep.admin_memb.toFixed(1)+' PMPM',bench:'$8.5 PMPM',gapHtml:null,key:'admin'});
+    rows.push({type:'sub',name:'IT Run Cost',val:'$'+deep.admin_it.toFixed(1)+' PMPM',bench:'$12.8 PMPM',gapHtml:null,key:'admin'});
+  }
+  // Operating Income
+  const oiPos=oi>=0;
+  rows.push({type:'total',name:'Operating Income',val:(oiPos?'+':'-')+fmtM(Math.abs(oi)),key:'oi',pos:oiPos});
+  rows.push({type:'total',name:'Operating Margin',val:fmtPct(oi/rev*100),key:'margin',pos:oiPos});
+  rows.push({type:'total',name:'Medical Loss Ratio',val:fmtPct(state.mlr),key:'mlr',pos:state.mlr<88});
+
+  let h=rows.map(r=>{
+    const hc=pnlClass(r.key);
+    const negCls=r.neg?' negative':'';
+    const posCls=r.pos?' positive':'';
+    return`<div class="pr ${r.type}${negCls}${posCls} ${hc}" id="pnl-${r.key}">
+      <div class="pn">${r.name}</div>
+      <div class="pv">${r.val}</div>
+      <div class="pb-bench">${r.bench||''}</div>
+      ${r.gapHtml||'<div class="pb-gap">—</div>'}
+      <div class="pr-src" title="Click to see benchmark methodology">?</div>
+    </div>`;
+  }).join('');
+  document.getElementById('pnlBody').innerHTML=h;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FILE UPLOAD
+// ═══════════════════════════════════════════════════════════════
+function handleFile(f){
+  if(!f)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const txt=e.target.result;
+    const lines=txt.split('\n').filter(l=>l.trim());
+    const headers=lines[0].split(',').map(s=>s.trim().toLowerCase().replace(/[^a-z_]/g,''));
+    for(let i=1;i<lines.length;i++){
+      const vals=lines[i].split(',').map(s=>s.trim());
+      const id=vals[0]?.trim();
+      const val=parseFloat(vals[1]);
+      if(id&&!isNaN(val)&&DRIVERS[id]){
+        state.clientDrivers[id]=val;
+      }
+    }
+    updateModeUI();
+    onInput();
+    renderTree();
+  };
+  reader.readAsText(f);
+}
+
+function downloadTemplate(){
+  const rows=['driver_id,your_value,benchmark_commercial,benchmark_ma,benchmark_medicaid,unit,description'];
+  Object.values(DRIVERS).forEach(d=>{
+    rows.push(`${d.id},,${d.bench.commercial},${d.bench.ma},${d.bench.medicaid},${d.unit},${d.label}`);
+  });
+  const blob=new Blob([rows.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='payer-driver-template.csv';a.click();
+}
+
+function clearDrivers(){state.clientDrivers={};updateModeUI();onInput();renderTree();}
+
+// ═══════════════════════════════════════════════════════════════
+// DRIVER TREE
+// ═══════════════════════════════════════════════════════════════
+const CAT_ORDER=['inpatient','outpatient','professional','pharmacy','behavioral','admin'];
+const CAT_LABELS={inpatient:'Inpatient',outpatient:'Outpatient / ER',professional:'Professional',pharmacy:'Pharmacy / Rx',behavioral:'Behavioral Health',admin:'Admin'};
+
+function renderTree(){
+  const {med,adm,deep}=calcPnL();
+  const catPmpm={
+    inpatient:state.deepMode?deep.ip:PNL_BENCH[state.mkt].ip,
+    outpatient:state.deepMode?deep.op:PNL_BENCH[state.mkt].op,
+    professional:state.deepMode?deep.prof:PNL_BENCH[state.mkt].prof,
+    pharmacy:state.deepMode?deep.rx:PNL_BENCH[state.mkt].rx,
+    behavioral:state.deepMode?deep.bh:PNL_BENCH[state.mkt].bh,
+    admin:state.deepMode?deep.admin:(state.members*state.pmpm*12/1e6*state.adm/100)*1e6/(state.members*12)
+  };
+  const total=Object.values(catPmpm).reduce((a,b)=>a+b,0);
+  document.getElementById('tree-root-val').textContent='$'+total.toFixed(0)+' PMPM';
+
+  const initData=state.activeInit?INITIATIVES.find(x=>x.id===state.activeInit):null;
+  const primaryDrivers=new Set(initData?.primary||[]);
+  const secondaryDrivers=new Set(initData?.secondary||[]);
+  const primaryCats=new Set(initData?.pnl_primary||[]);
+  const secondaryCats=new Set(initData?.pnl_secondary||[]);
+
+  let h='';
+  CAT_ORDER.forEach(cat=>{
+    const drivers=Object.values(DRIVERS).filter(d=>d.cat===cat);
+    const catAct=primaryCats.has(cat)?'cat-primary-active':secondaryCats.has(cat)?'cat-secondary-active':'';
+    const pmpm=catPmpm[cat]||0;
+    h+=`<div class="tree-cat ${cat} ${catAct}" id="tree-cat-${cat}">
+      <div class="tree-cat-hdr">
+        <div class="tch-label">${CAT_LABELS[cat]}</div>
+        <div class="tch-pmpm">$${pmpm.toFixed(0)}</div>
+      </div>`;
+    drivers.forEach(d=>{
+      const bench=d.bench[state.mkt];
+      const client=state.clientDrivers[d.id];
+      const hasClient=client!==undefined&&client!=='';
+      const actCls=primaryDrivers.has(d.id)?'primary':secondaryDrivers.has(d.id)?'secondary':'';
+      const gapVal=hasClient?((client-bench)/bench*100):null;
+      const gapWorse=d.dir==='lower'?gapVal>0:d.dir==='higher'?gapVal<0:false;
+      const gapCls=gapVal===null?'neutral':gapWorse?'worse':'better';
+      const barPct=hasClient?Math.min(100,Math.abs(client/bench)*100):50;
+      h+=`<div class="tree-driver ${actCls}" id="td-${d.id}" onclick="showDriverDetail('${d.id}')">
+        <div class="td-top">
+          <div class="td-name">${d.label}</div>
+          <div class="td-unit">${d.unit}</div>
+        </div>
+        <div class="td-vals">
+          <div class="td-bench">Bench: ${bench.toLocaleString()}</div>
+          ${hasClient?`<div class="td-client">You: ${parseFloat(client).toLocaleString()}</div>`:``}
+          ${gapVal!==null?`<div class="td-gap ${gapCls}">${gapVal>0?'+':''}${gapVal.toFixed(1)}%</div>`:''}
+        </div>
+        <div class="td-bar"><div class="td-bar-f" style="width:${barPct}%"></div></div>
+      </div>`;
+    });
+    h+='</div>';
+  });
+  document.getElementById('treeCols').innerHTML=h;
+
+  if(initData){
+    const b=document.getElementById('activeInitBanner');
+    b.style.display='block';
+    b.textContent=`Showing: ${initData.name} — Primary drivers (teal) · Secondary drivers (amber)`;
+  } else {
+    document.getElementById('activeInitBanner').style.display='none';
+  }
+}
+
+function showDriverDetail(id){
+  const d=DRIVERS[id];
+  if(!d)return;
+  const bench=d.bench[state.mkt];
+  const client=state.clientDrivers[id];
+  const hasClient=client!==undefined&&client!=='';
+  const gapVal=hasClient?((client-bench)/bench*100):null;
+  const gapWorse=d.dir==='lower'?gapVal>0:d.dir==='higher'?gapVal<0:false;
+  const {rev,members}=calcPnL();
+  const annualImpactPer1Pct=rev*0.01*1e6/(members*12);
+
+  document.getElementById('driverDetail').innerHTML=`
+    <div class="lbl" style="margin-bottom:8px">${CAT_LABELS[d.cat]} Driver</div>
+    <div style="font-family:var(--ds);font-size:16px;font-weight:600;margin-bottom:14px">${d.label}</div>
+    ${d.trend?`<div style="font-family:var(--dm);font-size:10px;color:var(--amber);margin-bottom:12px">Trend: ${d.trend}</div>`:''}
+    <div style="display:grid;grid-template-columns:1fr 1fr${hasClient?' 1fr':''};gap:10px;margin-bottom:16px">
+      <div style="background:var(--bg);border-radius:5px;padding:10px;text-align:center">
+        <div style="font-family:var(--dm);font-size:16px;color:var(--t3)">${bench.toLocaleString()}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:3px">Benchmark</div>
+      </div>
+      ${hasClient?`<div style="background:var(--blueDim);border:1px solid rgba(74,158,255,.2);border-radius:5px;padding:10px;text-align:center">
+        <div style="font-family:var(--dm);font-size:16px;color:var(--blue)">${parseFloat(client).toLocaleString()}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:3px">Your Data</div>
+      </div>`:''}
+      ${gapVal!==null?`<div style="background:${gapWorse?'var(--redDim)':'var(--tealDim)'};border-radius:5px;padding:10px;text-align:center">
+        <div style="font-family:var(--dm);font-size:16px;color:${gapWorse?'var(--red)':'var(--teal)'}">${gapVal>0?'+':''}${gapVal.toFixed(1)}%</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:3px">vs Benchmark</div>
+      </div>`:''}
+    </div>
+    <div style="background:var(--bg);border-radius:5px;padding:10px 12px;margin-bottom:12px">
+      <div style="font-family:var(--dm);font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Formula</div>
+      <div style="font-family:var(--dm);font-size:11px;color:var(--t2);line-height:1.6">${d.formula}</div>
+    </div>
+    <div style="background:var(--bg);border-radius:5px;padding:10px 12px;margin-bottom:12px">
+      <div style="font-family:var(--dm);font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">P&L Connection</div>
+      <div style="font-family:var(--dm);font-size:11px;color:var(--t2);line-height:1.6">${d.pnl_formula}</div>
+    </div>
+    <div style="margin-bottom:12px">
+      <div style="font-family:var(--dm);font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Plausibility Band (${state.mkt})</div>
+      ${d.plaus&&d.plaus[state.mkt]?`<div style="font-family:var(--dm);font-size:11px;color:var(--t2)">${d.plaus[state.mkt][0].toLocaleString()} – ${d.plaus[state.mkt][1].toLocaleString()} ${d.unit}</div>
+      <div style="font-size:10px;color:var(--t3);margin-top:3px">Values outside this range require explanation before committing to savings</div>`:'<div style="font-size:11px;color:var(--t3)">See source for ranges</div>'}
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+      <span style="width:7px;height:7px;border-radius:50%;background:${TIER_COL[d.tier]};display:inline-block"></span>
+      <span style="font-family:var(--dm);font-size:9px;color:${TIER_COL[d.tier]}">${TIER[d.tier]}</span>
+    </div>
+    <div style="font-size:10px;color:var(--t3)">${d.src}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INITIATIVES
+// ═══════════════════════════════════════════════════════════════
+function renderInitList(){
+  document.getElementById('initList').innerHTML=INITIATIVES.map(ini=>`
+    <div class="init-item ${state.activeInit===ini.id?'active':''}" onclick="selectInit('${ini.id}')">
+      <div class="ii-num">${INITIATIVES.indexOf(ini)+1}</div>
+      <div>
+        <div class="ii-name">${ini.name}</div>
+        <div class="ii-range">${ini.range}</div>
+        <div class="ii-tl">${ini.tl} · ${ini.inv}</div>
+      </div>
+    </div>`).join('');
+}
+
+function selectInit(id){
+  state.activeInit=state.activeInit===id?null:id;
+  renderInitList();
+  renderInitDetail();
+  renderTree();
+  renderPnL(state.activeInit);
+}
+
+function renderInitDetail(){
+  const ini=state.activeInit?INITIATIVES.find(x=>x.id===state.activeInit):null;
+  if(!ini){
+    document.getElementById('initDetail').innerHTML=`<div class="impact-panel"><div class="ip-none"><div class="icon">◈</div><p>Select an initiative to see its P&L impact, driver connections, evidence base, and calculated savings.</p></div></div>`;
+    return;
+  }
+  const {rev,med,adm,deep}=calcPnL();
+  const si={bear:0,base:1,bull:2}[state.scenario];
+  const b4={med,adm,rx:med*0.22};
+  const base=b4[ini.lvrData.bt];
+  const savings=base*ini.lvrData.r[si];
+
+  document.getElementById('initDetail').innerHTML=`<div class="impact-panel">
+    <div class="impact-header">
+      <div>
+        <div class="ih-title">${ini.name}</div>
+        <div class="ih-range">${ini.range}</div>
+        <div class="ih-tl">Timeline: ${ini.tl} · Investment: ${ini.inv}</div>
+      </div>
+      <div class="ih-calc">
+        <div class="ihc-val">${fmtM(savings)}</div>
+        <div class="ihc-lbl">Est. savings (${state.scenario})</div>
+      </div>
+    </div>
+
+    <div class="impact-section">
+      <div class="is-title">Primary Driver Impacts — P&L line lights up teal</div>
+      ${ini.primary.map(did=>{
+        const d=DRIVERS[did];if(!d)return'';
+        return`<div class="driver-impact-row dir-primary">
+          <div class="dir-dot"></div>
+          <div class="dir-name">${d.label}</div>
+          <div class="dir-impact">${ini.impacts[did]||'↓ Target'}</div>
+        </div>
+        <div class="dir-formula">${d.pnl_formula}</div>`;
+      }).join('')}
+    </div>
+
+    <div class="impact-section">
+      <div class="is-title">Secondary Driver Impacts — P&L line lights up amber</div>
+      ${ini.secondary.map(did=>{
+        const d=DRIVERS[did];if(!d)return'';
+        return`<div class="driver-impact-row dir-secondary">
+          <div class="dir-dot"></div>
+          <div class="dir-name">${d.label}</div>
+          <div class="dir-impact">${ini.impacts[did]||'↓ Secondary'}</div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div class="impact-section">
+      <div class="is-title">P&L Line Impact</div>
+      ${ini.pnl_primary.map(k=>`<div class="pnl-impact-row primary"><div class="pir-line">${k.charAt(0).toUpperCase()+k.slice(1)}</div><div class="pir-val">Primary target</div></div>`).join('')}
+      ${ini.pnl_secondary.map(k=>`<div class="pnl-impact-row secondary"><div class="pir-line">${k.charAt(0).toUpperCase()+k.slice(1)}</div><div class="pir-val">Secondary</div></div>`).join('')}
+    </div>
+
+    <div class="ev-box">
+      <div style="font-family:var(--dm);font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Evidence &amp; Risks</div>
+      ${ini.risks.map(r=>`<div class="ev-row"><div class="ev-dot" style="background:var(--amber)"></div><div class="ev-txt">${r}</div></div>`).join('')}
+      <div style="margin-top:8px;display:flex;align-items:center;gap:6px">
+        <span style="width:6px;height:6px;border-radius:50%;background:${TIER_COL[ini.evTier]};display:inline-block"></span>
+        <span style="font-family:var(--dm);font-size:9px;color:${TIER_COL[ini.evTier]}">${TIER[ini.evTier]}</span>
+        <span style="font-size:10px;color:var(--t3)"> · ${ini.src}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// OPPORTUNITY
+// ═══════════════════════════════════════════════════════════════
+function setScn(s){
+  state.scenario=s;
+  ['bear','base','bull'].forEach(x=>{
+    const el=document.getElementById('sb-'+x);
+    el.className='sbtn'+(x===s?' a'+x:'');
+  });
+  renderOpp();
+  renderInitDetail();
+}
+
+function renderOpp(){
+  const {rev,med,adm}=calcPnL();
+  const si={bear:0,base:1,bull:2}[state.scenario];
+  const rxBase=med*0.22;
+  const b4={med,adm,rx:rxBase};
+  const bL={med:`Medical (${fmtM(med)})`,adm:`Admin (${fmtM(adm)})`,rx:`Pharmacy (~${fmtM(rxBase)})`};
+  let rows='',tb=0,tb2=0,tb3=0;
+  INITIATIVES.forEach(ini=>{
+    if(!state.activeLevers.has(ini.id))return;
+    const base=b4[ini.lvrData.bt];
+    const be=base*ini.lvrData.r[0],ba=base*ini.lvrData.r[1],bu=base*ini.lvrData.r[2];
+    tb+=be;tb2+=ba;tb3+=bu;
+    rows+=`<tr><td class="otn">${ini.name}</td><td style="font-size:10px;color:var(--t3)">${bL[ini.lvrData.bt]}</td><td class="bear">${fmtM(be)}</td><td class="base">${fmtM(ba)}</td><td class="bull">${fmtM(bu)}</td><td style="font-family:var(--dm);font-size:10px;color:var(--t3)">${ini.tl}</td></tr>`;
+  });
+  const disc=state.activeLevers.size>3?.13:.08;
+  const ab=tb*(1-disc),ab2=tb2*(1-disc),ab3=tb3*(1-disc);
+  rows+=`<tr class="totr"><td>Total (adj. overlap)</td><td></td><td class="bear">${fmtM(ab)}</td><td class="base">${fmtM(ab2)}</td><td class="bull">${fmtM(ab3)}</td><td></td></tr>`;
+  document.getElementById('oppBody').innerHTML=rows;
+
+  const pick=[ab,ab2,ab3][si];
+  const mlrImp=rev>0?(pick/rev*100).toFixed(1):'—';
+  const newMlr=(state.mlr-parseFloat(mlrImp)).toFixed(1);
+  const spm=state.members?Math.round(pick*1e6/state.members).toLocaleString():'—';
+  document.getElementById('oppCards').innerHTML=`
+    <div class="sc t"><div class="sv ct">${fmtM(pick)}</div><div class="sl">${state.scenario} scenario savings</div><div class="sx">After overlap discount</div></div>
+    <div class="sc t"><div class="sv ct">${mlrImp} pts</div><div class="sl">MLR improvement</div><div class="sx">${state.mlr.toFixed(1)}% → ~${newMlr}%</div></div>
+    <div class="sc t"><div class="sv ct">$${spm}</div><div class="sl">Annual savings per member</div></div>`;
+
+  // Validation flags
+  const flags=[];
+  if(state.activeLevers.has('aa'))flags.push({c:'warn',t:'Capacity ≠ cost: Admin Automation savings only appear in the P&L if freed FTEs are removed or redeployed to revenue-generating work. Model against avoided hiring, not current headcount.'});
+  if(state.activeLevers.has('vb')&&state.scenario!=='bear')flags.push({c:'warn',t:'Timing: VBC requires 3–5 years to realize savings. Including in a Base/Bull near-term case overstates Year 1–2 P&L impact.'});
+  if(state.activeLevers.has('cm')&&state.activeLevers.has('pa'))flags.push({c:'warn',t:'Double-count risk: Care Management and Prior Auth both target high-cost utilization. Scope to distinct member cohorts before combining.'});
+  if(state.activeLevers.size>=5&&state.scenario==='bull')flags.push({c:'err',t:'Plausibility: 5+ levers at Bull assumes near-simultaneous high-effectiveness deployment. Apply a steeper overlap discount or shift to Base.'});
+  if(parseFloat(mlrImp)>5)flags.push({c:'warn',t:`${mlrImp} pts MLR improvement exceeds the typical 3–5 pt range for an initial portfolio. Validate this reflects a phased multi-year program.`});
+  if(flags.length===0)flags.push({c:'ok',t:'No validation flags for current selection. Review stress tests in Section 07 before finalizing.'});
+  document.getElementById('valFlags').innerHTML=flags.map(f=>`<div class="vflag ${f.c}"><div class="vflag-ico">${f.c==='ok'?'✓':f.c==='err'?'⚠':'◆'}</div><div>${f.t}</div></div>`).join('');
+
+  // Checks
+  document.getElementById('oppChecks').innerHTML=INITIATIVES.map(ini=>`
+    <div style="display:flex;align-items:center;gap:9px;padding:8px;border-radius:5px;cursor:pointer;border:1px solid ${state.activeLevers.has(ini.id)?'var(--teal)':'var(--bdr)'};background:${state.activeLevers.has(ini.id)?'var(--tealDim)':'transparent'};margin-bottom:6px;transition:all .15s" onclick="togLvr('${ini.id}')">
+      <div style="width:12px;height:12px;border-radius:3px;border:1.5px solid ${state.activeLevers.has(ini.id)?'var(--teal)':'var(--bdrl)'};background:${state.activeLevers.has(ini.id)?'var(--teal)':'transparent'};flex-shrink:0;display:flex;align-items:center;justify-content:center">
+        ${state.activeLevers.has(ini.id)?'<span style="color:#07111e;font-size:8px">✓</span>':''}
+      </div>
+      <div style="font-size:11px;color:${state.activeLevers.has(ini.id)?'var(--t1)':'var(--t3)'}">${ini.name}</div>
+    </div>`).join('');
+
+  // P&L impact summary
+  const pnlSummary={};
+  INITIATIVES.forEach(ini=>{
+    if(!state.activeLevers.has(ini.id))return;
+    const base=b4[ini.lvrData.bt];
+    const sv=base*ini.lvrData.r[si];
+    ini.pnl_primary.forEach(k=>{pnlSummary[k]=(pnlSummary[k]||0)+sv*0.7;});
+    ini.pnl_secondary.forEach(k=>{pnlSummary[k]=(pnlSummary[k]||0)+sv*0.3;});
+  });
+  const pnlKeys=['inpatient','outpatient','professional','pharmacy','behavioral','admin'];
+  const pnlLabels={inpatient:'Inpatient',outpatient:'Outpatient',professional:'Professional',pharmacy:'Pharmacy',behavioral:'Behavioral Health',admin:'Admin'};
+  document.getElementById('oppPnlImpact').innerHTML=pnlKeys.filter(k=>pnlSummary[k]).map(k=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--tealDim);border-radius:4px;margin-bottom:5px;border:1px solid rgba(18,196,160,.15)">
+      <div style="font-size:11px;color:var(--t2)">${pnlLabels[k]}</div>
+      <div style="font-family:var(--dm);font-size:11px;color:var(--teal)">${fmtM(pnlSummary[k])}</div>
+    </div>`).join('');
+}
+
+function togLvr(id){
+  if(state.activeLevers.has(id))state.activeLevers.delete(id); else state.activeLevers.add(id);
+  renderOpp();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// METHODOLOGY
+// ═══════════════════════════════════════════════════════════════
+const METH_CATS=[
+  {id:'inpatient',label:'Inpatient',drivers:['ip_admits','ip_los','ip_cost']},
+  {id:'outpatient',label:'Outpatient / ER',drivers:['er_visits','er_cost','op_visits','op_cost']},
+  {id:'professional',label:'Professional',drivers:['pcp_visits','spec_visits','prof_cost']},
+  {id:'pharmacy',label:'Pharmacy',drivers:['rx_scripts','rx_generic','rx_specialty','rx_netcost']},
+  {id:'behavioral',label:'Behavioral Health',drivers:['bh_admits','bh_visits']},
+  {id:'admin',label:'Admin',drivers:['adm_claims','adm_pa']},
+];
+let activeMethCat='inpatient';
+
+function renderMeth(){
+  document.getElementById('methNav').innerHTML=METH_CATS.map(c=>`<div class="meth-nav-item ${activeMethCat===c.id?'on':''}" onclick="setMethCat('${c.id}')">${c.label}</div>`).join('');
+  renderMethContent();
+}
+function setMethCat(id){activeMethCat=id;renderMeth();}
+function renderMethContent(){
+  const cat=METH_CATS.find(c=>c.id===activeMethCat);
+  if(!cat){document.getElementById('methContent').innerHTML='';return;}
+  let h=`<div class="meth-content">
+    <div class="lbl" style="margin-bottom:4px">${cat.label}</div>
+    <div style="font-size:13px;color:var(--t2);margin-bottom:20px">Benchmark documentation for all ${cat.label} drivers</div>`;
+  cat.drivers.forEach(did=>{
+    const d=DRIVERS[did];if(!d)return;
+    h+=`<div class="bench-card" id="bc-${did}">
+      <div class="bc-hdr" onclick="togBc('${did}')">
+        <div class="bc-name">${d.label}</div>
+        <div class="bc-tier" style="background:${TIER_COL[d.tier]}22;border:1px solid ${TIER_COL[d.tier]}44;color:${TIER_COL[d.tier]}">${TIER[d.tier]}</div>
+      </div>
+      <div class="bc-body">
+        <div class="bc-vals">
+          <div class="bcv"><div class="bcv-n">${d.bench.commercial.toLocaleString()}</div><div class="bcv-l">Commercial</div></div>
+          <div class="bcv"><div class="bcv-n">${d.bench.ma.toLocaleString()}</div><div class="bcv-l">Medicare Advantage</div></div>
+          <div class="bcv"><div class="bcv-n">${d.bench.medicaid.toLocaleString()}</div><div class="bcv-l">Medicaid MCO</div></div>
+        </div>
+        <div class="bc-formula">${d.formula}</div>
+        ${d.plaus?.commercial?`<div class="bc-field"><div class="bc-field-l">Plausibility Band (Commercial)</div><div class="bc-field-v">${d.plaus.commercial[0].toLocaleString()} – ${d.plaus.commercial[1].toLocaleString()} ${d.unit} · Values outside this range should be explained before using in a savings case</div></div>`:''}
+        <div class="bc-field"><div class="bc-field-l">P&L Connection</div><div class="bc-field-v">${d.pnl_formula}</div></div>
+        ${d.trend?`<div class="bc-field"><div class="bc-field-l">Current Trend</div><div class="bc-field-v" style="color:var(--amber)">${d.trend}</div></div>`:''}
+        <div class="bc-field"><div class="bc-field-l">Source</div><div class="bc-field-v">${d.src}</div></div>
+      </div>
+    </div>`;
+  });
+  h+='</div>';
+  document.getElementById('methContent').innerHTML=h;
+}
+function togBc(id){document.getElementById('bc-'+id).classList.toggle('open');}
+
+// ═══════════════════════════════════════════════════════════════
+// STRESS TEST
+// ═══════════════════════════════════════════════════════════════
+function renderStress(){
+  document.getElementById('stItems').innerHTML=STRESS.map((d,i)=>`
+    <div class="si" id="st${i}">
+      <div class="sh" onclick="togSt(${i})">
+        <div class="sico ${d.type}">${d.type==='rsk'?'⚠':'◆'}</div>
+        <div class="stit">${d.title}</div>
+        <div class="schv">▼</div>
+      </div>
+      <div class="sb-body">
+        <p>${d.body}</p>
+        ${d.sigs.map(s=>`<div class="ssig"><div class="sdot ${s.r?'r':''}"></div><div>${s.txt}</div></div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+function togSt(i){document.getElementById('st'+i).classList.toggle('op');}
+
+// ── INIT ──────────────────────────────────────────────────────
+onInput();
+renderInitList();
+renderStress();
+
+// Drag-drop upload
+const dz=document.getElementById('dropZone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');handleFile(e.dataTransfer.files[0]);});
+</script>
+</div><!-- /shell -->
+</body>
+</html>

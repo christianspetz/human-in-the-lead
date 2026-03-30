@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EY · The Agentic Platform Shift</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --dark:#0a0907;--dark2:#111009;--dark3:#1a1612;
+  --copper:#b4823c;--copper-dim:#6b4e24;
+  --cream:#f0ebe0;--cream2:#d8d0c0;
+  --muted:#7a7060;--muted2:#4a4540;
+  --red:#c94040;--green:#4a8c5c;--amber:#c47a20;
+  --border:rgba(180,130,60,0.18);--border-dim:rgba(180,130,60,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'DM Sans',sans-serif;background:var(--dark);color:var(--cream);}
+
+/* ── SHELL ── */
+.shell{display:flex;flex-direction:column;height:100vh;}
+
+/* top bar */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 32px;height:48px;border-bottom:1px solid var(--border);
+  background:var(--dark2);flex-shrink:0;
+}
+.topbar-brand{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--copper);letter-spacing:.12em;}
+.topbar-title{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:.08em;display:flex;align-items:center;gap:8px;}
+.slide-counter{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted2);}
+
+/* slides wrapper */
+.slides-wrap{flex:1;position:relative;overflow:hidden;}
+
+.slide{
+  position:absolute;inset:0;
+  padding:48px 64px;
+  overflow-y:auto;
+  opacity:0;transform:translateX(40px);
+  transition:opacity .35s ease, transform .35s ease;
+  pointer-events:none;
+}
+.slide.active{opacity:1;transform:translateX(0);pointer-events:all;}
+.slide.prev{opacity:0;transform:translateX(-40px);}
+
+/* bottom nav */
+.nav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 32px;height:52px;border-top:1px solid var(--border);
+  background:var(--dark2);flex-shrink:0;
+}
+.nav-dots{display:flex;gap:6px;align-items:center;}
+.dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--muted2);cursor:pointer;transition:all .2s;border:none;
+}
+.dot.active{background:var(--copper);width:20px;border-radius:3px;}
+.dot:hover:not(.active){background:var(--muted);}
+.nav-arrows{display:flex;gap:8px;}
+.arr{
+  width:36px;height:36px;border-radius:50%;
+  border:1px solid var(--border);background:var(--dark);
+  color:var(--cream2);font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.arr:hover{background:var(--dark3);border-color:var(--copper);color:var(--copper);}
+.arr:disabled{opacity:.3;cursor:not-allowed;}
+.nav-hint{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted2);letter-spacing:.08em;}
+
+/* ── TYPOGRAPHY UTILITIES ── */
+.mono{font-family:'IBM Plex Mono',monospace;}
+.serif{font-family:'Libre Baskerville',serif;}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--copper);letter-spacing:.18em;text-transform:uppercase;margin-bottom:12px;}
+.h1{font-family:'Libre Baskerville',serif;font-size:42px;line-height:1.1;letter-spacing:-.02em;margin-bottom:16px;}
+.h1 em{color:var(--copper);font-style:italic;}
+.h2{font-family:'Libre Baskerville',serif;font-size:28px;line-height:1.2;letter-spacing:-.01em;margin-bottom:12px;}
+.h2 em{color:var(--red);font-style:italic;}
+.h2 em.c{color:var(--copper);}
+.sub{font-size:14px;color:var(--muted);line-height:1.75;margin-bottom:28px;max-width:700px;}
+.sub strong{color:var(--cream2);}
+
+/* ── LAYOUT HELPERS ── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:32px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);}
+.card{background:var(--dark2);border:1px solid var(--border);border-radius:4px;padding:20px;}
+.card.red-top{border-top:2px solid var(--red);}
+.card.copper-top{border-top:2px solid var(--copper);}
+.card-tag{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;}
+.card-tag.r{color:var(--red);}.card-tag.c{color:var(--copper);}.card-tag.g{color:var(--green);}
+.card-h{font-size:13px;color:var(--cream);font-weight:500;margin-bottom:6px;line-height:1.4;}
+.card-b{font-size:11.5px;color:var(--muted);line-height:1.6;}
+.card-b strong{color:var(--cream2);}
+.divider{height:1px;background:var(--border-dim);margin:16px 0;}
+.label{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px;margin-top:12px;}
+.body{font-size:12px;color:var(--cream2);line-height:1.65;}
+.body li{margin-left:14px;margin-bottom:3px;color:var(--muted);}
+.body li strong{color:var(--cream2);}
+.pills{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
+.pill{font-family:'IBM Plex Mono',monospace;font-size:8px;padding:2px 7px;border-radius:2px;border:1px solid var(--border);color:var(--muted);background:var(--dark);}
+.quote-block{border-left:2px solid var(--copper);padding:12px 16px;background:rgba(180,130,60,.05);}
+.quote-block p{font-family:'Libre Baskerville',serif;font-style:italic;font-size:13px;color:var(--cream2);line-height:1.7;margin-bottom:5px;}
+.quote-block cite{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--copper);letter-spacing:.08em;}
+.persona{background:rgba(180,130,60,.05);border-left:2px solid var(--copper-dim);padding:8px 10px;margin-top:10px;}
+.persona p{font-family:'Libre Baskerville',serif;font-style:italic;font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:3px;}
+.persona cite{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted2);}
+.tool-tag{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--copper);letter-spacing:.08em;padding:3px 8px;background:rgba(180,130,60,.1);display:inline-block;border-radius:2px;margin-bottom:10px;}
+.stat-strip{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:2px;overflow:hidden;margin-top:16px;}
+.stat-c{background:var(--dark2);padding:14px;text-align:center;}
+.stat-v{font-family:'IBM Plex Mono',monospace;font-size:20px;color:var(--copper);display:block;line-height:1;margin-bottom:4px;}
+.stat-l{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;}
+
+/* chart */
+.cr{display:grid;grid-template-columns:36px 1fr 56px 44px;gap:8px;align-items:center;padding:3px 0;border-bottom:1px solid var(--border-dim);}
+.cy{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);}
+.cy.h{color:var(--red);}
+.bw{height:9px;background:rgba(255,255,255,.04);border-radius:1px;overflow:hidden;}
+.bf{height:100%;border-radius:1px;}
+.bb{background:#2a5fa0;}.ba{background:var(--green);}.bc{background:var(--red);}
+.bp{background:rgba(201,64,64,.35);border:1px dashed var(--red);}
+.cn{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--cream2);text-align:right;}
+.cd{font-family:'IBM Plex Mono',monospace;font-size:9px;text-align:right;}
+.cdp{color:var(--green);}.cdn{color:var(--red);}.cdb{color:var(--muted);}
+
+/* platform track */
+.platform-track{display:flex;gap:0;border:1px solid var(--border);border-radius:3px;overflow:hidden;margin-bottom:24px;}
+.era{flex:1;padding:14px 14px;border-right:1px solid var(--border);background:var(--dark2);}
+.era:last-child{border-right:none;background:rgba(180,130,60,.07);position:relative;}
+.era:last-child::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--copper);}
+.era-d{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);margin-bottom:4px;}
+.era-n{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;margin-bottom:3px;}
+.era-t{font-size:10px;color:var(--muted);line-height:1.45;}
+
+/* infosec */
+.is-box{background:rgba(201,64,64,.05);border:1px solid rgba(201,64,64,.25);border-radius:4px;padding:22px 26px;display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:start;}
+.is-icon{width:38px;height:38px;border-radius:50%;background:rgba(201,64,64,.1);border:1px solid rgba(201,64,64,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.is-tag{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--red);letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px;}
+.is-t{font-family:'Libre Baskerville',serif;font-size:17px;color:var(--cream);margin-bottom:8px;}
+.is-b{font-size:12px;color:var(--muted);line-height:1.75;}
+.is-b strong{color:var(--cream2);}
+
+/* rtw */
+.rtw-box{background:rgba(180,130,60,.05);border:1px solid var(--border);border-radius:4px;padding:24px 28px;}
+.rtw-tag{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--copper);letter-spacing:.15em;text-transform:uppercase;margin-bottom:8px;}
+.rtw-t{font-family:'Libre Baskerville',serif;font-size:19px;color:var(--cream);margin-bottom:10px;}
+.rtw-b{font-size:13px;color:var(--muted);line-height:1.75;}
+.rtw-b strong{color:var(--cream2);}
+
+/* phase col */
+.phase-col{background:var(--dark2);padding:20px 18px;}
+.pnum{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--copper-dim);letter-spacing:.1em;margin-bottom:5px;}
+.pname{font-family:'Libre Baskerville',serif;font-size:16px;color:var(--cream);margin-bottom:2px;}
+.pq{font-family:'Libre Baskerville',serif;font-style:italic;font-size:12px;color:var(--copper);margin-bottom:8px;}
+
+/* if grid */
+.ifg{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border-dim);border:1px solid var(--border-dim);border-radius:2px;overflow:hidden;margin-top:16px;}
+.ifc{background:var(--dark3);padding:12px 14px;}
+.ift{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--copper-dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px;}
+.ifo{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted2);text-decoration:line-through;margin-bottom:3px;}
+.ifn{font-size:11px;color:var(--cream2);line-height:1.5;}
+
+/* EVE specific */
+.eve-boxes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:16px;}
+.eve-box{background:rgba(201,64,64,.07);border:1px solid rgba(201,64,64,.2);border-radius:4px;padding:14px 16px;}
+.eve-num{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--red);margin-bottom:4px;}
+.eve-t{font-size:13px;color:var(--cream);font-weight:500;margin-bottom:4px;}
+.eve-s{font-size:11px;color:var(--muted);}
+.six-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
+.six-card{background:var(--dark3);border:1px solid var(--border-dim);border-radius:4px;padding:12px 14px;}
+.six-pct{font-family:'IBM Plex Mono',monospace;font-size:16px;margin-bottom:4px;}
+.six-t{font-size:12px;color:var(--cream);font-weight:500;margin-bottom:3px;}
+.six-s{font-size:10.5px;color:var(--muted);line-height:1.5;}
+</style>
+</head>
+<body>
+
+<div id="gate" style="display:flex;align-items:center;justify-content:center;height:100vh;background:var(--dark);flex-direction:column;gap:20px;">
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--copper);letter-spacing:.18em;text-transform:uppercase;margin-bottom:8px;">EY Business Transformation</div>
+  <div style="font-family:'Libre Baskerville',serif;font-size:28px;color:var(--cream);margin-bottom:4px;">The Agentic Platform Shift</div>
+  <div style="font-size:13px;color:var(--muted);margin-bottom:24px;">Enter access code to continue</div>
+  <input id="gate-pw" type="password" placeholder="Access code" onkeydown="if(event.key==='Enter')unlock()" style="background:var(--dark2);border:1px solid var(--border);border-radius:3px;padding:10px 16px;color:var(--cream);font-family:'IBM Plex Mono',monospace;font-size:13px;width:260px;outline:none;"/>
+  <button onclick="unlock()" style="background:var(--copper);color:var(--dark);border:none;border-radius:3px;padding:10px 24px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;cursor:pointer;font-weight:500;">Enter →</button>
+  <div id="gate-err" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--red);min-height:16px;"></div>
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted2);margin-top:8px;">humaninthelead.ai · Confidential</div>
+</div>
+
+<div class="shell" id="shell" style="display:none;">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-brand">EY · Business Transformation</div>
+    <div class="topbar-title">
+      <span id="slide-name">The Agentic Platform Shift</span>
+    </div>
+    <div class="slide-counter"><span id="cur">1</span> / <span id="tot">10</span></div>
+  </div>
+
+  <!-- SLIDES -->
+  <div class="slides-wrap">
+
+    <!-- SLIDE 1: TITLE -->
+    <div class="slide active" data-title="The Agentic Platform Shift">
+      <div style="max-width:820px;margin-top:40px;">
+        <div class="eyebrow">EY Business Transformation · March 2026</div>
+        <h1 class="h1">Every decade, the platform shifts.<br>This is the <em>agentic</em> one.</h1>
+        <p class="sub">The world runs on technology platforms. Every major shift — mainframe to ERP, ERP to cloud — redrew which companies won and which got left behind. <strong>We are in the next one now.</strong> Agentic AI does not augment the operating model. It replaces workflow layers entirely.</p>
+        <div class="platform-track">
+          <div class="era"><div class="era-d">1960s–80s</div><div class="era-n">Mainframe</div><div class="era-t">Centralized compute. IT as infrastructure.</div></div>
+          <div class="era"><div class="era-d">1980s–2000s</div><div class="era-n">ERP Era</div><div class="era-t">SAP, Oracle. Workflow digitization at scale.</div></div>
+          <div class="era"><div class="era-d">2000s–2015</div><div class="era-n">Cloud / SaaS</div><div class="era-t">Global delivery. API economy. Mobile first.</div></div>
+          <div class="era"><div class="era-d">2015–2022</div><div class="era-n">AI / ML</div><div class="era-t">Predictive models. Automation layer one.</div></div>
+          <div class="era"><div class="era-d" style="color:var(--copper);">Now → 2027</div><div class="era-n" style="color:var(--copper);">Agentic AI</div><div class="era-t" style="color:var(--cream2);">Autonomous workflows. Function layers replaced. The operating model is the variable.</div></div>
+        </div>
+        <div class="quote-block">
+          <p>"We're starting to see projects that used to require big teams now be accomplished by a single very talented person."</p>
+          <cite>Mark Zuckerberg · Q4 2025 Earnings · $META</cite>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 2: COMPETITIVE SIGNALS -->
+    <div class="slide" data-title="Competitive Signals">
+      <div class="eyebrow">What is happening right now</div>
+      <h2 class="h2">Three signals EY cannot ignore</h2>
+      <div class="grid3" style="margin-top:8px;">
+        <div class="card red-top">
+          <div class="card-tag r">Signal · Competitive threat</div>
+          <div class="card-h">EY is not on the OpenAI Frontier Alliances list</div>
+          <div class="card-b">OpenAI partnered with <strong>BCG, McKinsey, Accenture, and Capgemini</strong> to deploy enterprise AI at scale — each building a dedicated practice with direct product and research support. EY was not included.<br><br>This is a distribution play. OpenAI accesses thousands of live enterprise relationships where budget is approved and trust is already built.</div>
+        </div>
+        <div class="card red-top">
+          <div class="card-tag r">Signal · New entrants</div>
+          <div class="card-h">AI-native consulting being built from scratch</div>
+          <div class="card-b">Anthropic is in talks with <strong>Blackstone and Hellman &amp; Friedman</strong> to form a Palantir-model AI consulting JV. OpenAI is hiring hundreds into a technical consulting team.<br><br><strong>These are not legacy firms adapting.</strong> They are starting clean — no partnership model, no hourly economics, no prior constraints on delivery speed.</div>
+        </div>
+        <div class="card copper-top">
+          <div class="card-tag c">Signal · Compression</div>
+          <div class="card-h">Implementation cycles are collapsing</div>
+          <div class="card-b">Palantir and SAP will do implementations in weeks, not quarters. <strong>The hours-based model is not under pressure — it is being structurally replaced.</strong><br><br>What survives is what requires genuine human judgment: misaligned incentives, political complexity, behavioral change. That is EY's right to win — if we move.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3: META EVIDENCE -->
+    <div class="slide" data-title="Meta Evidence">
+      <div class="eyebrow">Evidence · The platform shift in numbers</div>
+      <h2 class="h2">Meta: <em>2.8× revenue. ~1.8× headcount.</em></h2>
+      <div class="grid2" style="margin-top:8px;">
+        <div>
+          <div class="label">Meta Headcount Walk — 2019 → 2026E</div>
+          <div class="cr"><span class="cy">2019</span><div class="bw"><div class="bf bb" style="width:41%"></div></div><span class="cn">35,587</span><span class="cd cdb">base</span></div>
+          <div class="cr"><span class="cy">2020</span><div class="bw"><div class="bf ba" style="width:52%"></div></div><span class="cn">44,942</span><span class="cd cdp">+9,355</span></div>
+          <div class="cr"><span class="cy">2021</span><div class="bw"><div class="bf ba" style="width:83%"></div></div><span class="cn">71,970</span><span class="cd cdp">+27,028</span></div>
+          <div class="cr"><span class="cy">2022</span><div class="bw"><div class="bf ba" style="width:100%"></div></div><span class="cn">86,482</span><span class="cd cdp">+14,512</span></div>
+          <div class="cr"><span class="cy">2023</span><div class="bw"><div class="bf bc" style="width:78%"></div></div><span class="cn">67,317</span><span class="cd cdn">−19,165</span></div>
+          <div class="cr"><span class="cy">2024</span><div class="bw"><div class="bf ba" style="width:86%"></div></div><span class="cn">74,067</span><span class="cd cdp">+6,750</span></div>
+          <div class="cr"><span class="cy">2025</span><div class="bw"><div class="bf ba" style="width:91%"></div></div><span class="cn">~78,900</span><span class="cd cdp">+4,833</span></div>
+          <div class="cr"><span class="cy h">2026E</span><div class="bw"><div class="bf bp" style="width:73%"></div></div><span class="cn" style="color:var(--red)">~63,100</span><span class="cd cdn">−15,800</span></div>
+          <div class="stat-strip">
+            <div class="stat-c"><span class="stat-v">2.8×</span><span class="stat-l">Revenue growth</span></div>
+            <div class="stat-c"><span class="stat-v">~1.8×</span><span class="stat-l">Headcount (if cuts)</span></div>
+            <div class="stat-c"><span class="stat-v">$69B</span><span class="stat-l">2025 AI capex</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="ifg">
+            <div class="ifc"><div class="ift">Prior → Output</div><div class="ifo">"one person = capped output"</div><div class="ifn">One person + AI now ships at former small-team scale. Variance within the same job title has exploded.</div></div>
+            <div class="ifc"><div class="ift">Prior → Scale</div><div class="ifo">"headcount = capacity"</div><div class="ifn">CapEx is the leading indicator. Headcount is lagging. Big Tech moves in a single planning cycle.</div></div>
+            <div class="ifc"><div class="ift">Prior → Skills</div><div class="ifo">"learn the stack, work hard"</div><div class="ifn">Problem selection, decomposition, agent orchestration. Execution moves from scarce to abundant.</div></div>
+            <div class="ifc"><div class="ift">Prior → Transformation</div><div class="ifo">"augment org with AI tools"</div><div class="ifn">Buy the AI capability, then redesign the org around what it replaces. Tool to structure — not structure to tool.</div></div>
+          </div>
+          <p style="font-size:10px;color:var(--muted2);margin-top:12px;line-height:1.6;">Sources: Reuters (Mar 13 2026) · Meta Q4 2025 Earnings · Meta SEC Filings. 2026 headcount is projected — directional, not confirmed.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 4: EY RIGHT TO WIN -->
+    <div class="slide" data-title="EY's Right to Win">
+      <div class="eyebrow">The human gap</div>
+      <h2 class="h2">The technical gap is closing.<br><em class="c">The human gap is not.</em></h2>
+      <p class="sub" style="margin-bottom:20px;">AI can generate a process map, a benchmarking report, and a value case in minutes. What it cannot do is navigate a CFO who does not trust the assumptions, a CHRO whose team is threatened, or a Board that has seen three transformations fail.</p>
+      <div class="rtw-box">
+        <div class="rtw-tag">EY right to win</div>
+        <p class="rtw-b"><strong>Politics, misaligned incentives, unclear ownership, and institutional inertia have not received the software upgrade.</strong> The gap between what is technically possible and what organizations can actually absorb may now be greater than ever. That is EY's moat — if we build the tools to get in the room fast and the credibility to hold it.</p>
+      </div>
+      <div class="grid3" style="margin-top:16px;">
+        <div class="card">
+          <div class="card-tag g">What survives</div>
+          <div class="card-b">Complex, multi-stakeholder programs where <strong>human judgment, trust, and behavioral change</strong> determine outcomes — not just the technology selection.</div>
+        </div>
+        <div class="card">
+          <div class="card-tag r">What gets compressed</div>
+          <div class="card-b">Advisory work that is primarily analysis, benchmarking, or recommendation — anything an agent can generate with the right data access.</div>
+        </div>
+        <div class="card">
+          <div class="card-tag c">The model that wins</div>
+          <div class="card-b"><strong>Outcome-based. Tool-enabled. Bespoke.</strong> Deployed in days. Paid on value realized — not hours sold.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 5: FRAMEWORK OVERVIEW -->
+    <div class="slide" data-title="Where Enterprise Value Lives">
+      <div class="eyebrow">Phase 01 · WHAT · EY Enterprise Value Acceleration</div>
+      <h2 class="h2">The board wants to grow enterprise value.<br><em class="c">Where does it actually live?</em></h2>
+
+      <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:32px;margin-top:16px;align-items:start;">
+
+        <!-- Left: cascade -->
+        <div>
+          <div class="label">The cascade from board to big rock</div>
+          <div style="margin-top:8px;display:flex;flex-direction:column;gap:1px;">
+
+            <div style="background:rgba(180,130,60,.15);border:1px solid var(--copper);border-radius:3px;padding:14px 16px;text-align:center;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--copper);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px;">Board mandate</div>
+              <div style="font-family:'Libre Baskerville',serif;font-size:17px;color:var(--cream);">Grow Enterprise Value</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:3px;">EBITDA expansion · Revenue growth · Cost takeout · Working capital</div>
+            </div>
+
+            <div style="display:flex;justify-content:center;color:var(--copper-dim);font-size:18px;padding:4px 0;">↓</div>
+
+            <div style="background:var(--dark2);border:1px solid var(--border);border-radius:3px;padding:12px 16px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">Value Streams</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <span style="background:var(--dark3);border:1px solid var(--border);border-radius:2px;padding:3px 10px;font-size:11px;color:var(--cream2);">Supply Chain</span>
+                <span style="background:var(--dark3);border:1px solid var(--border);border-radius:2px;padding:3px 10px;font-size:11px;color:var(--cream2);">Finance</span>
+                <span style="background:var(--dark3);border:1px solid var(--border);border-radius:2px;padding:3px 10px;font-size:11px;color:var(--cream2);">Operations</span>
+                <span style="background:var(--dark3);border:1px solid var(--border);border-radius:2px;padding:3px 10px;font-size:11px;color:var(--cream2);">Sales &amp; Service</span>
+                <span style="background:var(--dark3);border:1px solid var(--border);border-radius:2px;padding:3px 10px;font-size:11px;color:var(--cream2);">HR</span>
+              </div>
+            </div>
+
+            <div style="display:flex;justify-content:center;color:var(--copper-dim);font-size:18px;padding:4px 0;">↓</div>
+
+            <div style="background:var(--dark2);border:1px solid var(--border);border-radius:3px;padding:12px 16px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">Functions &amp; Sub-functions</div>
+              <div style="font-size:11px;color:var(--muted);line-height:1.6;">Procure-to-Pay · Order-to-Cash · Record-to-Report · Plan-to-Produce · Hire-to-Retire</div>
+            </div>
+
+            <div style="display:flex;justify-content:center;color:var(--copper-dim);font-size:18px;padding:4px 0;">↓</div>
+
+            <div style="background:var(--dark2);border:1px solid var(--border);border-radius:3px;padding:12px 16px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">L3 / L4 Processes</div>
+              <div style="font-size:11px;color:var(--muted);line-height:1.6;">Invoice processing · Inventory replenishment · Revenue recognition · Headcount planning</div>
+            </div>
+
+            <div style="display:flex;justify-content:center;color:var(--copper-dim);font-size:18px;padding:4px 0;">↓</div>
+
+            <div style="background:rgba(180,130,60,.08);border:1px solid var(--copper);border-radius:3px;padding:12px 16px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--copper);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;">The big rocks</div>
+              <div style="font-size:12px;color:var(--cream2);line-height:1.6;">1–3 high-impact opportunities per value stream ranked by EBITDA impact and ease of execution. These are what the board funds.</div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Right: how EY surfaces the rocks -->
+        <div>
+          <div class="label">How EY Enterprise Value Acceleration surfaces the rocks</div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+
+            <div class="card copper-top">
+              <div class="card-tag c">Outside-in baseline</div>
+              <div class="card-h">Where do you stand vs. peers today?</div>
+              <div class="card-b">APQC benchmarks by sector and sub-sector. Capability maturity curves. We establish your baseline across value streams before we set any ambition — otherwise the targets are arbitrary.</div>
+            </div>
+
+            <div class="card copper-top">
+              <div class="card-tag c">Client validation</div>
+              <div class="card-h">Does the data match reality?</div>
+              <div class="card-b">Questionnaires, process maps, KPIs, internal audit reports. Uploaded into the tool. Baselines get calibrated through interviews and data triangulation — not assumed.</div>
+            </div>
+
+            <div class="card copper-top">
+              <div class="card-tag c">Aspirational targets</div>
+              <div class="card-h">What is achievable in your sector?</div>
+              <div class="card-b">Benchmark → validation → ambition. For each value stream, we set a target that is defensible to the CFO and credible to the operating teams. No fantasy numbers.</div>
+            </div>
+
+            <div class="card" style="border:1px solid var(--copper);background:rgba(180,130,60,.06);">
+              <div class="card-tag c">Output: prioritized big rocks</div>
+              <div class="card-b">1–3 high-impact opportunities per value stream. Ranked by EBITDA impact and ease of implementation. <strong>This is what the board approves. This is what funds the program.</strong></div>
+            </div>
+
+          </div>
+
+          <div class="persona" style="margin-top:12px;">
+            <p>"I need to show the board three things we should fund — and why those three, not everything. With numbers I can defend."</p>
+            <cite>— Group CFO, pre-ERP decision</cite>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 6: EVA DEEP DIVE -->
+    <div class="slide" data-title="EY Enterprise Value Accelerator">
+      <div class="eyebrow">Phase 01 · WHAT · New EY Tool — In Production</div>
+      <h2 class="h2">EY Enterprise Value Accelerator:<br><em class="c">Deploy capital where it actually creates value.</em></h2>
+      <p class="sub" style="margin-bottom:14px;">A live interactive platform that underwrites transformation before you commit the budget. Not a slide deck — a tool clients work inside. <strong>It traces every dollar of enterprise value down to the specific capability element that drives it.</strong></p>
+
+      <div style="display:grid;grid-template-columns:1fr 1.3fr;gap:24px;align-items:start;">
+
+        <div>
+          <!-- The cascade -->
+          <div class="label">The value cascade — from financial impact to initiative</div>
+          <div style="display:flex;flex-direction:column;gap:0;margin-top:8px;">
+
+            <div style="background:rgba(180,130,60,.15);border:1px solid var(--copper);border-radius:3px 3px 0 0;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--copper);letter-spacing:.1em;margin-bottom:3px;">LEVEL 01 · FINANCIAL IMPACT</div>
+                <div style="font-size:13px;color:var(--cream);font-weight:500;">Working Capital · EBITDA · Cash Flow</div>
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;padding:3px 10px;background:rgba(180,130,60,.2);border:1px solid var(--copper);border-radius:2px;color:var(--copper);">Reduced Working Capital</div>
+            </div>
+
+            <div style="display:flex;justify-content:center;background:var(--dark3);padding:3px 0;color:var(--copper-dim);">↓</div>
+
+            <div style="background:var(--dark2);border:1px solid var(--border);border-top:none;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:.1em;margin-bottom:3px;">LEVEL 02 · VALUE STREAMS</div>
+                <div style="font-size:13px;color:var(--cream2);">Integrated value pathways</div>
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;padding:3px 10px;background:var(--dark3);border:1px solid var(--border);border-radius:2px;color:var(--muted);">Supply Chain</div>
+            </div>
+
+            <div style="display:flex;justify-content:center;background:var(--dark3);padding:3px 0;color:var(--copper-dim);">↓</div>
+
+            <div style="background:var(--dark2);border:1px solid var(--border);border-top:none;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:.1em;margin-bottom:3px;">LEVEL 03 · BUSINESS CAPABILITIES</div>
+                <div style="font-size:13px;color:var(--cream2);">Distinct ability to deliver value</div>
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;padding:3px 10px;background:var(--dark3);border:1px solid var(--border);border-radius:2px;color:var(--muted);">Improved Inventory Terms</div>
+            </div>
+
+            <div style="display:flex;justify-content:center;background:var(--dark3);padding:3px 0;color:var(--copper-dim);">↓</div>
+
+            <div style="background:var(--dark2);border:1px solid var(--border);border-top:none;padding:12px 16px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:.1em;margin-bottom:6px;">LEVEL 04 · CAPABILITY ELEMENTS</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <span style="font-size:10px;color:var(--cream2);padding:3px 10px;background:var(--dark3);border:1px solid var(--border);border-radius:2px;">Inventory Segmentation</span>
+                <span style="font-size:10px;color:var(--cream2);padding:3px 10px;background:var(--dark3);border:1px solid var(--border);border-radius:2px;">Safety Stock Policy</span>
+                <span style="font-size:10px;color:var(--cream2);padding:3px 10px;background:var(--dark3);border:1px solid var(--border);border-radius:2px;">Replenishment Cadence</span>
+              </div>
+            </div>
+
+            <div style="display:flex;justify-content:center;background:var(--dark3);padding:3px 0;color:var(--copper-dim);">↓</div>
+
+            <div style="background:rgba(180,130,60,.06);border:1px solid var(--copper);border-top:none;border-radius:0 0 3px 3px;padding:12px 16px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--copper);letter-spacing:.1em;margin-bottom:4px;">THE INITIATIVE</div>
+              <div style="font-size:11px;color:var(--cream2);line-height:1.5;">Reduce cycle time by improving: Inventory Segmentation, Safety Stock Policy and Replenishment Cadence → <strong>$X working capital reduction</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <!-- Maturity assessment -->
+          <div class="label">How the tool works — live capability maturity assessment</div>
+          <div style="background:var(--dark2);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-top:8px;">
+
+            <!-- Maturity scale header -->
+            <div style="padding:10px 14px;border-bottom:1px solid var(--border-dim);background:var(--dark3);">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:.1em;margin-bottom:6px;">MATURITY SCALE — SET CURRENT &amp; TARGET FOR EACH CAPABILITY</div>
+              <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                <span style="font-size:9px;padding:2px 8px;border-radius:2px;border:1px solid var(--border);color:var(--copper);background:rgba(180,130,60,.1);">World-Class</span>
+                <span style="font-size:9px;padding:2px 8px;border-radius:2px;border:1px solid var(--border);color:var(--muted);">AI-Augmented</span>
+                <span style="font-size:9px;padding:2px 8px;border-radius:2px;border:1px solid rgba(180,130,60,.5);color:var(--cream2);background:rgba(180,130,60,.12);">Defined ✓</span>
+                <span style="font-size:9px;padding:2px 8px;border-radius:2px;border:1px solid var(--border);color:var(--muted);">Managed</span>
+                <span style="font-size:9px;padding:2px 8px;border-radius:2px;border:1px solid var(--border);color:var(--muted);">Ad-Hoc</span>
+                <span style="font-size:9px;padding:2px 8px;border-radius:2px;border:1px solid var(--border);color:var(--muted2);">Unmanaged</span>
+              </div>
+            </div>
+
+            <!-- Sample capabilities -->
+            <div style="padding:10px 14px;border-bottom:1px solid var(--border-dim);">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <div style="font-size:12px;color:var(--cream2);font-weight:500;">Policy &amp; Governance</div>
+                <div style="display:flex;gap:6px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);padding:2px 6px;border:1px solid var(--border);border-radius:2px;">CURRENT L3</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--copper);padding:2px 6px;border:1px solid var(--copper);border-radius:2px;">TARGET L4</span>
+                </div>
+              </div>
+              <div style="font-size:10.5px;color:var(--muted);line-height:1.5;">Formally defined policy sets with documented targets and review frequencies. Moving to managed = dynamic classification and automated escalation.</div>
+            </div>
+
+            <div style="padding:10px 14px;border-bottom:1px solid var(--border-dim);">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <div style="font-size:12px;color:var(--cream2);font-weight:500;">Planning &amp; Replenishment</div>
+                <div style="display:flex;gap:6px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--red);padding:2px 6px;border:1px solid var(--red);border-radius:2px;">CURRENT L2</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--copper);padding:2px 6px;border:1px solid var(--copper);border-radius:2px;">TARGET L4</span>
+                </div>
+              </div>
+              <div style="font-size:10.5px;color:var(--muted);line-height:1.5;">Ad-hoc inventory policy. Targets and stock levels set informally with no governance or review cadence.</div>
+            </div>
+
+            <div style="padding:10px 14px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <div style="font-size:12px;color:var(--cream2);font-weight:500;">Network Design &amp; Positioning</div>
+                <div style="display:flex;gap:6px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);padding:2px 6px;border:1px solid var(--border);border-radius:2px;">CURRENT L3</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--copper);padding:2px 6px;border:1px solid var(--copper);border-radius:2px;">TARGET L5</span>
+                </div>
+              </div>
+              <div style="font-size:10.5px;color:var(--muted);line-height:1.5;">Static network models. Target: AI-driven dynamic positioning with real-time demand signal integration.</div>
+            </div>
+          </div>
+
+          <!-- What the tool outputs -->
+          <div class="label" style="margin-top:14px;">What the tool outputs</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+            <div style="background:var(--dark2);border:1px solid var(--border);border-radius:3px;padding:10px 12px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--copper);letter-spacing:.08em;margin-bottom:4px;">INITIATIVES</div>
+              <div style="font-size:11px;color:var(--cream2);line-height:1.5;">Ranked list of capability improvements by value impact. Prioritized by financial outcome, not gut feel.</div>
+            </div>
+            <div style="background:var(--dark2);border:1px solid var(--border);border-radius:3px;padding:10px 12px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--copper);letter-spacing:.08em;margin-bottom:4px;">ROADMAP</div>
+              <div style="font-size:11px;color:var(--cream2);line-height:1.5;">Sequenced maturity improvement path. Current → Target by capability, with financial value attached to each step.</div>
+            </div>
+          </div>
+
+          <div style="background:rgba(180,130,60,.05);border:1px solid var(--border);border-radius:3px;padding:12px 14px;margin-top:10px;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:11.5px;color:var(--cream2);">New EY tool. In production. Output feeds directly into EY.ai Value Blueprints and EY Prism.</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--copper);padding:4px 10px;background:rgba(180,130,60,.12);border:1px solid var(--copper);border-radius:2px;white-space:nowrap;margin-left:12px;">In Production →</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 6: HOW -->
+    <div class="slide" data-title="Phase 02 — How to Execute">
+      <div class="eyebrow">Phase 02 · HOW · EY Delivery Teams</div>
+      <h2 class="h2">The strategy is approved.<br><em class="c">Now we need a plan that holds.</em></h2>
+      <p class="sub" style="margin-bottom:20px;">Once the big rocks are identified, the org needs a credible execution plan. Technology, process, and people change must be sequenced correctly — or value leaks at every handoff. This is where most transformations fail.</p>
+
+      <div class="grid2" style="align-items:start;">
+        <div>
+          <div class="label">What Phase 02 delivers</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+            <div class="card copper-top">
+              <div class="card-tag c">Program architecture</div>
+              <div class="card-b">Workstream definition, sequencing, dependency mapping. What goes first, what depends on what, who owns each stream.</div>
+            </div>
+            <div class="card copper-top">
+              <div class="card-tag c">Technology scoping</div>
+              <div class="card-b">For SAP S/4HANA programs: Phase 0 visioning, configuration approach, hybrid architecture decisions, custom object strategy. Built with the client, not for the client.</div>
+            </div>
+            <div class="card copper-top">
+              <div class="card-tag c">Behavioral change layer</div>
+              <div class="card-b">The critical behaviors required for each initiative to land. Not change management as a checkbox — prescriptive, evidence-based behavioral requirements per workstream.</div>
+            </div>
+            <div class="card copper-top">
+              <div class="card-tag c">Value realization setup</div>
+              <div class="card-b">KPIs, baselines, and measurement cadence established in Phase 02 — so Phase 04 has something to track against. Value realization starts here, not at go-live.</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="label">The stakeholder reality at this stage</div>
+          <div class="persona" style="margin-top:8px;margin-bottom:16px;">
+            <p>"The strategy is approved. Now I need a credible plan — what goes first, what depends on what, and who owns it. I have been through transformations where this was not clear and we lost 18 months."</p>
+            <cite>— COO, 90 days into a transformation mandate</cite>
+          </div>
+
+          <div class="label">EY sector advantage</div>
+          <div class="card" style="margin-top:8px;">
+            <div class="card-b">EY delivery teams bring deep sector-specific implementation knowledge — not generic methodology. A healthcare payer S/4HANA program is structurally different from an aerospace manufacturer. The sequencing, the compliance requirements, the integration points — all sector-specific.<br><br><strong>This is where EY's industry depth creates differentiated value versus pure-play technology integrators.</strong></div>
+          </div>
+
+          <div class="label" style="margin-top:14px;">What changes in the agentic era</div>
+          <div class="card" style="margin-top:8px;background:rgba(180,130,60,.05);border:1px solid var(--border);">
+            <div class="card-b">AI agents can now handle the analytical and documentation layer of program architecture in days, not weeks. <strong>The human role shifts to judgment, sequencing decisions, stakeholder alignment, and behavioral change.</strong> EY teams that are built around this shift will outpace those still selling the analytical hours.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 6b: EY AI ECOSYSTEM -->
+    <div class="slide" data-title="The EY.ai Ecosystem">
+      <div class="eyebrow">The connected stack — in production</div>
+      <h2 class="h2">Four tools. One client journey.<br><em class="c">Now being pushed to production together.</em></h2>
+      <p class="sub" style="margin-bottom:20px;">EY has invested over $1B in AI technology. EVA, EY.ai Value Blueprints, and Prism are not competing tools — they answer sequential questions in the same client engagement. <strong>The stack is built. The deployment model is the unlock.</strong></p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;">
+
+        <div>
+          <div class="label">The EY.ai ecosystem — mapped to the four phases</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">
+
+            <div style="background:var(--dark2);border:1px solid var(--border);border-radius:3px;padding:12px 14px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--copper-dim);letter-spacing:.1em;">01 · WHAT</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--copper);padding:2px 8px;background:rgba(180,130,60,.1);border-radius:2px;">EY Enterprise Value Acceleration</div>
+              </div>
+              <div style="font-size:11px;color:var(--muted);line-height:1.5;">Outside-in baseline. APQC benchmarks. Value stream prioritization. Big rocks identified.</div>
+            </div>
+
+            <div style="background:var(--dark2);border:1px solid var(--border);border-radius:3px;padding:12px 14px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--copper-dim);letter-spacing:.1em;">02 · HOW</div>
+                <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--copper);padding:2px 8px;background:rgba(180,130,60,.1);border-radius:2px;">EY.ai Value Blueprints</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--copper);padding:2px 8px;background:rgba(180,130,60,.1);border-radius:2px;">EY.ai Agentic Platform</div>
+                </div>
+              </div>
+              <div style="font-size:11px;color:var(--muted);line-height:1.5;">Pre-built process blueprints by function (Order to Cash, Procure to Pay, etc.). Agentic workflows replace manual analysis layers. Program architecture in days not weeks.</div>
+            </div>
+
+            <div style="background:rgba(180,130,60,.07);border:1px solid var(--copper);border-radius:3px;padding:12px 14px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--copper);letter-spacing:.1em;">03 · VALUE</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--copper);padding:2px 8px;background:rgba(180,130,60,.15);border-radius:2px;">EY Prism (Tech2Value)</div>
+              </div>
+              <div style="font-size:11px;color:var(--cream2);line-height:1.5;">Takes Blueprint outputs and quantifies the EBITDA impact. APQC benchmarks + SAP attribution + scenario modeling. The CFO number — by process area, with defensible assumptions.</div>
+            </div>
+
+            <div style="background:var(--dark2);border:1px solid var(--border);border-radius:3px;padding:12px 14px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--copper-dim);letter-spacing:.1em;">04 · EXECUTION</div>
+                <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--copper);padding:2px 8px;background:rgba(180,130,60,.1);border-radius:2px;">EY Fabric</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--copper);padding:2px 8px;background:rgba(180,130,60,.1);border-radius:2px;">EY.ai EYQ</div>
+                </div>
+              </div>
+              <div style="font-size:11px;color:var(--muted);line-height:1.5;">Delivery teams augmented by EY Fabric infrastructure. EYQ agents handle documentation, reporting, and tracking. Humans focus on judgment and behavioral change.</div>
+            </div>
+
+          </div>
+        </div>
+
+        <div>
+          <div class="label">What EY.ai Value Blueprints actually are</div>
+          <div class="card" style="margin-top:8px;border-top:2px solid var(--copper);">
+            <div class="card-tag c">Launched December 2025</div>
+            <div class="card-b">Pre-built, process-level transformation blueprints that move organizations from AI-enabled to AI-native. Built across seven layers — interoperable toolsets, compliance as code, transparent hybrid workforces.<br><br>A global healthcare client using the Order to Cash blueprint reduced manual work, improved customer engagement, and freed capacity for higher-value work. <strong>Not a pilot. A deployed transformation.</strong></div>
+          </div>
+
+          <div class="label" style="margin-top:14px;">What going to production together means</div>
+          <div class="card" style="margin-top:8px;background:rgba(180,130,60,.05);border:1px solid var(--copper);">
+            <div class="card-tag c">The production push</div>
+            <div class="card-b">EVA, EY.ai Value Blueprints, and Prism are being pushed to production as a connected client-facing stack — not as standalone tools sold by separate teams.<br><br>A client engagement starts with EVA (identify the rocks), moves to Value Blueprints (blueprint the execution), and closes with Prism (the CFO number). <strong>One narrative. One handoff. One outcome.</strong></div>
+          </div>
+
+          <div class="label" style="margin-top:14px;">The only gating item</div>
+          <div class="card" style="margin-top:8px;background:rgba(201,64,64,.05);border:1px solid rgba(201,64,64,.2);">
+            <div class="card-tag r">InfoSec deployment</div>
+            <div class="card-b">The tools are built and validated. The stack logic is clear. <strong>Fast-path deployment approval is the only thing standing between this and a client conversation next week.</strong> Every week in the queue is a week BCG or Palantir uses it instead.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SLIDE 7: PRISM DEEP DIVE -->
+    <div class="slide" data-title="EY Prism — Tech2Value">
+      <div class="eyebrow">Phase 03 · VALUE · Built by Christian Spetz</div>
+      <h2 class="h2">Prism: <em>The only tool that answers the CFO question with a number</em></h2>
+      <p class="sub" style="margin-bottom:16px;">Every transformation promises value. Almost none can quantify it with a number the CFO will sign off on. Prism is the only EY tool that produces a defensible business case — by process area, with assumptions the client can stress-test.</p>
+      <div class="grid2">
+        <div>
+          <div class="label">What Prism outputs</div>
+          <div class="card" style="margin-top:6px;">
+            <div class="card-b">
+              <ul style="list-style:none;padding:0;">
+                <li style="padding:6px 0;border-bottom:1px solid var(--border-dim);color:var(--cream2);">EBITDA impact by L3 process area</li>
+                <li style="padding:6px 0;border-bottom:1px solid var(--border-dim);color:var(--cream2);">SG&amp;A walk — before and after transformation</li>
+                <li style="padding:6px 0;border-bottom:1px solid var(--border-dim);color:var(--cream2);">Hours redeployed alongside dollar figures</li>
+                <li style="padding:6px 0;border-bottom:1px solid var(--border-dim);color:var(--cream2);">SAP + AI agent benchmark attribution</li>
+                <li style="padding:6px 0;border-bottom:1px solid var(--border-dim);color:var(--cream2);">Scenario modeling with adjustable assumptions</li>
+                <li style="padding:6px 0;color:var(--cream2);">Sub-sector toggle — Payer / Provider / etc.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="label" style="margin-top:14px;">CFO stakeholder questions Prism answers</div>
+          <div class="persona" style="margin-top:6px;"><p>"Everyone tells me transformation creates value. I need a number I can defend — by process area, with assumptions I can stress-test."</p><cite>— CFO, S/4HANA business case stage</cite></div>
+        </div>
+        <div>
+          <div class="label">How Prism connects to EVE</div>
+          <div class="card" style="margin-top:6px;border-left:2px solid var(--copper);">
+            <div class="card-b">Phase 02 identifies <strong>which RICEFW items to move to hybrid</strong> and which process areas to prioritize. Prism takes that output and <strong>quantifies the value</strong> — translating EVE's operational decisions into the financial language the CFO and Board need to approve the program.<br><br>Together they answer: not just <em>what to do</em> and <em>how to do it</em> — but <em>how much it is worth</em>.</div>
+          </div>
+          <div class="label" style="margin-top:14px;">Current status</div>
+          <div class="card" style="margin-top:6px;background:rgba(201,64,64,.05);border:1px solid rgba(201,64,64,.2);">
+            <div class="card-tag r">Deployment blocker</div>
+            <div class="card-b">Prism is validated by David Fields and the EY Americas leadership group. The tool exists. The methodology works. <strong>InfoSec approval is the only blocker to client deployment.</strong> Every week in the queue is a week a competitor does not have.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 8: INFOSEC -->
+    <div class="slide" data-title="The Constraint">
+      <div class="eyebrow">The underlying problem</div>
+      <h2 class="h2">InfoSec is the bottleneck.<br><em>Not the methodology. Not the tools.</em></h2>
+      <p class="sub" style="margin-bottom:20px;">The tools exist. They are validated. They can be made bespoke to any client — sector, sub-sector, regulatory context, data sources. <strong>What is missing is the ability to deploy quickly.</strong></p>
+      <div class="is-box">
+        <div class="is-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c94040" stroke-width="1.5"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg></div>
+        <div>
+          <div class="is-tag">Competitive consequence</div>
+          <div class="is-t">While EY navigates approvals, Palantir ships.</div>
+          <div class="is-b">Every client engagement currently requires InfoSec approval before a tool can be hosted, accessed, or shown in a live working session. That process — not the build, not the methodology — is the single biggest drag on time-to-value and the primary reason EY loses to faster competitors in early client conversations.<br><br><strong>The ask is a fast-path deployment model</strong> — a way to get bespoke, credible tools in front of CFOs and transformation leads in days, not quarters. The platform shift window does not wait for internal governance cycles.</div>
+        </div>
+      </div>
+      <div class="grid3" style="margin-top:16px;">
+        <div class="card">
+          <div class="card-tag r">The cost of waiting</div>
+          <div class="card-b">Each week a tool sits in a queue is a week BCG, McKinsey, or Palantir uses it in a client meeting EY is not in.</div>
+        </div>
+        <div class="card">
+          <div class="card-tag c">What fast-path looks like</div>
+          <div class="card-b">Bespoke tool deployed in days. Client-specific data, sector benchmarks, live scenario modeling. No generic slides.</div>
+        </div>
+        <div class="card">
+          <div class="card-tag g">The outcome</div>
+          <div class="card-b">EY is in the room with the right tool at the right moment. The conversation shifts from "here is our methodology" to "here is your number."</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 9: CLOSE -->
+    <div class="slide" data-title="The Ask">
+      <div style="max-width:760px;margin-top:40px;">
+        <div class="eyebrow">Where we go from here</div>
+        <h1 class="h1">The tools are built.<br>The window is <em>open</em>.</h1>
+        <p class="sub">The tools are validated and ready to deploy. Together they answer the four questions every transformation client is asking — what to prioritize, how to execute, how much it is worth, and whether we realized the value.</p>
+        <div class="divider"></div>
+        <div class="grid2" style="margin-top:0;">
+          <div>
+            <div class="label">What we are asking for</div>
+            <div class="card" style="margin-top:6px;border-left:2px solid var(--copper);">
+              <div class="card-b">A fast-path deployment model that allows bespoke client-facing versions of the tools to be live in days — not quarters. The methodology is approved. The tools work. The only variable is deployment speed.<br><br><strong>This is not a permanent infrastructure ask. It is a competitive timing ask.</strong></div>
+            </div>
+          </div>
+          <div>
+            <div class="label">The 24-month window</div>
+            <div class="card" style="margin-top:6px;background:rgba(180,130,60,.05);border:1px solid var(--border);">
+              <div class="card-b">EY has approximately 24 months to make category-defining bets before the capability gap becomes structurally irreversible.<br><br>The firms that in 2025 picked a lane, built the tools to own it, and stopped pretending they could win across the entire board — <strong>those are the firms that will look smart in 2030.</strong></div>
+            </div>
+          </div>
+        </div>
+        <p style="font-size:10px;color:var(--muted2);margin-top:20px;line-height:1.6;">humaninthelead.ai · EY Business Transformation · March 2026 · Working document — not for external distribution</p>
+      </div>
+    </div>
+
+  </div><!-- /slides-wrap -->
+
+  <!-- BOTTOM NAV -->
+  <div class="nav">
+    <div class="nav-arrows">
+      <button class="arr" id="prev" onclick="go(-1)">←</button>
+      <button class="arr" id="next" onclick="go(1)">→</button>
+    </div>
+    <div class="nav-dots" id="dots"></div>
+    <div class="nav-hint">← → or click dots to navigate</div>
+  </div>
+
+</div></div><!-- /shell -->
+
+<script>
+function unlock(){
+  if(document.getElementById('gate-pw').value==='EY-open-labs'){
+    sessionStorage.setItem('ey_auth','ok');
+    document.getElementById('gate').style.display='none';
+    document.getElementById('shell').style.display='flex';
+  } else {
+    document.getElementById('gate-err').textContent='Incorrect access code.';
+    document.getElementById('gate-pw').value='';
+  }
+}
+if(sessionStorage.getItem('ey_auth')==='ok'){
+  document.getElementById('gate').style.display='none';
+  document.getElementById('shell').style.display='flex';
+}
+const slides = document.querySelectorAll('.slide');
+const dotsEl = document.getElementById('dots');
+const curEl = document.getElementById('cur');
+const nameEl = document.getElementById('slide-name');
+let cur = 0;
+
+// Build dots
+slides.forEach((_, i) => {
+  const d = document.createElement('button');
+  d.className = 'dot' + (i === 0 ? ' active' : '');
+  d.onclick = () => goTo(i);
+  dotsEl.appendChild(d);
+});
+
+document.getElementById('tot').textContent = slides.length;
+
+function goTo(n) {
+  slides[cur].classList.remove('active');
+  slides[cur].classList.add('prev');
+  setTimeout(() => slides[cur].classList.remove('prev'), 400);
+  cur = (n + slides.length) % slides.length;
+  slides[cur].classList.add('active');
+  dotsEl.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === cur));
+  curEl.textContent = cur + 1;
+  nameEl.textContent = slides[cur].dataset.title;
+  document.getElementById('prev').disabled = cur === 0;
+  document.getElementById('next').disabled = cur === slides.length - 1;
+}
+
+function go(dir) { goTo(cur + dir); }
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') go(1);
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') go(-1);
+});
+
+// Init
+document.getElementById('prev').disabled = true;
+nameEl.textContent = slides[0].dataset.title;
+</script>
+</body>
+</html>
