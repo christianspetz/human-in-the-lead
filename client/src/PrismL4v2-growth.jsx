@@ -1182,31 +1182,54 @@ const GrowthImpactCalculator = ({ proc, growthLevers, financials, erpValue, agen
         </div>
       </div>
 
-      {/* KPI-level breakdown */}
+      {/* KPI-level breakdown with working math */}
       <div style={{ padding: "10px 12px", background: t.card, borderRadius: 8, border: `1px solid ${t.bdr}`, marginBottom: 10 }}>
-        <div style={{ fontSize: 9, color: t.mut, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>KPI Breakdown</div>
-        {(kpiRows || []).map((row, i) => (
-          <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: i < kpiRows.length - 1 ? `1px solid ${t.bdr}40` : "none" }}>
-            <div style={{ fontSize: 10, color: t.tx2, flex: 1 }}>
-              {row.kpi.name}
-              <span style={{ color: t.mut, marginLeft: 4, fontSize: 9 }}>
-                {row.current != null ? `${row.current}` : "—"} → {row.bench ?? "—"} {row.kpi.unit}
-              </span>
-            </div>
-            <div style={{ display: "flex", gap: 12, fontSize: 10, fontFamily: "monospace" }}>
-              <span style={{ color: BLUE, fontWeight: 600 }}>{row.erpImpact > 0 ? fmtVal(row.erpImpact) : "—"}</span>
-              <span style={{ color: GOLD, fontWeight: 600 }}>{row.agentImpact > 0 ? fmtVal(row.agentImpact) : "—"}</span>
-            </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <div style={{ fontSize: 9, color: t.mut, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>KPI Breakdown — Working Math</div>
+          <div style={{ display: "flex", gap: 16, fontSize: 8, color: t.mut }}>
+            <span><span style={{ color: BLUE }}>■</span> ERP</span>
+            <span><span style={{ color: GOLD }}>■</span> + Agent</span>
           </div>
-        ))}
+        </div>
+        {(kpiRows || []).map((row, i) => {
+          const gap = row.current != null && row.bench != null ? Math.abs(row.current - row.bench) : null;
+          const agentGap = row.bench != null && row.agentBench != null ? Math.abs(row.bench - row.agentBench) : null;
+          const hasErp = row.erpImpact > 0;
+          const hasAgent = row.agentImpact > 0;
+          return (
+          <div key={i} style={{ padding: "8px 0", borderBottom: i < kpiRows.length - 1 ? `1px solid ${t.bdr}30` : "none" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+              <span style={{ fontSize: 11, color: t.tx, fontWeight: 600 }}>{row.kpi.name} <span style={{ fontSize: 9, color: t.mut }}>({row.kpi.unit})</span></span>
+              <div style={{ display: "flex", gap: 10, fontFamily: "monospace", fontSize: 11 }}>
+                <span style={{ color: BLUE, fontWeight: 700 }}>{hasErp ? fmtVal(row.erpImpact) : "—"}</span>
+                <span style={{ color: GOLD, fontWeight: 700 }}>{hasAgent ? "+" + fmtVal(row.agentImpact) : "—"}</span>
+              </div>
+            </div>
+            {/* Show the actual formula */}
+            {hasErp && row.current != null && (
+              <div style={{ fontSize: 9, fontFamily: "monospace", color: t.mut, padding: "3px 8px", background: t.bg, borderRadius: 4, marginBottom: 2 }}>
+                ERP: |{row.current} − {row.bench}| = {gap?.toFixed(1)} gap × {row.m?.toFixed(2)} factor × ${row.baseAmt?.toLocaleString()}M base × 0.0001 = <span style={{ color: BLUE, fontWeight: 600 }}>{fmtVal(row.erpImpact)}</span>
+              </div>
+            )}
+            {hasAgent && (
+              <div style={{ fontSize: 9, fontFamily: "monospace", color: t.mut, padding: "3px 8px", background: t.bg, borderRadius: 4 }}>
+                Agent: |{row.bench} − {row.agentBench}| = {agentGap?.toFixed(1)} gap × {row.m?.toFixed(2)} factor × ${row.baseAmt?.toLocaleString()}M base × 0.0001 = <span style={{ color: GOLD, fontWeight: 600 }}>{fmtVal(row.agentImpact)}</span>
+              </div>
+            )}
+            {!hasErp && row.current == null && (
+              <div style={{ fontSize: 9, color: RED, fontStyle: "italic" }}>No current value entered — enter in Step 3 to calculate impact</div>
+            )}
+          </div>
+          );
+        })}
       </div>
 
-      {/* Methodology */}
+      {/* Methodology — value levers, SAP, agent */}
       <button onClick={() => setShowMethod(v => !v)} style={{
         fontSize: 9, background: "transparent", border: "none", color: t.mut,
         cursor: "pointer", fontFamily: FONT, padding: 0, textDecoration: "underline",
-        textUnderlineOffset: 2, marginBottom: showMethod ? 0 : 0,
-      }}>{showMethod ? "▾ Hide methodology" : "▸ How this is calculated"}</button>
+        textUnderlineOffset: 2,
+      }}>{showMethod ? "▾ Hide context" : "▸ Value levers, SAP lever & AI agent"}</button>
       {showMethod && (
         <div style={{ marginTop: 8, padding: "12px 14px", background: t.card, borderRadius: 8, border: `1px solid ${t.bdr}`, fontSize: 10, color: t.tx2, lineHeight: 1.7 }}>
           {/* Value Levers */}
@@ -1219,7 +1242,6 @@ const GrowthImpactCalculator = ({ proc, growthLevers, financials, erpValue, agen
             </div>
           ))}
 
-          {/* SAP + Agent */}
           {(sapLever || narrative) && (
             <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${t.bdr}` }}>
               {sapLever && (
@@ -1243,18 +1265,8 @@ const GrowthImpactCalculator = ({ proc, growthLevers, financials, erpValue, agen
             </div>
           )}
 
-          {/* Formula explanation */}
-          <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${t.bdr}` }}>
-            <div style={{ fontSize: 9, color: t.mut, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Calculation Method</div>
-            <div style={{ color: t.tx2, lineHeight: 1.7 }}>
-              For each KPI: |current − benchmark| × scenario factor ({scenLvl}) × addressable % ({addressablePct}%) × financial base ÷ 10,000.
-              Agent uplift uses the incremental gap between ERP benchmark and AI agent benchmark.
-              These are the same values that flow into the P&L summary.
-            </div>
-          </div>
-
           <div style={{ marginTop: 10, paddingTop: 8, borderTop: `1px solid ${t.bdr}`, fontStyle: "italic", color: t.mut }}>
-            Floor estimate — actual recovery depends on implementation maturity and root cause mix. Validate with client order-level data.
+            Floor estimate — actual recovery depends on implementation maturity and root cause mix. These values carry directly to the P&L summary.
           </div>
         </div>
       )}
@@ -5835,7 +5847,7 @@ WHAT WOULD MAKE THIS UNASSAILABLE:
                   }
                   procErpVal += erpImpact;
                   procAgentVal += agentImpact;
-                  return { kpi, ki, current, isModeled, bench, agentBench, erpImpact, agentImpact };
+                  return { kpi, ki, current, isModeled, bench, agentBench, erpImpact, agentImpact, baseAmt, m, lever };
                 });
 
                 // Tab state per process — default "benchmarks"
